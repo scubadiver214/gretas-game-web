@@ -2,12 +2,16 @@
 
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { MathUtils, type Group, type Mesh } from "three";
+import { MathUtils, type Group, type Mesh, type PerspectiveCamera } from "three";
+import { fitDistance } from "@/components/three/FitCamera";
 import { Character } from "@/features/characters/Character";
 import type { CharacterId } from "@/features/player/types";
 import { LANE_X, pickSpawn, spawnIntervalFor, speedFor, type ItemKind } from "./scoring";
 import { useDeliveryGame } from "./useDeliveryGame";
 
+const CAMERA_VFOV = 55;
+const CAMERA_FIT_WIDTH = 7.2; // both outer lanes + a mailbox on each side
+const CAMERA_MIN_DISTANCE = 7.2;
 const SPAWN_Z = -70;
 const DESPAWN_Z = 6;
 const HIT_RADIUS = 1.0;
@@ -198,13 +202,24 @@ function World({ character }: { character: CharacterId }) {
     const elapsed = s.phase === "riding" ? (Date.now() - s.startedAt) / 1000 : 0;
     const speed = s.phase === "riding" ? speedFor(elapsed) : 0;
 
-    // Player lane lerp + camera sway.
+    // Player lane lerp + aspect-aware chase camera (pulls back on portrait phones).
     if (player.current) {
       const targetX = LANE_X[s.lane];
       player.current.position.x = MathUtils.lerp(player.current.position.x, targetX, 1 - Math.pow(0.0005, dt));
       player.current.rotation.z = (targetX - player.current.position.x) * -0.12;
-      state.camera.position.x = MathUtils.lerp(state.camera.position.x, player.current.position.x * 0.35, 1 - Math.pow(0.01, dt));
-      state.camera.lookAt(player.current.position.x * 0.2, 0.8, -8);
+
+      const cam = state.camera as PerspectiveCamera;
+      const aspect = state.size.width / Math.max(1, state.size.height);
+      const d = fitDistance(aspect, CAMERA_VFOV, CAMERA_FIT_WIDTH, CAMERA_MIN_DISTANCE);
+      if (cam.fov !== CAMERA_VFOV) {
+        cam.fov = CAMERA_VFOV;
+        cam.updateProjectionMatrix();
+      }
+      const elev = MathUtils.degToRad(26);
+      cam.position.x = MathUtils.lerp(cam.position.x, player.current.position.x * 0.35, 1 - Math.pow(0.01, dt));
+      cam.position.y = 0.8 + Math.sin(elev) * d;
+      cam.position.z = Math.cos(elev) * d;
+      cam.lookAt(player.current.position.x * 0.2, 0.8, -6);
     }
 
     // Scroll scenery.
@@ -351,7 +366,7 @@ function World({ character }: { character: CharacterId }) {
 
 export default function DeliveryScene({ character }: { character: CharacterId }) {
   return (
-    <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 3.4, 6.5], fov: 55 }}>
+    <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 4, 7.2], fov: CAMERA_VFOV }}>
       <color attach="background" args={["#BFE7FF"]} />
       <World character={character} />
     </Canvas>

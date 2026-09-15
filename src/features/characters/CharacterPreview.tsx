@@ -33,7 +33,7 @@ export default function CharacterPreview({
   return (
     <Canvas
       dpr={[1, 1.5]}
-      camera={{ position: [0, 0.6, 3.6], fov: 38 }}
+      camera={{ position: [0, 0.4, 4.2], fov: 38 }}
       gl={{ antialias: true, alpha: true }}
       style={{ width: "100%", height: "100%" }}
     >

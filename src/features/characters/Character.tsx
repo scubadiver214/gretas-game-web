@@ -20,6 +20,8 @@ interface CharacterProps {
   wobble?: number;
 }
 
+/** Hip height: legs hang below this, torso/arms/head sit above it. */
+const BODY_Y = 0.6;
 const SKIN = "#F6C9A0";
 const EYE = "#2B2D42";
 const STYLE: Record<
@@ -54,7 +56,7 @@ export function Character({
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (body.current) {
-      body.current.position.y = pose === "bike" ? 0 : Math.sin(t * 2.2) * 0.02;
+      body.current.position.y = BODY_Y + (pose === "bike" ? 0 : Math.sin(t * 2.2) * 0.02);
     }
     if (root.current) {
       root.current.rotation.z = rotation[2] + Math.sin(t * 18) * 0.25 * wobble;
@@ -108,7 +110,7 @@ export function Character({
         </mesh>
       </group>
 
-      <group ref={body} rotation={[lean, 0, 0]} position={[0, 0.6, 0]}>
+      <group ref={body} rotation={[lean, 0, 0]} position={[0, BODY_Y, 0]}>
         {/* Torso */}
         <mesh position={[0, 0.32, 0]} castShadow>
           <boxGeometry args={[0.5, 0.62, 0.3]} />

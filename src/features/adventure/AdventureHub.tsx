@@ -61,7 +61,7 @@ function Inner() {
 
         <Stack spacing={2} sx={{ flex: 1 }}>
           {ADVENTURES.map(({ mode, title, blurb, icon: Icon, gradient }) => (
-            <Card key={mode} sx={{ flex: 1, minHeight: 170 }}>
+            <Card key={mode} sx={{ flex: 1, minHeight: 170, display: "flex" }}>
               <CardActionArea
                 onClick={() => router.push(`/play/${mode}`)}
                 sx={{ height: "100%", background: gradient, color: "#fff", p: 2.5 }}
@@ -100,7 +100,7 @@ function Inner() {
           ))}
         </Stack>
 
-        <Stack direction="row" spacing={1}>
+        <Stack spacing={1}>
           <Button fullWidth variant="outlined" color="secondary" onClick={() => router.push("/scoreboard")}>
             Scoreboard
           </Button>

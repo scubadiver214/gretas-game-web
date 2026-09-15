@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Color, MathUtils, type Group, type MeshStandardMaterial } from "three";
+import FitCamera from "@/components/three/FitCamera";
 import { Character } from "@/features/characters/Character";
 import type { CharacterId } from "@/features/player/types";
 import { TOPPINGS, TOPPING_BY_ID, type ToppingId } from "./scoring";
@@ -10,7 +11,7 @@ import { useKitchenGame } from "./useKitchenGame";
 
 const COUNTER_TOP = 0.9;
 const PIZZA_HOME: [number, number, number] = [0, COUNTER_TOP + 0.04, 0.1];
-const PIZZA_OVEN: [number, number, number] = [1.65, COUNTER_TOP + 0.5, -0.85];
+const PIZZA_OVEN: [number, number, number] = [1.45, COUNTER_TOP + 0.5, -0.85];
 
 const DOUGH = new Color("#E8C27A");
 const GOLDEN = new Color("#C98A3A");
@@ -101,7 +102,7 @@ function Bowl({ id, index }: { id: ToppingId; index: number }) {
   const phase = useKitchenGame((s) => s.phase);
   const info = TOPPING_BY_ID[id];
   const mesh = useRef<Group>(null);
-  const x = -1.55 + index * 0.62;
+  const x = -1.3 + index * 0.52;
   const hovered = useRef(false);
   useFrame((_, delta) => {
     if (!mesh.current) return;
@@ -122,12 +123,12 @@ function Bowl({ id, index }: { id: ToppingId; index: number }) {
       onPointerOut={() => (hovered.current = false)}
     >
       <mesh position={[0, 0.06, 0]} castShadow>
-        <cylinderGeometry args={[0.24, 0.18, 0.12, 20]} />
+        <cylinderGeometry args={[0.21, 0.16, 0.12, 20]} />
         <meshStandardMaterial color="#FFFFFF" />
       </mesh>
       {contents.map(([cx, cz], i) => (
-        <mesh key={i} position={[cx, 0.13, cz]}>
-          <sphereGeometry args={[0.06, 10, 10]} />
+        <mesh key={i} position={[cx * 0.85, 0.13, cz * 0.85]}>
+          <sphereGeometry args={[0.055, 10, 10]} />
           <meshStandardMaterial color={info.color} />
         </mesh>
       ))}
@@ -145,9 +146,9 @@ function Oven() {
     glow.current.emissiveIntensity = MathUtils.lerp(glow.current.emissiveIntensity, pulse, 0.1);
   });
   return (
-    <group position={[1.65, 0, -0.85]}>
+    <group position={[1.45, 0, -0.85]}>
       <mesh position={[0, 0.85, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.3, 1.7, 1.1]} />
+        <boxGeometry args={[1.2, 1.7, 1.1]} />
         <meshStandardMaterial color="#4B5563" />
       </mesh>
       {/* Oven mouth */}
@@ -187,11 +188,11 @@ function Kitchen({ character }: { character: CharacterId }) {
 
       {/* Counter */}
       <mesh position={[0, COUNTER_TOP / 2, 0.2]} castShadow receiveShadow>
-        <boxGeometry args={[4.4, COUNTER_TOP, 1.5]} />
+        <boxGeometry args={[3.6, COUNTER_TOP, 1.5]} />
         <meshStandardMaterial color="#B07A4B" />
       </mesh>
       <mesh position={[0, COUNTER_TOP + 0.01, 0.2]} receiveShadow>
-        <boxGeometry args={[4.5, 0.05, 1.6]} />
+        <boxGeometry args={[3.7, 0.05, 1.6]} />
         <meshStandardMaterial color="#F3E6D3" />
       </mesh>
 
@@ -201,19 +202,17 @@ function Kitchen({ character }: { character: CharacterId }) {
         <Bowl key={t.id} id={t.id} index={i} />
       ))}
 
-      <Character character={character} pose="cook" position={[-1.35, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
+      <Character character={character} pose="cook" position={[-1.15, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
     </>
   );
 }
 
+const CAMERA_TARGET: [number, number, number] = [0, 0.85, 0.15];
+
 export default function KitchenScene({ character }: { character: CharacterId }) {
   return (
-    <Canvas
-      shadows
-      dpr={[1, 1.75]}
-      camera={{ position: [0, 2.7, 4.3], fov: 42 }}
-      onCreated={({ camera }) => camera.lookAt(0, 0.9, 0)}
-    >
+    <Canvas shadows dpr={[1, 1.75]}>
+      <FitCamera fitWidth={4.2} vfov={46} minDistance={4.6} elevationDeg={34} target={CAMERA_TARGET} />
       <color attach="background" args={["#FFF1D6"]} />
       <Kitchen character={character} />
     </Canvas>

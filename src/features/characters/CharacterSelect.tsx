@@ -59,9 +59,9 @@ function Inner() {
                 <CardActionArea
                   onClick={() => setSelected(opt.id)}
                   aria-pressed={active}
-                  sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch" }}
+                  sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start" }}
                 >
-                  <Box sx={{ height: 260, bgcolor: active ? "#FFF1D6" : "#F6F1EA" }}>
+                  <Box sx={{ flex: 1, minHeight: 220, bgcolor: active ? "#FFF1D6" : "#F6F1EA" }}>
                     <CharacterPreview character={opt.id} active={active} />
                   </Box>
                   <Box sx={{ p: 2, textAlign: "center", position: "relative" }}>
