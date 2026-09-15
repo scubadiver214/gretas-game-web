@@ -30,7 +30,7 @@ interface PoolItem {
 
 const HOUSE_COLORS = ["#F9A8D4", "#93C5FD", "#FCD34D", "#86EFAC", "#FDBA74", "#C4B5FD"];
 
-function Bike({ character, pedaling, wobble }: { character: CharacterId; pedaling: boolean; wobble: number }) {
+function Bike({ character, color, pedaling, wobble }: { character: CharacterId; color?: string; pedaling: boolean; wobble: number }) {
   const front = useRef<Mesh>(null);
   const back = useRef<Mesh>(null);
   useFrame((_, delta) => {
@@ -80,7 +80,7 @@ function Bike({ character, pedaling, wobble }: { character: CharacterId; pedalin
         <boxGeometry args={[0.42, 0.08, 0.34]} />
         <meshStandardMaterial color="#FFFFFF" />
       </mesh>
-      <Character character={character} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
+      <Character character={character} color={color} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
     </group>
   );
 }
@@ -174,7 +174,7 @@ function Tree({ side }: { side: -1 | 1 }) {
   );
 }
 
-function World({ character }: { character: CharacterId }) {
+function World({ character, color }: { character: CharacterId; color?: string }) {
   const phase = useDeliveryGame((s) => s.phase);
   const wobbling = useDeliveryGame((s) => s.wobbling);
   const riding = phase === "riding";
@@ -200,7 +200,7 @@ function World({ character }: { character: CharacterId }) {
     const dt = Math.min(delta, 0.05);
     const s = useDeliveryGame.getState();
     const elapsed = s.phase === "riding" ? (Date.now() - s.startedAt) / 1000 : 0;
-    const speed = s.phase === "riding" ? speedFor(elapsed) : 0;
+    const speed = s.phase === "riding" ? speedFor(elapsed, s.difficulty) : 0;
 
     // Player lane lerp + aspect-aware chase camera (pulls back on portrait phones).
     if (player.current) {
@@ -245,7 +245,7 @@ function World({ character }: { character: CharacterId }) {
     // Spawn.
     sim.current.spawnIn -= dt;
     if (sim.current.spawnIn <= 0) {
-      const { kind, lane } = pickSpawn(Math.random, sim.current.lastLane);
+      const { kind, lane } = pickSpawn(s.rng, sim.current.lastLane, s.difficulty);
       const slot = pool.find((p) => p.kind === kind && !p.active);
       if (slot) {
         slot.active = true;
@@ -254,7 +254,7 @@ function World({ character }: { character: CharacterId }) {
         slot.z = SPAWN_Z;
         sim.current.lastLane = lane;
       }
-      sim.current.spawnIn = spawnIntervalFor(speed);
+      sim.current.spawnIn = spawnIntervalFor(speed, s.difficulty);
     }
 
     // Advance + collide.
@@ -358,17 +358,17 @@ function World({ character }: { character: CharacterId }) {
       ))}
 
       <group ref={player} position={[0, 0, 0]}>
-        <Bike character={character} pedaling={riding} wobble={wobbling ? 1 : 0} />
+        <Bike character={character} color={color} pedaling={riding} wobble={wobbling ? 1 : 0} />
       </group>
     </>
   );
 }
 
-export default function DeliveryScene({ character }: { character: CharacterId }) {
+export default function DeliveryScene({ character, color }: { character: CharacterId; color?: string }) {
   return (
     <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 4, 7.2], fov: CAMERA_VFOV }}>
       <color attach="background" args={["#BFE7FF"]} />
-      <World character={character} />
+      <World character={character} color={color} />
     </Canvas>
   );
 }

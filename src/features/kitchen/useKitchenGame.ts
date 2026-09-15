@@ -1,13 +1,16 @@
 "use client";
 
 import { create } from "zustand";
+import { fx } from "@/lib/fx";
+import { seededRng } from "@/lib/rng";
 import {
-  BAKE_DURATION_MS,
   generateOrders,
   isOrderComplete,
+  kitchenDifficultyFor,
   scoreBake,
   scoreTopping,
   type BakeOutcome,
+  type KitchenDifficulty,
   type Order,
   type ToppingId,
   type ToppingOutcome,
@@ -28,8 +31,17 @@ interface KitchenStats {
   okBakes: number;
 }
 
+/** How a round should be set up. `seed` makes the orders deterministic (daily challenge). */
+export interface RoundConfig {
+  level: number;
+  seed?: string;
+  challengeDate?: string;
+}
+
 interface KitchenState {
   phase: KitchenPhase;
+  config: RoundConfig;
+  difficulty: KitchenDifficulty;
   orders: Order[];
   orderIndex: number;
   placed: ToppingId[];
@@ -40,7 +52,7 @@ interface KitchenState {
   feedback: Feedback | null;
   stats: KitchenStats;
   startedAt: number;
-  begin: () => void;
+  begin: (config: RoundConfig) => void;
   startRound: () => void;
   addTopping: (id: ToppingId) => void;
   startBaking: () => void;
@@ -61,6 +73,8 @@ function clearTimers() {
 
 const initial = {
   phase: "intro" as KitchenPhase,
+  config: { level: 1 } as RoundConfig,
+  difficulty: kitchenDifficultyFor(1),
   orders: [] as Order[],
   orderIndex: 0,
   placed: [] as ToppingId[],
@@ -89,9 +103,12 @@ const BAKE_MESSAGES: Record<BakeOutcome, string> = {
 export const useKitchenGame = create<KitchenState>()((set, get) => ({
   ...initial,
 
-  begin: () => {
+  begin: (config) => {
     clearTimers();
-    set({ ...initial, orders: generateOrders(), phase: "countdown" });
+    fx.unlock();
+    const difficulty = kitchenDifficultyFor(config.level);
+    const rng = config.seed ? seededRng(`${config.seed}:kitchen`) : Math.random;
+    set({ ...initial, config, difficulty, orders: generateOrders(difficulty, rng), phase: "countdown" });
   },
 
   startRound: () => set({ phase: "topping", startedAt: Date.now() }),
@@ -102,6 +119,9 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
     const order = s.orders[s.orderIndex];
     const { delta, outcome } = scoreTopping(order, s.placed, id);
     const label = id.charAt(0).toUpperCase() + id.slice(1);
+    if (outcome === "correct") fx.good();
+    else if (outcome === "wrong") fx.bad();
+    else fx.tap();
     set({
       placed: outcome === "duplicate" ? s.placed : [...s.placed, id],
       wrongPlaced: outcome === "wrong" ? [...s.wrongPlaced, id] : s.wrongPlaced,
@@ -124,10 +144,12 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
     if (s.phase !== "topping") return;
     if (!isOrderComplete(s.orders[s.orderIndex], s.placed)) return;
     clearTimers();
+    fx.whoosh();
     const started = performance.now();
+    const duration = s.difficulty.bakeDurationMs;
     set({ phase: "baking", bakeProgress: 0 });
     bakeTimer = setInterval(() => {
-      const p = (performance.now() - started) / BAKE_DURATION_MS;
+      const p = (performance.now() - started) / duration;
       if (p >= 1) {
         set({ bakeProgress: 1 });
         get().takeOut();
@@ -143,6 +165,9 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
     if (bakeTimer) clearInterval(bakeTimer);
     bakeTimer = null;
     const { delta, outcome } = scoreBake(s.bakeProgress);
+    if (outcome === "perfect") fx.great();
+    else if (outcome === "ok") fx.good();
+    else fx.bad();
     const isLast = s.orderIndex >= s.orders.length - 1;
     set({
       phase: "served",

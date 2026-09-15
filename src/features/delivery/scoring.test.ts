@@ -9,6 +9,7 @@ import {
   applyDelivery,
   applyObstacle,
   clampLane,
+  deliveryDifficultyFor,
   pickSpawn,
   spawnIntervalFor,
   speedFor,
@@ -56,6 +57,33 @@ describe("speed + spawning", () => {
       expect(lane).toBeLessThan(LANE_COUNT);
       expect(["mailbox", "cone", "puddle"]).toContain(kind);
     }
+  });
+});
+
+describe("deliveryDifficultyFor", () => {
+  it("gets faster, denser and more obstacle-heavy with level", () => {
+    const l1 = deliveryDifficultyFor(1);
+    const l5 = deliveryDifficultyFor(5);
+    expect(l1.baseSpeed).toBe(BASE_SPEED);
+    expect(l5.baseSpeed).toBeGreaterThan(l1.baseSpeed);
+    expect(l5.maxSpeed).toBeGreaterThan(l1.maxSpeed);
+    expect(l5.spawnBase).toBeLessThan(l1.spawnBase);
+    expect(l5.mailboxShare).toBeLessThan(l1.mailboxShare);
+    expect(speedFor(0, l5)).toBe(l5.baseSpeed);
+    expect(speedFor(10_000, l5)).toBe(l5.maxSpeed);
+  });
+  it("clamps levels and keeps mailboxes the most common item", () => {
+    expect(deliveryDifficultyFor(-3)).toEqual(deliveryDifficultyFor(1));
+    expect(deliveryDifficultyFor(50)).toEqual(deliveryDifficultyFor(5));
+    let seed = 11;
+    const rng = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+    let mailboxes = 0;
+    for (let i = 0; i < 1000; i++) if (pickSpawn(rng, 1, deliveryDifficultyFor(5)).kind === "mailbox") mailboxes++;
+    expect(mailboxes).toBeGreaterThan(300);
+    expect(mailboxes).toBeLessThan(500);
   });
 });
 

@@ -6,10 +6,16 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import TimerRoundedIcon from "@mui/icons-material/TimerRounded";
+import VibrationRoundedIcon from "@mui/icons-material/VibrationRounded";
+import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
+import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import { useEffect, useState } from "react";
+import { useSettingsStore } from "@/features/settings/store";
+import { fx } from "@/lib/fx";
 
 export function ScorePill({ score }: { score: number }) {
   return (
@@ -94,9 +100,11 @@ export function CountdownOverlay({ onDone }: { onDone: () => void }) {
   const [n, setN] = useState(3);
   useEffect(() => {
     if (n === 0) {
+      fx.go();
       const t = setTimeout(onDone, 500);
       return () => clearTimeout(t);
     }
+    fx.tick();
     const t = setTimeout(() => setN((v) => v - 1), 800);
     return () => clearTimeout(t);
   }, [n, onDone]);
@@ -130,11 +138,14 @@ export function CountdownOverlay({ onDone }: { onDone: () => void }) {
 
 export function IntroCard({
   title,
+  badge,
   lines,
   cta,
   onStart,
 }: {
   title: string;
+  /** Small chip under the title, e.g. the level or "Daily challenge". */
+  badge?: string;
   lines: string[];
   cta: string;
   onStart: () => void;
@@ -142,18 +153,55 @@ export function IntroCard({
   return (
     <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", p: 2, bgcolor: "rgba(43,45,66,0.35)" }}>
       <Paper sx={{ p: 3, maxWidth: 380, width: "100%", borderRadius: 6, textAlign: "center" }}>
-        <Typography variant="h2" gutterBottom>
+        <Typography variant="h2" gutterBottom={!badge}>
           {title}
         </Typography>
+        {badge && <Chip label={badge} color="secondary" size="small" sx={{ mb: 1.5, fontWeight: 800 }} />}
         {lines.map((l) => (
           <Typography key={l} sx={{ mb: 1, fontSize: "1.05rem" }}>
             {l}
           </Typography>
         ))}
-        <Button size="large" fullWidth sx={{ mt: 2 }} variant="contained" onClick={onStart}>
-          {cta}
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
+          <Button size="large" fullWidth variant="contained" onClick={onStart} sx={{ flex: 1 }}>
+            {cta}
+          </Button>
+          <SettingsToggles />
+        </Stack>
       </Paper>
     </Box>
+  );
+}
+
+/** Sound + haptics toggles; safe to render anywhere. */
+export function SettingsToggles({ size = "medium" }: { size?: "small" | "medium" }) {
+  const soundOn = useSettingsStore((s) => s.soundOn);
+  const hapticsOn = useSettingsStore((s) => s.hapticsOn);
+  const toggleSound = useSettingsStore((s) => s.toggleSound);
+  const toggleHaptics = useSettingsStore((s) => s.toggleHaptics);
+  return (
+    <Stack direction="row" spacing={0.5}>
+      <IconButton
+        size={size}
+        aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+        aria-pressed={soundOn}
+        onClick={() => {
+          toggleSound();
+          if (!soundOn) fx.unlock();
+        }}
+        sx={{ bgcolor: soundOn ? "#FDE68A" : "#F1E9DE" }}
+      >
+        {soundOn ? <VolumeUpRoundedIcon /> : <VolumeOffRoundedIcon />}
+      </IconButton>
+      <IconButton
+        size={size}
+        aria-label={hapticsOn ? "Turn vibration off" : "Turn vibration on"}
+        aria-pressed={hapticsOn}
+        onClick={toggleHaptics}
+        sx={{ bgcolor: hapticsOn ? "#FDE68A" : "#F1E9DE" }}
+      >
+        <VibrationRoundedIcon sx={{ opacity: hapticsOn ? 1 : 0.45 }} />
+      </IconButton>
+    </Stack>
   );
 }

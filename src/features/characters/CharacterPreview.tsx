@@ -6,7 +6,7 @@ import type { Group } from "three";
 import { Character } from "./Character";
 import type { CharacterId } from "@/features/player/types";
 
-function Turntable({ character, active }: { character: CharacterId; active: boolean }) {
+function Turntable({ character, active, color }: { character: CharacterId; active: boolean; color?: string }) {
   const ref = useRef<Group>(null);
   useFrame((_, delta) => {
     if (!ref.current) return;
@@ -14,7 +14,7 @@ function Turntable({ character, active }: { character: CharacterId; active: bool
   });
   return (
     <group ref={ref}>
-      <Character character={character} pose="idle" position={[0, -0.9, 0]} />
+      <Character character={character} pose="idle" position={[0, -0.9, 0]} color={color} />
       <mesh position={[0, -0.95, 0]} receiveShadow>
         <cylinderGeometry args={[0.9, 0.9, 0.1, 32]} />
         <meshStandardMaterial color={active ? "#FDE68A" : "#EADFD0"} />
@@ -26,9 +26,11 @@ function Turntable({ character, active }: { character: CharacterId; active: bool
 export default function CharacterPreview({
   character,
   active,
+  color,
 }: {
   character: CharacterId;
   active: boolean;
+  color?: string;
 }) {
   return (
     <Canvas
@@ -40,7 +42,7 @@ export default function CharacterPreview({
       <ambientLight intensity={0.9} />
       <directionalLight position={[3, 5, 4]} intensity={1.4} castShadow />
       <Suspense fallback={null}>
-        <Turntable character={character} active={active} />
+        <Turntable character={character} active={active} color={color} />
       </Suspense>
     </Canvas>
   );

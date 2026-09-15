@@ -1,7 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { ROUND_SECONDS, applyDelivery, applyObstacle, clampLane } from "./scoring";
+import { fx } from "@/lib/fx";
+import { seededRng, type Rng } from "@/lib/rng";
+import { ROUND_SECONDS, applyDelivery, applyObstacle, clampLane, deliveryDifficultyFor, type DeliveryDifficulty } from "./scoring";
 
 export type DeliveryPhase = "intro" | "countdown" | "riding" | "finished";
 
@@ -11,8 +13,19 @@ export interface Feedback {
   tone: "good" | "bad" | "neutral";
 }
 
+/** How a round should be set up. `seed` makes the spawn sequence deterministic (daily challenge). */
+export interface RoundConfig {
+  level: number;
+  seed?: string;
+  challengeDate?: string;
+}
+
 interface DeliveryState {
   phase: DeliveryPhase;
+  config: RoundConfig;
+  difficulty: DeliveryDifficulty;
+  /** Spawn RNG for this round; seeded for daily challenges. Not reactive. */
+  rng: Rng;
   lane: number;
   score: number;
   combo: number;
@@ -23,7 +36,7 @@ interface DeliveryState {
   wobbling: boolean;
   feedback: Feedback | null;
   startedAt: number;
-  begin: () => void;
+  begin: (config: RoundConfig) => void;
   startRide: () => void;
   moveLeft: () => void;
   moveRight: () => void;
@@ -45,6 +58,9 @@ function clearTimers() {
 
 const initial = {
   phase: "intro" as DeliveryPhase,
+  config: { level: 1 } as RoundConfig,
+  difficulty: deliveryDifficultyFor(1),
+  rng: Math.random as Rng,
   lane: 1,
   score: 0,
   combo: 0,
@@ -60,9 +76,16 @@ const initial = {
 export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
   ...initial,
 
-  begin: () => {
+  begin: (config) => {
     clearTimers();
-    set({ ...initial, phase: "countdown" });
+    fx.unlock();
+    set({
+      ...initial,
+      config,
+      difficulty: deliveryDifficultyFor(config.level),
+      rng: config.seed ? seededRng(`${config.seed}:delivery`) : Math.random,
+      phase: "countdown",
+    });
   },
 
   startRide: () => {
@@ -82,10 +105,12 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
 
   moveLeft: () => {
     if (get().phase !== "riding") return;
+    fx.tap();
     set((s) => ({ lane: clampLane(s.lane - 1) }));
   },
   moveRight: () => {
     if (get().phase !== "riding") return;
+    fx.tap();
     set((s) => ({ lane: clampLane(s.lane + 1) }));
   },
 
@@ -93,6 +118,8 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
     const s = get();
     if (s.phase !== "riding") return;
     const next = applyDelivery(s);
+    if (next.bonus) fx.great();
+    else fx.good();
     set({
       score: next.score,
       combo: next.combo,
@@ -106,6 +133,7 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
     const s = get();
     if (s.phase !== "riding") return;
     const next = applyObstacle(s);
+    fx.bad();
     if (wobbleTimer) clearTimeout(wobbleTimer);
     set({
       score: next.score,

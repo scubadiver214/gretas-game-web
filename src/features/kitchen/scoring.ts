@@ -38,6 +38,28 @@ export const POINTS_PERFECT_BAKE = 25;
 export const POINTS_OK_BAKE = 10;
 export const BAKE_DURATION_MS = 4200;
 
+/** Knobs that scale with the player's level. */
+export interface KitchenDifficulty {
+  level: number;
+  orderCount: number;
+  /** Toppings on the first order; each following order adds one (capped). */
+  minToppings: number;
+  maxToppings: number;
+  /** Faster bake meter at higher levels = smaller perfect window in real time. */
+  bakeDurationMs: number;
+}
+
+export function kitchenDifficultyFor(level: number): KitchenDifficulty {
+  const l = Math.max(1, Math.min(5, Math.floor(level)));
+  return {
+    level: l,
+    orderCount: Math.min(5, ORDER_COUNT + Math.max(0, l - 1)),
+    minToppings: l >= 4 ? 3 : 2,
+    maxToppings: Math.min(TOPPINGS.length, 3 + l),
+    bakeDurationMs: Math.max(3000, BAKE_DURATION_MS - (l - 1) * 300),
+  };
+}
+
 /** Bake meter zones as fractions of BAKE_DURATION_MS. */
 export const BAKE_ZONES = {
   okStart: 0.46,
@@ -58,10 +80,13 @@ function pickDistinct<T>(items: readonly T[], count: number, rng: Rng): T[] {
   return out;
 }
 
-/** Orders ramp up: 2, 3, 4 toppings. Cheese is always first when present. */
-export function generateOrders(count = ORDER_COUNT, rng: Rng = Math.random): Order[] {
-  return Array.from({ length: count }, (_, i) => {
-    const size = Math.min(2 + i, TOPPINGS.length);
+/**
+ * Orders ramp up within a round (level 1: 2, 3, 4 toppings; higher levels add
+ * orders and toppings). Cheese is always first when present.
+ */
+export function generateOrders(difficulty: KitchenDifficulty = kitchenDifficultyFor(1), rng: Rng = Math.random): Order[] {
+  return Array.from({ length: difficulty.orderCount }, (_, i) => {
+    const size = Math.min(difficulty.minToppings + i, difficulty.maxToppings, TOPPINGS.length);
     const picked = pickDistinct(
       TOPPINGS.map((t) => t.id),
       size,

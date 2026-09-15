@@ -15,6 +15,8 @@ import GameShell from "@/components/GameShell";
 import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FeedbackToast, IntroCard, QuitButton, ScorePill } from "@/components/HUD";
 import { usePlayerStore } from "@/features/player/store";
+import { useRoundSetup } from "@/features/player/useRoundConfig";
+import { LEVEL_NAMES } from "@/features/player/progress";
 import { BAKE_ZONES, TOPPINGS, isOrderComplete, maxScore, TOPPING_BY_ID } from "./scoring";
 import { useKitchenGame } from "./useKitchenGame";
 
@@ -46,9 +48,12 @@ function BakeMeter({ progress }: { progress: number }) {
 function Inner() {
   const router = useRouter();
   const character = usePlayerStore((s) => s.character)!;
-  const setLastResult = usePlayerStore((s) => s.setLastResult);
+  const color = usePlayerStore((s) => s.color);
+  const finishRound = usePlayerStore((s) => s.finishRound);
+  const setup = useRoundSetup("kitchen");
 
   const phase = useKitchenGame((s) => s.phase);
+  const config = useKitchenGame((s) => s.config);
   const orders = useKitchenGame((s) => s.orders);
   const orderIndex = useKitchenGame((s) => s.orderIndex);
   const placed = useKitchenGame((s) => s.placed);
@@ -69,11 +74,13 @@ function Inner() {
 
   useEffect(() => {
     if (phase !== "finished") return;
-    setLastResult({
+    finishRound({
       mode: "kitchen",
       score,
       durationSeconds: Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
       roundId: `kitchen-${startedAt}`,
+      level: config.level,
+      challengeDate: config.challengeDate,
       highlights: [
         { label: "Toppings right", value: String(stats.correct) },
         { label: "Perfect bakes", value: `${stats.perfectBakes}/${orders.length}` },
@@ -81,16 +88,21 @@ function Inner() {
       ],
     });
     router.replace("/results");
-  }, [phase, score, stats, startedAt, orders, setLastResult, router]);
+  }, [phase, score, stats, startedAt, orders, config, finishRound, router]);
 
   const onCountdownDone = useCallback(() => startRound(), [startRound]);
+  const onStart = useCallback(
+    () => begin({ level: setup.level, seed: setup.seed, challengeDate: setup.challengeDate }),
+    [begin, setup.level, setup.seed, setup.challengeDate],
+  );
+  const levelLabel = setup.isDaily ? "Daily challenge" : `Level ${setup.level} · ${LEVEL_NAMES[setup.level]}`;
   const order = orders[orderIndex];
   const complete = order ? isOrderComplete(order, placed) : false;
   const playing = phase === "topping" || phase === "baking" || phase === "served";
 
   return (
     <GameShell
-      scene={<KitchenScene character={character} />}
+      scene={<KitchenScene character={character} color={color} />}
       top={
         <Stack spacing={1}>
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -183,13 +195,16 @@ function Inner() {
           {phase === "intro" && (
             <IntroCard
               title="Pizza Kitchen"
+              badge={levelLabel}
               lines={[
                 "Read the order card and tap the toppings it asks for.",
                 "Wrong toppings cost points!",
                 "Then bake it and take it out when the meter is green.",
+                ...(setup.isDaily ? ["Everyone gets the same orders today. Beat the world!"] : []),
+                ...(setup.level > 1 && !setup.isDaily ? [`Level ${setup.level}: more orders and a faster oven!`] : []),
               ]}
               cta="Start cooking"
-              onStart={begin}
+              onStart={onStart}
             />
           )}
           {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

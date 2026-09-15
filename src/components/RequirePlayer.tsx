@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -30,12 +30,15 @@ export default function RequirePlayer({
     else if (needCharacter && !character) router.replace("/character");
   }, [hydrated, nickname, character, needCharacter, router]);
 
-  if (!ready) {
-    return (
-      <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center" }}>
-        <CircularProgress color="primary" />
-      </Box>
-    );
-  }
-  return <>{children}</>;
+  if (!ready) return <Spinner />;
+  // Suspense so children may use useSearchParams() (daily-challenge routes).
+  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
+}
+
+function Spinner() {
+  return (
+    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center" }}>
+      <CircularProgress color="primary" />
+    </Box>
+  );
 }

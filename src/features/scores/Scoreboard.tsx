@@ -19,15 +19,19 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
 import PedalBikeRoundedIcon from "@mui/icons-material/PedalBikeRounded";
 import PageContainer from "@/components/PageContainer";
-import { usePlayerStore } from "@/features/player/store";
+import PlayerAvatar from "@/components/PlayerAvatar";
+import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
 import { CHARACTER_LABELS, MODE_LABELS, type GameMode } from "@/features/player/types";
+import { dailyKey } from "@/lib/rng";
 import { useTopScores } from "./hooks";
-import type { ScoreEntry } from "./api";
+import type { Board, ScoreEntry } from "./api";
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, ScoreEntry>();
@@ -43,11 +47,14 @@ const columns = helper.columns([
   helper.accessor("nickname", {
     header: "Player",
     cell: ({ row, getValue }) => (
-      <Stack spacing={0}>
-        <Typography sx={{ fontWeight: 800, lineHeight: 1.1 }}>{getValue()}</Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          as {CHARACTER_LABELS[row.original.character] ?? row.original.character}
-        </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        <PlayerAvatar nickname={getValue()} character={row.original.character} color={row.original.color} size={32} />
+        <Stack spacing={0}>
+          <Typography sx={{ fontWeight: 800, lineHeight: 1.1 }}>{getValue()}</Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            as {CHARACTER_LABELS[row.original.character] ?? row.original.character} · Lv {row.original.level}
+          </Typography>
+        </Stack>
       </Stack>
     ),
   }),
@@ -63,7 +70,7 @@ const columns = helper.columns([
 
 const EMPTY: ScoreEntry[] = [];
 
-function formatWhen(iso: string): string {
+export function formatWhen(iso: string): string {
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
   const mins = Math.round(diffMs / 60_000);
@@ -74,8 +81,8 @@ function formatWhen(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function ScoreTable({ mode, me }: { mode: GameMode; me: string }) {
-  const query = useTopScores(mode, 20);
+function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: string }) {
+  const query = useTopScores(mode, 20, board === "daily" ? dailyKey() : undefined);
   const table = useTable({ features, columns, data: query.data ?? EMPTY });
 
   if (query.isPending) {
@@ -105,15 +112,17 @@ function ScoreTable({ mode, me }: { mode: GameMode; me: string }) {
   if (!query.data.length) {
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="h4">No scores yet</Typography>
-        <Typography sx={{ color: "text.secondary" }}>Be the first to play {MODE_LABELS[mode]}!</Typography>
+        <Typography variant="h4">{board === "daily" ? "Nobody has played today yet" : "No scores yet"}</Typography>
+        <Typography sx={{ color: "text.secondary" }}>
+          {board === "daily" ? `Be the first to finish today's ${MODE_LABELS[mode]} challenge!` : `Be the first to play ${MODE_LABELS[mode]}!`}
+        </Typography>
       </Box>
     );
   }
 
   return (
     <TableContainer>
-      <Table size="small" aria-label={`${MODE_LABELS[mode]} top scores`}>
+      <Table size="small" aria-label={`${MODE_LABELS[mode]} ${board === "daily" ? "daily" : "all-time"} top scores`}>
         <TableHead>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id}>
@@ -133,7 +142,7 @@ function ScoreTable({ mode, me }: { mode: GameMode; me: string }) {
                 key={row.id}
                 sx={{
                   bgcolor: mine ? "#FFF1D6" : undefined,
-                  "& td": { py: 1.25, borderColor: "#F1E9DE" },
+                  "& td": { py: 1, borderColor: "#F1E9DE" },
                 }}
               >
                 {row.getAllCells().map((cell) => (
@@ -152,8 +161,13 @@ function ScoreTable({ mode, me }: { mode: GameMode; me: string }) {
 
 export default function Scoreboard() {
   const router = useRouter();
-  const nickname = usePlayerStore((s) => s.nickname);
+  // The scoreboard is public (no RequirePlayer), so only read the persisted
+  // nickname after hydration to keep the server and first client render equal.
+  const hydrated = usePlayerHydrated();
+  const storedNickname = usePlayerStore((s) => s.nickname);
+  const nickname = hydrated ? storedNickname : "";
   const [mode, setMode] = useState<GameMode>("kitchen");
+  const [board, setBoard] = useState<Board>("all");
 
   return (
     <PageContainer maxWidth={560}>
@@ -168,6 +182,19 @@ export default function Scoreboard() {
           {nickname && <Chip label={nickname} color="secondary" variant="outlined" />}
         </Stack>
 
+        <ToggleButtonGroup
+          exclusive
+          fullWidth
+          size="small"
+          value={board}
+          onChange={(_, v: Board | null) => v && setBoard(v)}
+          aria-label="Leaderboard period"
+          sx={{ bgcolor: "#fff", borderRadius: 3, "& .MuiToggleButton-root": { fontWeight: 800, textTransform: "none", borderRadius: 3 } }}
+        >
+          <ToggleButton value="all">All time</ToggleButton>
+          <ToggleButton value="daily">Today&apos;s challenge</ToggleButton>
+        </ToggleButtonGroup>
+
         <Paper sx={{ overflow: "hidden" }}>
           <Tabs
             value={mode}
@@ -179,12 +206,19 @@ export default function Scoreboard() {
             <Tab value="kitchen" icon={<LocalPizzaRoundedIcon />} iconPosition="start" label="Kitchen" sx={{ minHeight: 56 }} />
             <Tab value="delivery" icon={<PedalBikeRoundedIcon />} iconPosition="start" label="Delivery" sx={{ minHeight: 56 }} />
           </Tabs>
-          <ScoreTable mode={mode} me={nickname} />
+          <ScoreTable mode={mode} board={board} me={nickname} />
         </Paper>
 
-        <Button variant="contained" size="large" onClick={() => router.push(nickname ? "/adventure" : "/")}>
-          {nickname ? "Play" : "Start playing"}
-        </Button>
+        <Stack spacing={1}>
+          <Button variant="contained" size="large" onClick={() => router.push(nickname ? "/adventure" : "/")}>
+            {nickname ? "Play" : "Start playing"}
+          </Button>
+          {nickname && (
+            <Button variant="text" onClick={() => router.push("/my-scores")}>
+              My scores on this device
+            </Button>
+          )}
+        </Stack>
       </Stack>
     </PageContainer>
   );

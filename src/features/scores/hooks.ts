@@ -5,14 +5,15 @@ import type { GameMode } from "@/features/player/types";
 import { getPersonalBests, getTopScores, submitScore, type SubmitScoreRequest } from "./api";
 
 export const scoreKeys = {
-  top: (mode: GameMode, limit: number) => ["scores", "top", mode, limit] as const,
+  top: (mode: GameMode, limit: number, date?: string) => ["scores", "top", mode, date ?? "all", limit] as const,
   best: (nickname: string) => ["scores", "best", nickname] as const,
 };
 
-export function useTopScores(mode: GameMode, limit = 20) {
+/** Top scores for a mode; pass a UTC date key for that day's daily-challenge board. */
+export function useTopScores(mode: GameMode, limit = 20, date?: string) {
   return useQuery({
-    queryKey: scoreKeys.top(mode, limit),
-    queryFn: () => getTopScores(mode, limit),
+    queryKey: scoreKeys.top(mode, limit, date),
+    queryFn: () => getTopScores(mode, limit, date),
   });
 }
 

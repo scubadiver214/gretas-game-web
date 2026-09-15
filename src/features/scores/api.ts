@@ -4,7 +4,10 @@ export interface ScoreEntry {
   rank: number;
   nickname: string;
   character: CharacterId;
+  /** Player's avatar colour (hex) or null for players who never picked one. */
+  color: string | null;
   score: number;
+  level: number;
   durationSeconds: number;
   createdAt: string;
 }
@@ -12,9 +15,13 @@ export interface ScoreEntry {
 export interface SubmitScoreRequest {
   nickname: string;
   character: CharacterId;
+  color: string;
   mode: GameMode;
   score: number;
+  level: number;
   durationSeconds: number;
+  /** UTC date key when the round was a daily challenge. */
+  challengeDate?: string;
 }
 
 export interface SubmitScoreResponse {
@@ -28,6 +35,8 @@ export interface PersonalBest {
   score: number;
   createdAt: string;
 }
+
+export type Board = "all" | "daily";
 
 class ApiError extends Error {
   constructor(
@@ -56,8 +65,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export function getTopScores(mode: GameMode, limit = 20): Promise<ScoreEntry[]> {
+/** All-time top scores, or the leaderboard for one daily challenge when `date` is given. */
+export function getTopScores(mode: GameMode, limit = 20, date?: string): Promise<ScoreEntry[]> {
   const q = new URLSearchParams({ mode, limit: String(limit) });
+  if (date) q.set("date", date);
   return request<ScoreEntry[]>(`/api/scores/top?${q}`);
 }
 

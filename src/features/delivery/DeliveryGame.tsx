@@ -11,6 +11,8 @@ import RequirePlayer from "@/components/RequirePlayer";
 import TouchControls from "@/components/TouchControls";
 import { CountdownOverlay, FeedbackToast, IntroCard, QuitButton, ScorePill, TimerPill } from "@/components/HUD";
 import { usePlayerStore } from "@/features/player/store";
+import { useRoundSetup } from "@/features/player/useRoundConfig";
+import { LEVEL_NAMES } from "@/features/player/progress";
 import { ROUND_SECONDS } from "./scoring";
 import { useDeliveryGame } from "./useDeliveryGame";
 
@@ -21,9 +23,12 @@ const SWIPE_PX = 28;
 function Inner() {
   const router = useRouter();
   const character = usePlayerStore((s) => s.character)!;
-  const setLastResult = usePlayerStore((s) => s.setLastResult);
+  const color = usePlayerStore((s) => s.color);
+  const finishRound = usePlayerStore((s) => s.finishRound);
+  const setup = useRoundSetup("delivery");
 
   const phase = useDeliveryGame((s) => s.phase);
+  const config = useDeliveryGame((s) => s.config);
   const score = useDeliveryGame((s) => s.score);
   const combo = useDeliveryGame((s) => s.combo);
   const bestCombo = useDeliveryGame((s) => s.bestCombo);
@@ -42,11 +47,13 @@ function Inner() {
 
   useEffect(() => {
     if (phase !== "finished") return;
-    setLastResult({
+    finishRound({
       mode: "delivery",
       score,
       durationSeconds: ROUND_SECONDS,
       roundId: `delivery-${startedAt}`,
+      level: config.level,
+      challengeDate: config.challengeDate,
       highlights: [
         { label: "Pizzas delivered", value: String(deliveries) },
         { label: "Best combo", value: String(bestCombo) },
@@ -54,9 +61,14 @@ function Inner() {
       ],
     });
     router.replace("/results");
-  }, [phase, score, deliveries, bestCombo, hits, startedAt, setLastResult, router]);
+  }, [phase, score, deliveries, bestCombo, hits, startedAt, config, finishRound, router]);
 
   const onCountdownDone = useCallback(() => startRide(), [startRide]);
+  const onStart = useCallback(
+    () => begin({ level: setup.level, seed: setup.seed, challengeDate: setup.challengeDate }),
+    [begin, setup.level, setup.seed, setup.challengeDate],
+  );
+  const levelLabel = setup.isDaily ? "Daily challenge" : `Level ${setup.level} · ${LEVEL_NAMES[setup.level]}`;
 
   // Swipe-to-steer over the whole play area.
   const swipe = useRef<{ x: number; id: number } | null>(null);
@@ -82,7 +94,7 @@ function Inner() {
     <GameShell
       scene={
         <>
-          <DeliveryScene character={character} />
+          <DeliveryScene character={character} color={color} />
           {riding && (
             <Box
               aria-hidden
@@ -112,13 +124,16 @@ function Inner() {
           {phase === "intro" && (
             <IntroCard
               title="Bike Delivery"
+              badge={levelLabel}
               lines={[
                 "Ride through town and hit the glowing mailboxes to deliver pizzas.",
                 "Swipe or tap the arrows to change lanes.",
                 "Dodge cones and puddles! You have 60 seconds.",
+                ...(setup.isDaily ? ["Everyone rides the same street today. Beat the world!"] : []),
+                ...(setup.level > 1 && !setup.isDaily ? [`Level ${setup.level}: faster bike, more cones!`] : []),
               ]}
               cta="Start riding"
-              onStart={begin}
+              onStart={onStart}
             />
           )}
           {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

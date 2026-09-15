@@ -164,7 +164,7 @@ function Oven() {
   );
 }
 
-function Kitchen({ character }: { character: CharacterId }) {
+function Kitchen({ character, color }: { character: CharacterId; color?: string }) {
   return (
     <>
       <ambientLight intensity={0.75} />
@@ -202,19 +202,19 @@ function Kitchen({ character }: { character: CharacterId }) {
         <Bowl key={t.id} id={t.id} index={i} />
       ))}
 
-      <Character character={character} pose="cook" position={[-1.15, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
+      <Character character={character} color={color} pose="cook" position={[-1.15, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
     </>
   );
 }
 
 const CAMERA_TARGET: [number, number, number] = [0, 0.85, 0.15];
 
-export default function KitchenScene({ character }: { character: CharacterId }) {
+export default function KitchenScene({ character, color }: { character: CharacterId; color?: string }) {
   return (
     <Canvas shadows dpr={[1, 1.75]}>
       <FitCamera fitWidth={4.2} vfov={46} minDistance={4.6} elevationDeg={34} target={CAMERA_TARGET} />
       <color attach="background" args={["#FFF1D6"]} />
-      <Kitchen character={character} />
+      <Kitchen character={character} color={color} />
     </Canvas>
   );
 }

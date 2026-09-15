@@ -8,6 +8,7 @@ import {
   POINTS_WRONG,
   generateOrders,
   isOrderComplete,
+  kitchenDifficultyFor,
   maxScore,
   missingToppings,
   scoreBake,
@@ -25,8 +26,8 @@ function seeded(seed: number) {
 
 describe("generateOrders", () => {
   it("creates ramping orders with distinct toppings", () => {
-    const orders = generateOrders(ORDER_COUNT, seeded(7));
-    expect(orders).toHaveLength(3);
+    const orders = generateOrders(kitchenDifficultyFor(1), seeded(7));
+    expect(orders).toHaveLength(ORDER_COUNT);
     expect(orders.map((o) => o.toppings.length)).toEqual([2, 3, 4]);
     for (const o of orders) {
       expect(new Set(o.toppings).size).toBe(o.toppings.length);
@@ -35,8 +36,37 @@ describe("generateOrders", () => {
 
   it("puts cheese first when it is part of the order", () => {
     for (let seed = 1; seed < 40; seed++) {
-      for (const o of generateOrders(3, seeded(seed))) {
+      for (const o of generateOrders(kitchenDifficultyFor(1), seeded(seed))) {
         if (o.toppings.includes("cheese")) expect(o.toppings[0]).toBe("cheese");
+      }
+    }
+  });
+
+  it("is deterministic for the same seed (daily challenge)", () => {
+    const a = generateOrders(kitchenDifficultyFor(3), seeded(42));
+    const b = generateOrders(kitchenDifficultyFor(3), seeded(42));
+    expect(a).toEqual(b);
+  });
+});
+
+describe("kitchenDifficultyFor", () => {
+  it("adds orders and toppings and speeds up the oven as level rises", () => {
+    const l1 = kitchenDifficultyFor(1);
+    const l5 = kitchenDifficultyFor(5);
+    expect(l1.orderCount).toBe(3);
+    expect(l5.orderCount).toBe(5);
+    expect(l5.maxToppings).toBeGreaterThan(l1.maxToppings);
+    expect(l5.bakeDurationMs).toBeLessThan(l1.bakeDurationMs);
+    expect(l5.bakeDurationMs).toBeGreaterThanOrEqual(3000);
+  });
+  it("clamps out-of-range levels", () => {
+    expect(kitchenDifficultyFor(0)).toEqual(kitchenDifficultyFor(1));
+    expect(kitchenDifficultyFor(99)).toEqual(kitchenDifficultyFor(5));
+  });
+  it("never asks for more toppings than exist", () => {
+    for (let level = 1; level <= 5; level++) {
+      for (const o of generateOrders(kitchenDifficultyFor(level), seeded(level))) {
+        expect(o.toppings.length).toBeLessThanOrEqual(6);
       }
     }
   });
