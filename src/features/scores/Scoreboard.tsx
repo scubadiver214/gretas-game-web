@@ -27,6 +27,7 @@ import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
 import PedalBikeRoundedIcon from "@mui/icons-material/PedalBikeRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import { C } from "@/design/tokens";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
 import { CHARACTER_LABELS, MODE_LABELS, type GameMode } from "@/features/player/types";
 import { dailyKey } from "@/lib/rng";
@@ -41,7 +42,27 @@ const columns = helper.columns([
     cell: ({ getValue }) => {
       const r = getValue();
       const medal = r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : null;
-      return medal ?? r;
+      // Top three get a coloured disc; everyone else a plain grey one.
+      const fill = r === 1 ? C.sun : r === 2 ? "#B9C4CF" : r === 3 ? C.crust : C.sand;
+      const edge = r === 1 ? C.sunDeep : r === 2 ? "#8C99A6" : r === 3 ? C.crustDeep : C.sandDeep;
+      return (
+        <Box
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            display: "grid",
+            placeItems: "center",
+            bgcolor: fill,
+            boxShadow: `0 3px 0 ${edge}`,
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
+            fontSize: medal ? 18 : 15,
+          }}
+        >
+          {medal ?? r}
+        </Box>
+      );
     },
   }),
   helper.accessor("nickname", {
@@ -60,7 +81,14 @@ const columns = helper.columns([
   }),
   helper.accessor("score", {
     header: "Score",
-    cell: ({ getValue }) => <Typography sx={{ fontWeight: 900, color: "primary.main" }}>{getValue()}</Typography>,
+    cell: ({ getValue }) => (
+      <Typography
+        className="tnum"
+        sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.15rem", color: C.tomato }}
+      >
+        {getValue()}
+      </Typography>
+    ),
   }),
   helper.accessor("createdAt", {
     header: "When",
@@ -112,6 +140,9 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
   if (!query.data.length) {
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
+        <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
+          🍕
+        </Box>
         <Typography variant="h4">{board === "daily" ? "Nobody has played today yet" : "No scores yet"}</Typography>
         <Typography sx={{ color: "text.secondary" }}>
           {board === "daily" ? `Be the first to finish today's ${MODE_LABELS[mode]} challenge!` : `Be the first to play ${MODE_LABELS[mode]}!`}
@@ -141,8 +172,8 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
               <TableRow
                 key={row.id}
                 sx={{
-                  bgcolor: mine ? "#FFF1D6" : undefined,
-                  "& td": { py: 1, borderColor: "#F1E9DE" },
+                  bgcolor: mine ? C.sandSoft : undefined,
+                  "& td": { py: 1, borderColor: "rgba(22,33,46,0.08)" },
                 }}
               >
                 {row.getAllCells().map((cell) => (
@@ -176,10 +207,20 @@ export default function Scoreboard() {
           <IconButton aria-label="Back" onClick={() => router.back()}>
             <ArrowBackRoundedIcon />
           </IconButton>
-          <Typography variant="h2" component="h1" sx={{ flex: 1 }}>
-            Scoreboard
+          <Typography
+            variant="h2"
+            component="h1"
+            sx={{
+              flex: 1,
+              color: C.white,
+              WebkitTextStroke: `8px ${C.blueDeep}`,
+              paintOrder: "stroke fill",
+              filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+            }}
+          >
+            Top pizzaiolos
           </Typography>
-          {nickname && <Chip label={nickname} color="secondary" variant="outlined" />}
+          {nickname && <Chip label={nickname} variant="outlined" />}
         </Stack>
 
         <ToggleButtonGroup

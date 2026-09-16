@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Flat blue plate with a sand floor, matching the in-game art -->
+  <rect width="512" height="512" rx="112" fill="#2E8DEF"/>
+  <path d="M0 340 h512 v60 a112 112 0 0 1-112 112 H112 A112 112 0 0 1 0 400 Z" fill="#F6E4B0"/>
+  <rect x="0" y="330" width="512" height="16" fill="#1A67BE"/>
+  <!-- pizza -->
+  <circle cx="256" cy="252" r="160" fill="#EDAA5F"/>
+  <circle cx="256" cy="252" r="132" fill="#FFC53D"/>
+  <!-- pepperoni -->
+  <g fill="#EF5136">
+    <circle cx="204" cy="208" r="26"/>
+    <circle cx="302" cy="196" r="24"/>
+    <circle cx="326" cy="280" r="26"/>
+    <circle cx="238" cy="304" r="25"/>
+    <circle cx="186" cy="286" r="20"/>
+  </g>
+  <!-- basil -->
+  <g fill="#4FC64A">
+    <ellipse cx="262" cy="250" rx="18" ry="9" transform="rotate(-30 262 250)"/>
+    <ellipse cx="296" cy="330" rx="18" ry="9" transform="rotate(20 296 330)"/>
+  </g>
+  <!-- chef hat -->
+  <g fill="#FFFFFF">
+    <rect x="186" y="74" width="140" height="42" rx="14"/>
+    <circle cx="210" cy="64" r="34"/>
+    <circle cx="256" cy="50" r="40"/>
+    <circle cx="302" cy="64" r="34"/>
+  </g>
+</svg>

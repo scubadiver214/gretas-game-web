@@ -33,8 +33,9 @@ import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
+import { C } from "@/design/tokens";
 import { usePlayerStore } from "@/features/player/store";
-import { LEVEL_NAMES, levelForRounds } from "@/features/player/progress";
+import { LEVEL_NAMES, levelForStars } from "@/features/player/progress";
 import { MODE_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
 import { formatWhen } from "./Scoreboard";
 
@@ -60,7 +61,12 @@ const columns = helper.columns([
     sortFn: "basic",
     cell: ({ getValue, row }) => (
       <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-        <Typography sx={{ fontWeight: 900, color: "primary.main" }}>{getValue()}</Typography>
+        <Typography
+          className="tnum"
+          sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.1rem", color: C.tomato }}
+        >
+          {getValue()}
+        </Typography>
         {row.original.personalBest && <Chip label="PB" size="small" color="success" sx={{ height: 18, fontSize: 10, fontWeight: 900 }} />}
       </Stack>
     ),
@@ -87,14 +93,14 @@ function Inner() {
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
   const history = usePlayerStore((s) => s.history);
-  const roundsPlayed = usePlayerStore((s) => s.roundsPlayed);
+  const stars = usePlayerStore((s) => s.stars);
   const clearHistory = usePlayerStore((s) => s.clearHistory);
   const [mode, setMode] = useState<GameMode>("kitchen");
   const [sorting, setSorting] = useState<SortingState>([{ id: "playedAt", desc: true }]);
 
   const rows = useMemo(() => history.filter((h) => h.mode === mode), [history, mode]);
   const best = rows.reduce((m, r) => Math.max(m, r.score), 0);
-  const level = levelForRounds(roundsPlayed[mode] ?? 0);
+  const level = levelForStars(stars[mode] ?? 0);
 
   const table = useTable({
     features,
@@ -111,8 +117,18 @@ function Inner() {
           <IconButton aria-label="Back" onClick={() => router.back()}>
             <ArrowBackRoundedIcon />
           </IconButton>
-          <Typography variant="h2" component="h1" sx={{ flex: 1 }}>
-            My scores
+          <Typography
+            variant="h2"
+            component="h1"
+            sx={{
+              flex: 1,
+              color: C.white,
+              WebkitTextStroke: `8px ${C.blueDeep}`,
+              paintOrder: "stroke fill",
+              filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+            }}
+          >
+            My runs
           </Typography>
           <PlayerAvatar nickname={nickname} character={character} color={color} />
         </Stack>
@@ -132,6 +148,9 @@ function Inner() {
 
           {rows.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center" }}>
+              <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
+                🛵
+              </Box>
               <Typography variant="h4">No rounds yet</Typography>
               <Typography sx={{ color: "text.secondary" }}>Play {MODE_LABELS[mode]} and your rounds will show up here.</Typography>
             </Box>
@@ -160,7 +179,7 @@ function Inner() {
                 </TableHead>
                 <TableBody>
                   {table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} sx={{ "& td": { py: 1, borderColor: "#F1E9DE" } }}>
+                    <TableRow key={row.id} sx={{ "& td": { py: 1, borderColor: "rgba(22,33,46,0.08)" } }}>
                       {row.getAllCells().map((cell) => (
                         <TableCell key={cell.id}>
                           <table.FlexRender cell={cell} />

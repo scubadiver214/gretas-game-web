@@ -1,5 +1,10 @@
 :root {
   color-scheme: light;
+  /* Shop palette, mirrored from src/design/tokens.ts for plain-CSS use. */
+  --sand: #f6e4b0;
+  --sand-soft: #fdf4da;
+  --blue: #2e8def;
+  --ink: #16212e;
 }
 
 html,
@@ -13,7 +18,8 @@ body {
 }
 
 body {
-  background: #fff7ec;
+  background: var(--sand-soft);
+  color: var(--ink);
   touch-action: manipulation;
 }
 
@@ -24,4 +30,9 @@ body {
 canvas {
   display: block;
   touch-action: none;
+}
+
+/* Numbers should never wobble in width while a score counts up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }

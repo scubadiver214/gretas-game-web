@@ -3,8 +3,8 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
+import { C } from "@/design/tokens";
 
 /**
  * Guards game screens: waits for the persisted player to load, then bounces
@@ -35,10 +35,25 @@ export default function RequirePlayer({
   return <Suspense fallback={<Spinner />}>{children}</Suspense>;
 }
 
+/** Bouncing pizza instead of a spinner: on-theme and no layout shift. */
 function Spinner() {
   return (
-    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center" }}>
-      <CircularProgress color="primary" />
+    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center", bgcolor: C.sandSoft }}>
+      <Box
+        aria-label="Loading"
+        role="status"
+        sx={{
+          fontSize: 56,
+          lineHeight: 1,
+          animation: "loadBounce 900ms ease-in-out infinite",
+          "@keyframes loadBounce": {
+            "0%,100%": { transform: "translateY(0) rotate(-8deg)" },
+            "50%": { transform: "translateY(-18px) rotate(8deg)" },
+          },
+        }}
+      >
+        🍕
+      </Box>
     </Box>
   );
 }

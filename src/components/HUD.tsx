@@ -4,93 +4,225 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import StarRoundedIcon from "@mui/icons-material/StarRounded";
+import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
 import TimerRoundedIcon from "@mui/icons-material/TimerRounded";
+import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import VibrationRoundedIcon from "@mui/icons-material/VibrationRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import MusicNoteRoundedIcon from "@mui/icons-material/MusicNoteRounded";
+import MusicOffRoundedIcon from "@mui/icons-material/MusicOffRounded";
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/features/settings/store";
-import { fx } from "@/lib/fx";
+import { fx, useJuice, type PopupTone } from "@/lib/fx";
+import { C, floatShadow, hardShadow } from "@/design/tokens";
+import CountPill from "@/components/ui/CountPill";
+import Panel from "@/components/ui/Panel";
 
+/** Money-style score counter, top right. */
 export function ScorePill({ score }: { score: number }) {
-  return (
-    <Chip
-      icon={<StarRoundedIcon />}
-      label={score}
-      color="warning"
-      sx={{ fontSize: "1.1rem", height: 40, px: 0.5, bgcolor: "#FDE68A", color: "#2B2D42" }}
-    />
-  );
+  return <CountPill icon={<LocalPizzaRoundedIcon />} value={score} tone="sun" label={`Score ${score}`} />;
 }
 
 export function TimerPill({ seconds }: { seconds: number }) {
-  const urgent = seconds <= 10;
+  const left = Math.max(0, Math.ceil(seconds));
   return (
-    <Chip
+    <CountPill
       icon={<TimerRoundedIcon />}
-      label={`${Math.max(0, Math.ceil(seconds))}s`}
-      sx={{
-        fontSize: "1.1rem",
-        height: 40,
-        px: 0.5,
-        bgcolor: urgent ? "#F2542D" : "#FFFFFF",
-        color: urgent ? "#FFFFFF" : "#2B2D42",
-        "& .MuiChip-icon": { color: "inherit" },
-      }}
+      value={`${left}s`}
+      tone="blue"
+      urgent={left <= 10}
+      label={`${left} seconds left`}
     />
   );
 }
 
 export function QuitButton({ onQuit }: { onQuit: () => void }) {
   return (
-    <IconButton
-      aria-label="Quit game"
-      onClick={onQuit}
-      sx={{ bgcolor: "rgba(255,255,255,0.85)", "&:hover": { bgcolor: "#fff" } }}
-    >
+    <IconButton aria-label="Quit game" onClick={onQuit} sx={{ width: 46, height: 46 }}>
       <CloseRoundedIcon />
     </IconButton>
   );
 }
 
+const POPUP_COLORS: Record<PopupTone, string> = {
+  good: C.money,
+  great: C.sun,
+  bad: C.tomato,
+  neutral: C.ink,
+};
+
 /**
- * Floating "+10" style feedback that fades out. Parents pass a fresh `key`
- * per message so each toast mounts visible and then fades.
+ * Floating "+10" stickers anchored where the action happened. The white stroke
+ * around the glyphs is what keeps them legible over a busy 3D scene.
  */
-export function FeedbackToast({ message, tone }: { message: string | null; tone: "good" | "bad" | "neutral" }) {
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 900);
-    return () => clearTimeout(t);
-  }, []);
-  if (!message) return null;
-  const color = tone === "good" ? "#3FA34D" : tone === "bad" ? "#F2542D" : "#2B2D42";
+export function ScorePopups() {
+  const popups = useJuice((s) => s.popups);
+  return (
+    <Box aria-live="polite" sx={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+      {popups.map((p) => (
+        <Typography
+          key={p.id}
+          component="div"
+          sx={{
+            position: "absolute",
+            left: `${Math.min(92, Math.max(8, p.x * 100))}%`,
+            top: `${Math.min(85, Math.max(10, p.y * 100))}%`,
+            transform: "translate(-50%, -50%)",
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
+            fontSize: p.big ? "2.4rem" : "1.7rem",
+            lineHeight: 1.1,
+            whiteSpace: "nowrap",
+            color: POPUP_COLORS[p.tone],
+            WebkitTextStroke: "5px #FFFFFF",
+            paintOrder: "stroke fill",
+            filter: "drop-shadow(0 4px 6px rgba(22,33,46,0.25))",
+            animation: "popupRise 950ms cubic-bezier(.2,.8,.3,1) forwards",
+            "@keyframes popupRise": {
+              "0%": { opacity: 0, transform: "translate(-50%, -30%) scale(0.6)" },
+              "15%": { opacity: 1, transform: "translate(-50%, -50%) scale(1.15)" },
+              "30%": { transform: "translate(-50%, -55%) scale(1)" },
+              "100%": { opacity: 0, transform: "translate(-50%, -140%) scale(0.95)" },
+            },
+          }}
+        >
+          {p.text}
+        </Typography>
+      ))}
+    </Box>
+  );
+}
+
+/** Brief full-screen tint on big moments (perfect bake, hit, power-up). */
+export function FlashOverlay() {
+  const flash = useJuice((s) => s.flash);
+  if (!flash) return null;
   return (
     <Box
-      aria-live="polite"
+      key={flash.id}
+      aria-hidden
       sx={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        top: "34%",
-        textAlign: "center",
+        inset: 0,
         pointerEvents: "none",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0) scale(1)" : "translateY(-24px) scale(1.15)",
-        transition: "opacity 300ms ease, transform 500ms ease",
+        bgcolor: flash.color,
+        animation: "flashFade 380ms ease-out forwards",
+        "@keyframes flashFade": { from: { opacity: 1 }, to: { opacity: 0 } },
+      }}
+    />
+  );
+}
+
+/** Streak counter that catches fire once a bonus is in range. */
+export function ComboMeter({ combo, every }: { combo: number; every: number }) {
+  if (combo < 1) return null;
+  const toNext = combo % every;
+  const pct = toNext === 0 ? 100 : (toNext / every) * 100;
+  const hot = combo >= every;
+  return (
+    <Box
+      key={combo}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.75,
+        pl: 0.625,
+        pr: 1.5,
+        height: 46,
+        borderRadius: 999,
+        bgcolor: hot ? C.tomato : C.white,
+        color: hot ? C.white : C.ink,
+        boxShadow: floatShadow,
+        fontFamily: "var(--font-display)",
+        fontWeight: 800,
+        fontSize: "1.2rem",
+        animation: "comboPop 260ms cubic-bezier(.2,1.6,.4,1)",
+        "@keyframes comboPop": { from: { transform: "scale(1.2)" }, to: { transform: "scale(1)" } },
       }}
     >
-      <Typography
-        variant="h2"
-        sx={{ color, textShadow: "0 3px 0 rgba(255,255,255,0.9), 0 6px 18px rgba(0,0,0,0.15)" }}
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          display: "grid",
+          placeItems: "center",
+          background: `conic-gradient(${hot ? C.sun : C.blue} ${pct}%, ${hot ? "rgba(255,255,255,0.35)" : C.slate} 0)`,
+        }}
       >
-        {message}
-      </Typography>
+        <Box
+          sx={{
+            width: 26,
+            height: 26,
+            borderRadius: "50%",
+            bgcolor: hot ? C.tomato : C.white,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <LocalFireDepartmentRoundedIcon sx={{ fontSize: 18, color: hot ? C.sun : C.blue }} />
+        </Box>
+      </Box>
+      <span className="tnum">x{combo}</span>
+    </Box>
+  );
+}
+
+/** Customer patience: a chunky bar with a mood face riding on the front. */
+export function PatienceBar({ value, label }: { value: number; label?: string }) {
+  const pct = Math.max(0, Math.min(100, value * 100));
+  const color = value > 0.5 ? C.money : value > 0.25 ? C.sun : C.tomato;
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box
+        sx={{
+          width: 30,
+          height: 30,
+          flexShrink: 0,
+          borderRadius: "50%",
+          display: "grid",
+          placeItems: "center",
+          fontSize: 18,
+          lineHeight: 1,
+          bgcolor: color,
+          boxShadow: `0 2px 0 rgba(22,33,46,0.18)`,
+          animation: value <= 0.25 ? "faceShake 500ms ease-in-out infinite" : undefined,
+          "@keyframes faceShake": {
+            "0%,100%": { transform: "rotate(-8deg)" },
+            "50%": { transform: "rotate(8deg)" },
+          },
+        }}
+        aria-hidden
+      >
+        {value > 0.5 ? "😀" : value > 0.25 ? "😐" : "😡"}
+      </Box>
+      <Box
+        role="progressbar"
+        aria-label={label ?? "Customer patience"}
+        aria-valuenow={Math.round(pct)}
+        sx={{
+          flex: 1,
+          height: 16,
+          borderRadius: 999,
+          bgcolor: C.slate,
+          boxShadow: "inset 0 2px 0 rgba(22,33,46,0.10)",
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={{
+            width: `${pct}%`,
+            height: "100%",
+            borderRadius: 999,
+            bgcolor: color,
+            transition: "width 120ms linear, background-color 300ms",
+          }}
+        />
+      </Box>
     </Box>
   );
 }
@@ -115,7 +247,7 @@ export function CountdownOverlay({ onDone }: { onDone: () => void }) {
         inset: 0,
         display: "grid",
         placeItems: "center",
-        bgcolor: "rgba(43,45,66,0.25)",
+        bgcolor: "rgba(22,33,46,0.30)",
         pointerEvents: "none",
       }}
     >
@@ -123,9 +255,11 @@ export function CountdownOverlay({ onDone }: { onDone: () => void }) {
         key={n}
         variant="h1"
         sx={{
-          fontSize: "6rem",
-          color: "#fff",
-          textShadow: "0 6px 0 #F2542D",
+          fontSize: "7rem",
+          color: n === 0 ? C.sun : C.white,
+          WebkitTextStroke: `10px ${C.blueDeep}`,
+          paintOrder: "stroke fill",
+          filter: "drop-shadow(0 8px 10px rgba(22,33,46,0.35))",
           animation: "pop 700ms ease-out",
           "@keyframes pop": { from: { transform: "scale(1.6)", opacity: 0 }, to: { transform: "scale(1)", opacity: 1 } },
         }}
@@ -141,6 +275,7 @@ export function IntroCard({
   badge,
   lines,
   cta,
+  accent = C.blue,
   onStart,
 }: {
   title: string;
@@ -148,57 +283,109 @@ export function IntroCard({
   badge?: string;
   lines: string[];
   cta: string;
+  accent?: string;
   onStart: () => void;
 }) {
   return (
-    <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", p: 2, bgcolor: "rgba(43,45,66,0.35)" }}>
-      <Paper sx={{ p: 3, maxWidth: 380, width: "100%", borderRadius: 6, textAlign: "center" }}>
-        <Typography variant="h2" gutterBottom={!badge}>
-          {title}
-        </Typography>
-        {badge && <Chip label={badge} color="secondary" size="small" sx={{ mb: 1.5, fontWeight: 800 }} />}
-        {lines.map((l) => (
-          <Typography key={l} sx={{ mb: 1, fontSize: "1.05rem" }}>
-            {l}
-          </Typography>
-        ))}
-        <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
-          <Button size="large" fullWidth variant="contained" onClick={onStart} sx={{ flex: 1 }}>
+    <Box
+      sx={{
+        position: "absolute",
+        inset: 0,
+        display: "grid",
+        placeItems: "center",
+        p: 2,
+        bgcolor: "rgba(22,33,46,0.45)",
+      }}
+    >
+      <Panel accent={accent} padding={2.5} sx={{ maxWidth: 400, width: "100%" }}>
+        <Stack spacing={1.5}>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="h2" component="h2">
+              {title}
+            </Typography>
+            {badge && (
+              <Chip label={badge} sx={{ mt: 0.75, bgcolor: accent, color: C.white }} />
+            )}
+          </Box>
+          <Stack component="ul" spacing={0.75} sx={{ listStyle: "none", m: 0, p: 0 }}>
+            {lines.map((l) => (
+              <Stack key={l} component="li" direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                <Box
+                  aria-hidden
+                  sx={{
+                    mt: "3px",
+                    width: 10,
+                    height: 10,
+                    flexShrink: 0,
+                    borderRadius: "50%",
+                    bgcolor: accent,
+                    boxShadow: `0 2px 0 rgba(22,33,46,0.15)`,
+                  }}
+                />
+                <Typography sx={{ fontSize: "1.02rem", lineHeight: 1.35 }}>{l}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+          <Button size="large" fullWidth variant="contained" color="success" onClick={onStart}>
             {cta}
           </Button>
-          <SettingsToggles />
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <SettingsToggles />
+          </Box>
         </Stack>
-      </Paper>
+      </Panel>
     </Box>
   );
 }
 
-/** Sound + haptics toggles; safe to render anywhere. */
+/** Sound + music + haptics toggles; safe to render anywhere. */
 export function SettingsToggles({ size = "medium" }: { size?: "small" | "medium" }) {
   const soundOn = useSettingsStore((s) => s.soundOn);
+  const musicOn = useSettingsStore((s) => s.musicOn);
   const hapticsOn = useSettingsStore((s) => s.hapticsOn);
   const toggleSound = useSettingsStore((s) => s.toggleSound);
+  const toggleMusic = useSettingsStore((s) => s.toggleMusic);
   const toggleHaptics = useSettingsStore((s) => s.toggleHaptics);
+  const dim = size === "small" ? 36 : 42;
+  const on = (active: boolean) =>
+    ({
+      width: dim,
+      height: dim,
+      bgcolor: active ? C.sun : C.white,
+      color: C.ink,
+      boxShadow: hardShadow(active ? C.sunDeep : C.sandDeep, 4),
+      "&:hover": { bgcolor: active ? C.sun : C.sandSoft },
+    }) as const;
   return (
-    <Stack direction="row" spacing={0.5}>
+    <Stack direction="row" spacing={0.75}>
       <IconButton
-        size={size}
         aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
         aria-pressed={soundOn}
         onClick={() => {
           toggleSound();
           if (!soundOn) fx.unlock();
         }}
-        sx={{ bgcolor: soundOn ? "#FDE68A" : "#F1E9DE" }}
+        sx={on(soundOn)}
       >
         {soundOn ? <VolumeUpRoundedIcon /> : <VolumeOffRoundedIcon />}
       </IconButton>
       <IconButton
-        size={size}
+        aria-label={musicOn ? "Turn music off" : "Turn music on"}
+        aria-pressed={musicOn}
+        disabled={!soundOn}
+        onClick={() => {
+          toggleMusic();
+          if (!musicOn) fx.unlock();
+        }}
+        sx={on(musicOn && soundOn)}
+      >
+        {musicOn ? <MusicNoteRoundedIcon /> : <MusicOffRoundedIcon />}
+      </IconButton>
+      <IconButton
         aria-label={hapticsOn ? "Turn vibration off" : "Turn vibration on"}
         aria-pressed={hapticsOn}
         onClick={toggleHaptics}
-        sx={{ bgcolor: hapticsOn ? "#FDE68A" : "#F1E9DE" }}
+        sx={on(hapticsOn)}
       >
         <VibrationRoundedIcon sx={{ opacity: hapticsOn ? 1 : 0.45 }} />
       </IconButton>

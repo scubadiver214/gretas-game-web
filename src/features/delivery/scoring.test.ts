@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
   BASE_SPEED,
+  CLEAR_HEIGHT,
   COMBO_EVERY,
+  JUMP_HEIGHT,
+  JUMP_SECONDS,
   LANE_COUNT,
   MAX_SPEED,
   POINTS_COMBO,
   POINTS_DELIVERY,
+  TURBO_POINTS_MULTIPLIER,
+  TURBO_SPEED_MULTIPLIER,
   applyDelivery,
   applyObstacle,
   clampLane,
   deliveryDifficultyFor,
+  deliveryPar,
+  deliveryStars,
+  jumpHeight,
   pickSpawn,
   spawnIntervalFor,
   speedFor,
@@ -17,7 +25,7 @@ import {
 
 describe("applyDelivery", () => {
   it("adds points and grows the combo", () => {
-    expect(applyDelivery({ score: 0, combo: 0 })).toEqual({ score: POINTS_DELIVERY, combo: 1, bonus: false });
+    expect(applyDelivery({ score: 0, combo: 0 })).toEqual({ score: POINTS_DELIVERY, combo: 1, bonus: false, gained: POINTS_DELIVERY });
   });
   it("awards a combo bonus every COMBO_EVERY deliveries", () => {
     let s = { score: 0, combo: 0 };
@@ -55,8 +63,60 @@ describe("speed + spawning", () => {
       const { kind, lane } = pickSpawn(rng, i % LANE_COUNT);
       expect(lane).toBeGreaterThanOrEqual(0);
       expect(lane).toBeLessThan(LANE_COUNT);
-      expect(["mailbox", "cone", "puddle"]).toContain(kind);
+      expect(["mailbox", "cone", "puddle", "barrier", "star"]).toContain(kind);
     }
+  });
+  it("never spawns barriers at level 1 but does from level 2", () => {
+    const rng = lcg(5);
+    const kinds1 = new Set(Array.from({ length: 600 }, () => pickSpawn(rng, 0, deliveryDifficultyFor(1)).kind));
+    expect(kinds1.has("barrier")).toBe(false);
+    const kinds3 = new Set(Array.from({ length: 600 }, () => pickSpawn(rng, 0, deliveryDifficultyFor(3)).kind));
+    expect(kinds3.has("barrier")).toBe(true);
+  });
+  it("attaches a power-up kind to every star", () => {
+    const rng = lcg(9);
+    let stars = 0;
+    for (let i = 0; i < 1000; i++) {
+      const s = pickSpawn(rng, 1, deliveryDifficultyFor(2));
+      if (s.kind === "star") {
+        stars++;
+        expect(["magnet", "shield", "turbo"]).toContain(s.powerUp);
+      } else {
+        expect(s.powerUp).toBeUndefined();
+      }
+    }
+    expect(stars).toBeGreaterThan(20);
+  });
+});
+
+function lcg(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+describe("turbo, jumping and stars", () => {
+  it("doubles delivery points under turbo", () => {
+    expect(applyDelivery({ score: 0, combo: 0 }, TURBO_POINTS_MULTIPLIER).gained).toBe(POINTS_DELIVERY * 2);
+  });
+  it("speeds up under turbo", () => {
+    expect(speedFor(0, deliveryDifficultyFor(1), true)).toBeCloseTo(BASE_SPEED * TURBO_SPEED_MULTIPLIER);
+  });
+  it("follows a parabolic jump arc that clears obstacles mid-air", () => {
+    expect(jumpHeight(-1)).toBe(0);
+    expect(jumpHeight(0)).toBe(0);
+    expect(jumpHeight(JUMP_SECONDS)).toBe(0);
+    expect(jumpHeight(JUMP_SECONDS / 2)).toBeCloseTo(JUMP_HEIGHT);
+    expect(jumpHeight(JUMP_SECONDS / 2)).toBeGreaterThan(CLEAR_HEIGHT);
+  });
+  it("grades rounds against a per-level par", () => {
+    expect(deliveryPar(5)).toBeGreaterThan(deliveryPar(1));
+    expect(deliveryStars(deliveryPar(1) * 1.5, 1)).toBe(3);
+    expect(deliveryStars(deliveryPar(1), 1)).toBe(2);
+    expect(deliveryStars(deliveryPar(1) * 0.6, 1)).toBe(1);
+    expect(deliveryStars(0, 1)).toBe(0);
   });
 });
 

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Maskable: same art, full bleed and inset so nothing important is clipped -->
+  <rect width="512" height="512" fill="#2E8DEF"/>
+  <rect x="0" y="344" width="512" height="168" fill="#F6E4B0"/>
+  <rect x="0" y="336" width="512" height="14" fill="#1A67BE"/>
+  <circle cx="256" cy="256" r="132" fill="#EDAA5F"/>
+  <circle cx="256" cy="256" r="108" fill="#FFC53D"/>
+  <g fill="#EF5136">
+    <circle cx="214" cy="222" r="21"/>
+    <circle cx="296" cy="212" r="19"/>
+    <circle cx="314" cy="282" r="21"/>
+    <circle cx="240" cy="300" r="20"/>
+  </g>
+  <g fill="#4FC64A">
+    <ellipse cx="266" cy="256" rx="15" ry="8" transform="rotate(-30 266 256)"/>
+    <ellipse cx="292" cy="322" rx="15" ry="8" transform="rotate(20 292 322)"/>
+  </g>
+  <g fill="#FFFFFF">
+    <rect x="198" y="112" width="116" height="34" rx="12"/>
+    <circle cx="218" cy="104" r="28"/>
+    <circle cx="256" cy="92" r="33"/>
+    <circle cx="294" cy="104" r="28"/>
+  </g>
+</svg>

@@ -5,14 +5,17 @@ import {
   POINTS_CORRECT,
   POINTS_OK_BAKE,
   POINTS_PERFECT_BAKE,
+  POINTS_SPEEDY,
   POINTS_WRONG,
   generateOrders,
   isOrderComplete,
   kitchenDifficultyFor,
+  kitchenStars,
   maxScore,
   missingToppings,
   scoreBake,
   scoreTopping,
+  speedyBonus,
   type Order,
 } from "./scoring";
 
@@ -72,8 +75,62 @@ describe("kitchenDifficultyFor", () => {
   });
 });
 
+describe("patience, rush orders and speedy bonus", () => {
+  it("has no timer at level 1 and a shrinking one from level 2", () => {
+    expect(kitchenDifficultyFor(1).patienceMs).toBe(0);
+    expect(kitchenDifficultyFor(2).patienceMs).toBeGreaterThan(kitchenDifficultyFor(5).patienceMs);
+    expect(kitchenDifficultyFor(5).patienceMs).toBeGreaterThan(0);
+    for (const o of generateOrders(kitchenDifficultyFor(1), seeded(3))) expect(o.patienceMs).toBe(0);
+  });
+  it("grants more patience for orders with more toppings", () => {
+    const d = kitchenDifficultyFor(2);
+    for (const o of generateOrders(d, seeded(7))) {
+      expect(o.patienceMs).toBe(d.patienceMs + o.toppings.length * d.patiencePerToppingMs);
+    }
+  });
+  it("adds exactly one rush order from level 3, never the first one", () => {
+    for (let seed = 1; seed < 30; seed++) {
+      const l2 = generateOrders(kitchenDifficultyFor(2), seeded(seed));
+      expect(l2.filter((o) => o.rush)).toHaveLength(0);
+      const l3 = generateOrders(kitchenDifficultyFor(3), seeded(seed));
+      const rush = l3.filter((o) => o.rush);
+      expect(rush).toHaveLength(1);
+      expect(l3[0].rush).toBeFalsy();
+      const d3 = kitchenDifficultyFor(3);
+      const full = d3.patienceMs + rush[0].toppings.length * d3.patiencePerToppingMs;
+      expect(rush[0].patienceMs).toBe(Math.round(full * 0.7));
+    }
+  });
+  it("doubles topping and bake points on rush orders", () => {
+    const rush: Order = { id: 2, toppings: ["cheese"], rush: true, patienceMs: 10000 };
+    expect(scoreTopping(rush, [], "cheese").delta).toBe(POINTS_CORRECT * 2);
+    expect(scoreTopping(rush, [], "olive").delta).toBe(POINTS_WRONG);
+    const mid = (BAKE_ZONES.perfectStart + BAKE_ZONES.perfectEnd) / 2;
+    expect(scoreBake(mid, rush).delta).toBe(POINTS_PERFECT_BAKE * 2);
+  });
+  it("pays the speedy bonus only with a timer and enough patience left", () => {
+    const timed: Order = { id: 1, toppings: ["cheese"], patienceMs: 10000 };
+    const untimed: Order = { id: 1, toppings: ["cheese"], patienceMs: 0 };
+    expect(speedyBonus(timed, 0.9)).toBe(POINTS_SPEEDY);
+    expect(speedyBonus(timed, 0.2)).toBe(0);
+    expect(speedyBonus(untimed, 1)).toBe(0);
+    expect(speedyBonus({ ...timed, rush: true }, 1)).toBe(POINTS_SPEEDY * 2);
+  });
+});
+
+describe("kitchenStars", () => {
+  const orders = generateOrders(kitchenDifficultyFor(2), seeded(5));
+  it("grades against the best possible score", () => {
+    const max = maxScore(orders);
+    expect(kitchenStars(max, orders)).toBe(3);
+    expect(kitchenStars(Math.ceil(max * 0.7), orders)).toBe(2);
+    expect(kitchenStars(Math.ceil(max * 0.45), orders)).toBe(1);
+    expect(kitchenStars(0, orders)).toBe(0);
+  });
+});
+
 describe("scoreTopping", () => {
-  const order: Order = { id: 1, toppings: ["cheese", "olive"] };
+  const order: Order = { id: 1, toppings: ["cheese", "olive"], patienceMs: 0 };
 
   it("rewards a correct topping", () => {
     expect(scoreTopping(order, [], "cheese")).toEqual({ delta: POINTS_CORRECT, outcome: "correct" });
@@ -112,9 +169,17 @@ describe("scoreBake", () => {
 describe("maxScore", () => {
   it("sums toppings and perfect bakes", () => {
     const orders: Order[] = [
-      { id: 1, toppings: ["cheese", "olive"] },
-      { id: 2, toppings: ["cheese", "olive", "basil"] },
+      { id: 1, toppings: ["cheese", "olive"], patienceMs: 0 },
+      { id: 2, toppings: ["cheese", "olive", "basil"], patienceMs: 0 },
     ];
     expect(maxScore(orders)).toBe(5 * POINTS_CORRECT + 2 * POINTS_PERFECT_BAKE);
+  });
+  it("includes speedy bonuses and rush multipliers", () => {
+    const orders: Order[] = [
+      { id: 1, toppings: ["cheese"], patienceMs: 5000 },
+      { id: 2, toppings: ["cheese"], patienceMs: 5000, rush: true },
+    ];
+    const one = POINTS_CORRECT + POINTS_PERFECT_BAKE + POINTS_SPEEDY;
+    expect(maxScore(orders)).toBe(one + one * 2);
   });
 });

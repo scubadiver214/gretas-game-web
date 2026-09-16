@@ -28,6 +28,10 @@ export const TOPPING_BY_ID: Record<ToppingId, ToppingInfo> = Object.fromEntries(
 export interface Order {
   id: number;
   toppings: ToppingId[];
+  /** Rush orders pay double but the customer is twice as impatient. */
+  rush?: boolean;
+  /** How long the customer waits for the toppings (0 = no timer). */
+  patienceMs: number;
 }
 
 export const ORDER_COUNT = 3;
@@ -36,6 +40,10 @@ export const POINTS_WRONG = -5;
 export const POINTS_DUPLICATE = 0;
 export const POINTS_PERFECT_BAKE = 25;
 export const POINTS_OK_BAKE = 10;
+/** Bonus for finishing the toppings with at least half the patience left. */
+export const POINTS_SPEEDY = 5;
+export const SPEEDY_THRESHOLD = 0.5;
+export const RUSH_MULTIPLIER = 2;
 export const BAKE_DURATION_MS = 4200;
 
 /** Knobs that scale with the player's level. */
@@ -47,6 +55,12 @@ export interface KitchenDifficulty {
   maxToppings: number;
   /** Faster bake meter at higher levels = smaller perfect window in real time. */
   bakeDurationMs: number;
+  /** Base customer patience for the topping step; 0 disables the timer (level 1). */
+  patienceMs: number;
+  /** Extra patience granted per topping on the order, so big orders stay fair. */
+  patiencePerToppingMs: number;
+  /** Number of rush orders in the round. */
+  rushOrders: number;
 }
 
 export function kitchenDifficultyFor(level: number): KitchenDifficulty {
@@ -57,6 +71,9 @@ export function kitchenDifficultyFor(level: number): KitchenDifficulty {
     minToppings: l >= 4 ? 3 : 2,
     maxToppings: Math.min(TOPPINGS.length, 3 + l),
     bakeDurationMs: Math.max(3000, BAKE_DURATION_MS - (l - 1) * 300),
+    patienceMs: l === 1 ? 0 : 12000 - (l - 2) * 1500,
+    patiencePerToppingMs: l === 1 ? 0 : 2000,
+    rushOrders: l >= 3 ? 1 : 0,
   };
 }
 
@@ -85,7 +102,7 @@ function pickDistinct<T>(items: readonly T[], count: number, rng: Rng): T[] {
  * orders and toppings). Cheese is always first when present.
  */
 export function generateOrders(difficulty: KitchenDifficulty = kitchenDifficultyFor(1), rng: Rng = Math.random): Order[] {
-  return Array.from({ length: difficulty.orderCount }, (_, i) => {
+  const orders: Order[] = Array.from({ length: difficulty.orderCount }, (_, i) => {
     const size = Math.min(difficulty.minToppings + i, difficulty.maxToppings, TOPPINGS.length);
     const picked = pickDistinct(
       TOPPINGS.map((t) => t.id),
@@ -93,8 +110,23 @@ export function generateOrders(difficulty: KitchenDifficulty = kitchenDifficulty
       rng,
     );
     picked.sort((a, b) => (a === "cheese" ? -1 : b === "cheese" ? 1 : 0));
-    return { id: i + 1, toppings: picked };
+    const patienceMs =
+      difficulty.patienceMs > 0 ? difficulty.patienceMs + picked.length * difficulty.patiencePerToppingMs : 0;
+    return { id: i + 1, toppings: picked, patienceMs };
   });
+  // Rush orders never land on the very first order so players can warm up.
+  const candidates = orders.slice(1);
+  for (let r = 0; r < difficulty.rushOrders && candidates.length; r++) {
+    const pick = candidates.splice(Math.floor(rng() * candidates.length), 1)[0];
+    pick.rush = true;
+    pick.patienceMs = Math.round(pick.patienceMs * 0.7);
+  }
+  return orders;
+}
+
+/** Points multiplier for an order (rush orders pay double). */
+export function orderMultiplier(order: Order): number {
+  return order.rush ? RUSH_MULTIPLIER : 1;
 }
 
 export type ToppingOutcome = "correct" | "wrong" | "duplicate";
@@ -105,8 +137,17 @@ export function scoreTopping(
   topping: ToppingId,
 ): { delta: number; outcome: ToppingOutcome } {
   if (placed.includes(topping)) return { delta: POINTS_DUPLICATE, outcome: "duplicate" };
-  if (order.toppings.includes(topping)) return { delta: POINTS_CORRECT, outcome: "correct" };
+  if (order.toppings.includes(topping)) return { delta: POINTS_CORRECT * orderMultiplier(order), outcome: "correct" };
   return { delta: POINTS_WRONG, outcome: "wrong" };
+}
+
+/**
+ * Bonus for finishing the toppings quickly. `remaining` is the fraction of the
+ * customer's patience left (0..1); orders without a timer never get it.
+ */
+export function speedyBonus(order: Order, remaining: number): number {
+  if (order.patienceMs <= 0) return 0;
+  return remaining >= SPEEDY_THRESHOLD ? POINTS_SPEEDY * orderMultiplier(order) : 0;
 }
 
 export function isOrderComplete(order: Order, placed: readonly ToppingId[]): boolean {
@@ -119,19 +160,34 @@ export function missingToppings(order: Order, placed: readonly ToppingId[]): Top
 
 export type BakeOutcome = "raw" | "ok" | "perfect" | "burnt";
 
-export function scoreBake(progress: number): { delta: number; outcome: BakeOutcome } {
+export function scoreBake(progress: number, order?: Order): { delta: number; outcome: BakeOutcome } {
+  const mult = order ? orderMultiplier(order) : 1;
   if (progress >= 1) return { delta: 0, outcome: "burnt" };
   if (progress >= BAKE_ZONES.perfectStart && progress <= BAKE_ZONES.perfectEnd) {
-    return { delta: POINTS_PERFECT_BAKE, outcome: "perfect" };
+    return { delta: POINTS_PERFECT_BAKE * mult, outcome: "perfect" };
   }
   if (progress >= BAKE_ZONES.okStart && progress <= BAKE_ZONES.okEnd) {
-    return { delta: POINTS_OK_BAKE, outcome: "ok" };
+    return { delta: POINTS_OK_BAKE * mult, outcome: "ok" };
   }
   if (progress < BAKE_ZONES.okStart) return { delta: 0, outcome: "raw" };
   return { delta: 0, outcome: "burnt" };
 }
 
-/** Best possible score for a set of orders (used for the results screen). */
+/** Best possible score for a set of orders (used for the results screen and star rating). */
 export function maxScore(orders: readonly Order[]): number {
-  return orders.reduce((sum, o) => sum + o.toppings.length * POINTS_CORRECT + POINTS_PERFECT_BAKE, 0);
+  return orders.reduce((sum, o) => {
+    const speedy = o.patienceMs > 0 ? POINTS_SPEEDY : 0;
+    return sum + (o.toppings.length * POINTS_CORRECT + POINTS_PERFECT_BAKE + speedy) * orderMultiplier(o);
+  }, 0);
+}
+
+/** 0-3 stars for a kitchen round, from the share of the best possible score. */
+export function kitchenStars(score: number, orders: readonly Order[]): number {
+  const max = maxScore(orders);
+  if (max <= 0) return 0;
+  const ratio = score / max;
+  if (ratio >= 0.9) return 3;
+  if (ratio >= 0.7) return 2;
+  if (ratio >= 0.45) return 1;
+  return 0;
 }

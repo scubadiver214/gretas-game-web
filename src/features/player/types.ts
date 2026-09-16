@@ -35,6 +35,9 @@ export function isPlayerColor(value: string | null | undefined): value is string
   return !!value && PLAYER_COLORS.some((c) => c.id === value);
 }
 
+/** Raw numbers from a round, used for achievements (perfect bakes, combos, ...). */
+export type RoundMetrics = Record<string, number>;
+
 export interface GameResult {
   mode: GameMode;
   score: number;
@@ -45,6 +48,9 @@ export interface GameResult {
   roundId: string;
   /** Difficulty level the round was played at. */
   level: number;
+  /** 0-3 stars; drives level progression. */
+  stars: number;
+  metrics: RoundMetrics;
   /** Set when the round was today's seeded daily challenge (UTC date key). */
   challengeDate?: string;
 }
@@ -55,11 +61,36 @@ export interface RoundRecord {
   mode: GameMode;
   score: number;
   level: number;
+  stars?: number;
   playedAt: string;
   challengeDate?: string;
   rank?: number;
   personalBest?: boolean;
 }
+
+/** Unlockable bike paint jobs (delivery mode). */
+export type BikeSkinId = "classic" | "mint" | "midnight" | "gold";
+
+export interface BikeSkin {
+  id: BikeSkinId;
+  label: string;
+  frame: string;
+  accent: string;
+  /** Achievement that unlocks it; undefined = always available. */
+  unlockedBy?: string;
+}
+
+export const BIKE_SKINS: readonly BikeSkin[] = [
+  { id: "classic", label: "Classic red", frame: "#F2542D", accent: "#FDE68A" },
+  { id: "mint", label: "Mint racer", frame: "#5EEAD4", accent: "#0E9594", unlockedBy: "delivery-10" },
+  { id: "midnight", label: "Midnight", frame: "#2B2D42", accent: "#E85D9A", unlockedBy: "clean-ride" },
+  { id: "gold", label: "Golden legend", frame: "#F2B134", accent: "#FFFFFF", unlockedBy: "delivery-legend" },
+] as const;
+
+export const BIKE_SKIN_BY_ID: Record<BikeSkinId, BikeSkin> = Object.fromEntries(BIKE_SKINS.map((s) => [s.id, s])) as Record<
+  BikeSkinId,
+  BikeSkin
+>;
 
 export const NICKNAME_MIN = 2;
 export const NICKNAME_MAX = 16;

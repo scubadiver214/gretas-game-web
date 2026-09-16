@@ -7,9 +7,12 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import PageContainer from "@/components/PageContainer";
+import Panel from "@/components/ui/Panel";
+import { SettingsToggles } from "@/components/HUD";
+import { C, hardShadow } from "@/design/tokens";
 import { usePlayerHydrated, usePlayerStore } from "./store";
 import { NICKNAME_MAX, normalizeNickname, validateNickname } from "./types";
 
@@ -36,69 +39,106 @@ export default function StartScreen() {
 
   return (
     <PageContainer>
-      <Stack spacing={3} sx={{ flex: 1, justifyContent: "center", py: 4 }}>
+      <Stack spacing={2.5} sx={{ flex: 1, justifyContent: "center", py: 4 }}>
+        {/* Shop sign: a fat pizza token sitting on a tomato-topped card. */}
         <Box sx={{ textAlign: "center" }}>
           <Box
             sx={{
-              width: 112,
-              height: 112,
+              width: 118,
+              height: 118,
               mx: "auto",
-              mb: 2,
+              mb: 1.5,
               borderRadius: "50%",
               display: "grid",
               placeItems: "center",
-              bgcolor: "#FDE68A",
-              boxShadow: "0 12px 30px rgba(242,84,45,0.25)",
-              animation: "wiggle 3s ease-in-out infinite",
-              "@keyframes wiggle": {
-                "0%, 100%": { transform: "rotate(-6deg)" },
-                "50%": { transform: "rotate(6deg)" },
+              fontSize: 64,
+              lineHeight: 1,
+              bgcolor: C.sun,
+              boxShadow: hardShadow(C.sunDeep, 8),
+              animation: "signWiggle 3s ease-in-out infinite",
+              "@keyframes signWiggle": {
+                "0%, 100%": { transform: "rotate(-7deg)" },
+                "50%": { transform: "rotate(7deg)" },
               },
             }}
+            aria-hidden
           >
-            <LocalPizzaRoundedIcon sx={{ fontSize: 64, color: "#F2542D" }} />
+            🍕
           </Box>
-          <Typography variant="h1" component="h1" color="primary">
-            Greta&apos;s Game
+          <Typography
+            variant="h1"
+            component="h1"
+            sx={{
+              color: C.white,
+              WebkitTextStroke: `9px ${C.tomatoDeep}`,
+              paintOrder: "stroke fill",
+              filter: "drop-shadow(0 5px 0 rgba(22,33,46,0.18))",
+            }}
+          >
+            Greta&apos;s Pizza
           </Typography>
-          <Typography variant="h3" component="p" sx={{ color: "secondary.main" }}>
-            for fun
-          </Typography>
-          <Typography sx={{ mt: 1.5, color: "text.secondary" }}>
-            Plan your own pizza adventure! Cook in the kitchen or deliver by bike.
+          <Typography
+            sx={{
+              mt: 0.5,
+              display: "inline-block",
+              px: 2,
+              py: 0.5,
+              borderRadius: 999,
+              bgcolor: C.blue,
+              color: C.white,
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: "1.1rem",
+              boxShadow: hardShadow(C.blueDeep, 4),
+            }}
+          >
+            Kitchen &amp; Delivery
           </Typography>
         </Box>
 
-        <Box component="form" onSubmit={onSubmit} noValidate>
-          <Stack spacing={2}>
-            <TextField
-              label="What's your name?"
-              placeholder="Type a nickname"
-              value={value}
-              onChange={(e) => {
-                setTyped(e.target.value);
-                if (error) setError(null);
-              }}
-              error={Boolean(error)}
-              helperText={error ?? `${value.trim().length}/${NICKNAME_MAX}`}
-              autoComplete="nickname"
-              autoCapitalize="words"
-              enterKeyHint="go"
-              slotProps={{ htmlInput: { maxLength: NICKNAME_MAX, "aria-label": "Nickname" } }}
-            />
-            <Button type="submit" size="large" variant="contained" disabled={!hydrated}>
-              Let&apos;s play!
-            </Button>
-            <Button
-              variant="text"
-              color="secondary"
-              startIcon={<EmojiEventsRoundedIcon />}
-              onClick={() => router.push("/scoreboard")}
-            >
-              See the scoreboard
-            </Button>
-          </Stack>
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <SettingsToggles size="small" />
         </Box>
+
+        <Panel accent={C.tomato}>
+          <Box component="form" onSubmit={onSubmit} noValidate>
+            <Stack spacing={2}>
+              <TextField
+                label="What's your name?"
+                placeholder="Type a nickname"
+                value={value}
+                onChange={(e) => {
+                  setTyped(e.target.value);
+                  if (error) setError(null);
+                }}
+                error={Boolean(error)}
+                helperText={error ?? `${value.trim().length}/${NICKNAME_MAX}`}
+                autoComplete="nickname"
+                autoCapitalize="words"
+                enterKeyHint="go"
+                slotProps={{ htmlInput: { maxLength: NICKNAME_MAX, "aria-label": "Nickname" } }}
+              />
+              <Button
+                type="submit"
+                size="large"
+                variant="contained"
+                color="success"
+                disabled={!hydrated}
+                startIcon={<PlayArrowRoundedIcon />}
+              >
+                Let&apos;s play!
+              </Button>
+              <Button
+                variant="text"
+                color="primary"
+                startIcon={<EmojiEventsRoundedIcon />}
+                onClick={() => router.push("/scoreboard")}
+              >
+                See the scoreboard
+              </Button>
+            </Stack>
+          </Box>
+        </Panel>
       </Stack>
     </PageContainer>
   );
