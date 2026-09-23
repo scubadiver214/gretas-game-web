@@ -18,6 +18,8 @@ interface ModelSpec {
   clips: Record<ClipKey, string>;
   /** Material names that take the player's outfit colour. */
   recolor: readonly string[];
+  /** Material names that take the player's hair colour. */
+  hairRecolor: readonly string[];
   /** Extra Y rotation so the model faces +Z like the primitive rig. */
   facing: number;
 }
@@ -36,6 +38,7 @@ export const MODELS: Record<CharacterId, ModelSpec> = {
       run: "HumanArmature|Man_Run",
     },
     recolor: ["Shirt"],
+    hairRecolor: ["Hair"],
     facing: 0,
   },
   girl: {
@@ -46,7 +49,8 @@ export const MODELS: Record<CharacterId, ModelSpec> = {
       bike: "CharacterArmature|Idle_Neutral",
       run: "CharacterArmature|Run",
     },
-    recolor: ["LimeGreen"], // the dress ("Red" is her hair)
+    recolor: ["LimeGreen"], // the dress
+    hairRecolor: ["Red"], // "Red" is the material name for her hair
     facing: 0,
   },
 };
@@ -74,6 +78,7 @@ export function GltfCharacter({
   pedaling = false,
   wobble = 0,
   color,
+  hairColor,
 }: CharacterProps) {
   const spec = MODELS[character];
   const gltf = useGLTF(spec.url);
@@ -91,6 +96,10 @@ export function GltfCharacter({
         if (spec.recolor.includes(mat.name)) {
           const own = mat.clone();
           own.userData.recolor = true;
+          o.material = own;
+        } else if (spec.hairRecolor.includes(mat.name)) {
+          const own = mat.clone();
+          own.userData.hairRecolor = true;
           o.material = own;
         }
       }
@@ -113,6 +122,17 @@ export function GltfCharacter({
       }
     });
   }, [model, color]);
+
+  useEffect(() => {
+    if (!hairColor) return;
+    const c = new Color(hairColor);
+    model.obj.traverse((o) => {
+      if (o instanceof Mesh) {
+        const mat = o.material as MeshStandardMaterial;
+        if (mat.userData.hairRecolor) mat.color.copy(c);
+      }
+    });
+  }, [model, hairColor]);
 
   const { actions } = useAnimations(gltf.animations, rig);
   const current = useRef<AnimationAction | null>(null);

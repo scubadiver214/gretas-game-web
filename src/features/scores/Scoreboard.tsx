@@ -25,6 +25,7 @@ import Typography from "@mui/material/Typography";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
 import PedalBikeRoundedIcon from "@mui/icons-material/PedalBikeRounded";
+import AbcRoundedIcon from "@mui/icons-material/AbcRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import { C } from "@/design/tokens";
@@ -141,7 +142,7 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
         <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
-          🍕
+          {mode === "kitchen" ? "🍕" : mode === "delivery" ? "🛵" : "🔤"}
         </Box>
         <Typography variant="h4">{board === "daily" ? "Nobody has played today yet" : "No scores yet"}</Typography>
         <Typography sx={{ color: "text.secondary" }}>
@@ -246,6 +247,7 @@ export default function Scoreboard() {
           >
             <Tab value="kitchen" icon={<LocalPizzaRoundedIcon />} iconPosition="start" label="Kitchen" sx={{ minHeight: 56 }} />
             <Tab value="delivery" icon={<PedalBikeRoundedIcon />} iconPosition="start" label="Delivery" sx={{ minHeight: 56 }} />
+            <Tab value="wordle" icon={<AbcRoundedIcon />} iconPosition="start" label="Words" sx={{ minHeight: 56 }} />
           </Tabs>
           <ScoreTable mode={mode} board={board} me={nickname} />
         </Paper>

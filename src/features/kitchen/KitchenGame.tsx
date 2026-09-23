@@ -108,6 +108,7 @@ function Inner() {
   const router = useRouter();
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
+  const hairColor = usePlayerStore((s) => s.hairColor);
   const finishRound = usePlayerStore((s) => s.finishRound);
   const setup = useRoundSetup("kitchen");
 
@@ -175,7 +176,7 @@ function Inner() {
 
   return (
     <GameShell
-      scene={<KitchenScene character={character} color={color} />}
+      scene={<KitchenScene character={character} color={color} hairColor={hairColor} />}
       top={
         <Stack spacing={1.25} sx={{ alignItems: "flex-start" }}>
           <Stack direction="row" sx={{ width: "100%", alignItems: "center", justifyContent: "space-between" }}>

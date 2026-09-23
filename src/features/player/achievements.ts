@@ -47,10 +47,17 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: "jumper", title: "Hop to it", description: "Jump 10 times in one ride.", emoji: "🦘", tier: "bronze", check: (c) => c.result.mode === "delivery" && m(c, "jumps") >= 10 },
   { id: "powered", title: "Power player", description: "Grab 3 power-ups in one ride.", emoji: "⭐", tier: "bronze", check: (c) => c.result.mode === "delivery" && m(c, "powerUps") >= 3 },
 
+  // --- wordle ----------------------------------------------------------------
+  { id: "first-word", title: "Word smart", description: "Guess your first secret word.", emoji: "🔤", tier: "bronze", check: (c) => c.result.mode === "wordle" && m(c, "solved") >= 1 },
+  { id: "word-whiz", title: "Word whiz", description: "Guess a word in 2 tries or fewer.", emoji: "🧠", tier: "silver", check: (c) => c.result.mode === "wordle" && m(c, "bestGuesses") > 0 && m(c, "bestGuesses") <= 2 },
+  { id: "flawless-round", title: "Flawless round", description: "Solve every word in a round with no hints.", emoji: "🌈", tier: "gold", check: (c) => c.result.mode === "wordle" && m(c, "words") >= 3 && m(c, "solved") === m(c, "words") && m(c, "hints") === 0 },
+  { id: "triple-shift", title: "Triple shift", description: "Play the kitchen, delivery and word game.", emoji: "🎪", tier: "silver", check: (c) => ["kitchen", "delivery", "wordle"].every((mode) => c.history.some((h) => h.mode === mode)) },
+
   // --- progression ---------------------------------------------------------
   { id: "three-stars", title: "Three stars", description: "Earn a three-star round.", emoji: "🌟", tier: "bronze", check: (c) => c.result.stars >= 3 },
   { id: "kitchen-legend", title: "Kitchen legend", description: "Reach level 5 in the kitchen.", emoji: "🏆", tier: "gold", check: (c) => c.result.mode === "kitchen" && c.levelAfter >= MAX_LEVEL },
   { id: "delivery-legend", title: "Delivery legend", description: "Reach level 5 on the bike.", emoji: "🏆", tier: "gold", check: (c) => c.result.mode === "delivery" && c.levelAfter >= MAX_LEVEL },
+  { id: "wordle-legend", title: "Word legend", description: "Reach level 5 in the word game.", emoji: "🏆", tier: "gold", check: (c) => c.result.mode === "wordle" && c.levelAfter >= MAX_LEVEL },
   { id: "daily-1", title: "Challenger", description: "Play a daily challenge.", emoji: "📅", tier: "bronze", check: (c) => !!c.result.challengeDate },
   { id: "streak-3", title: "Three-day streak", description: "Play the daily challenge three days running.", emoji: "🔥", tier: "silver", check: (c) => c.streak >= 3 },
   { id: "streak-7", title: "Week of pizza", description: "Play the daily challenge seven days running.", emoji: "🗓️", tier: "gold", check: (c) => c.streak >= 7 },

@@ -49,6 +49,14 @@ const ADVENTURES: {
     fill: C.blue,
     edge: C.blueDeep,
   },
+  {
+    mode: "wordle",
+    title: "Guess the word",
+    blurb: "Crack it before you run out of tries",
+    emoji: "🔤",
+    fill: C.grape,
+    edge: C.grapeDeep,
+  },
 ];
 
 /** Star pips showing progress inside the current level. */
@@ -185,8 +193,8 @@ function Inner() {
           Pick your shift!
         </Typography>
 
-        {/* The two game modes as fat plastic cards. */}
-        <Stack spacing={1.75} sx={{ flex: 1, justifyContent: "center" }}>
+        {/* The game modes as fat plastic cards - tap one to pick what to play. */}
+        <Stack spacing={1.25} sx={{ flex: 1, justifyContent: "center" }}>
           {ADVENTURES.map(({ mode, title, blurb, emoji, fill, edge }) => {
             const modeStars = stars[mode] ?? 0;
             const level = levelForStars(modeStars);
@@ -206,8 +214,8 @@ function Inner() {
                   alignItems: "center",
                   gap: 2,
                   flex: 1,
-                  minHeight: 140,
-                  maxHeight: 210,
+                  minHeight: 112,
+                  maxHeight: 190,
                   p: 2,
                   borderRadius: "28px",
                   bgcolor: fill,
@@ -220,14 +228,14 @@ function Inner() {
                 <Box
                   aria-hidden
                   sx={{
-                    width: 82,
-                    height: 82,
+                    width: 68,
+                    height: 68,
                     flexShrink: 0,
                     borderRadius: "50%",
                     bgcolor: "rgba(255,255,255,0.22)",
                     display: "grid",
                     placeItems: "center",
-                    fontSize: 46,
+                    fontSize: 38,
                     lineHeight: 1,
                     boxShadow: "inset 0 -4px 0 rgba(22,33,46,0.10)",
                   }}

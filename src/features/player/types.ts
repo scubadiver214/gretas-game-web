@@ -1,12 +1,13 @@
 export type CharacterId = "boy" | "girl";
 
-export type GameMode = "kitchen" | "delivery";
+export type GameMode = "kitchen" | "delivery" | "wordle";
 
-export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery"] as const;
+export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle"] as const;
 
 export const MODE_LABELS: Record<GameMode, string> = {
   kitchen: "Pizza Kitchen",
   delivery: "Bike Delivery",
+  wordle: "Word Quest",
 };
 
 export const CHARACTER_LABELS: Record<CharacterId, string> = {
@@ -33,6 +34,28 @@ export const DEFAULT_COLOR: Record<CharacterId, string> = {
 
 export function isPlayerColor(value: string | null | undefined): value is string {
   return !!value && PLAYER_COLORS.some((c) => c.id === value);
+}
+
+/** Hair colours players can pick on the character screen. */
+export const HAIR_COLORS: readonly { id: string; label: string }[] = [
+  { id: "#1B1712", label: "Black" },
+  { id: "#5A3A1B", label: "Brown" },
+  { id: "#8C5A2B", label: "Chestnut" },
+  { id: "#F2B134", label: "Blonde" },
+  { id: "#C0392B", label: "Ginger" },
+  { id: "#EADCC8", label: "Platinum" },
+  { id: "#E85D9A", label: "Bubblegum" },
+  { id: "#3B82F6", label: "Blueberry" },
+] as const;
+
+/** Matches each character's original hard-coded hair colour (see PrimitiveCharacter). */
+export const DEFAULT_HAIR_COLOR: Record<CharacterId, string> = {
+  boy: "#5A3A1B",
+  girl: "#F2B134",
+};
+
+export function isHairColor(value: string | null | undefined): value is string {
+  return !!value && HAIR_COLORS.some((c) => c.id === value);
 }
 
 /** Raw numbers from a round, used for achievements (perfect bakes, combos, ...). */

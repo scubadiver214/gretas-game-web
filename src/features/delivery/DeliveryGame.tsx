@@ -85,6 +85,7 @@ function Inner() {
   const router = useRouter();
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
+  const hairColor = usePlayerStore((s) => s.hairColor);
   const bikeSkin = usePlayerStore((s) => s.bikeSkin);
   const finishRound = usePlayerStore((s) => s.finishRound);
   const setup = useRoundSetup("delivery");
@@ -175,7 +176,7 @@ function Inner() {
     <GameShell
       scene={
         <>
-          <DeliveryScene character={character} color={color} bikeSkin={bikeSkin} />
+          <DeliveryScene character={character} color={color} hairColor={hairColor} bikeSkin={bikeSkin} />
           {riding && (
             <Box
               aria-hidden

@@ -19,7 +19,16 @@ import RequirePlayer from "@/components/RequirePlayer";
 import { C, RADIUS, hardShadow, pressedShadow } from "@/design/tokens";
 import { ACHIEVEMENT_BY_ID } from "@/features/player/achievements";
 import { isBikeSkinUnlocked, usePlayerStore } from "@/features/player/store";
-import { BIKE_SKINS, CHARACTER_LABELS, DEFAULT_COLOR, PLAYER_COLORS, type BikeSkinId, type CharacterId } from "@/features/player/types";
+import {
+  BIKE_SKINS,
+  CHARACTER_LABELS,
+  DEFAULT_COLOR,
+  DEFAULT_HAIR_COLOR,
+  HAIR_COLORS,
+  PLAYER_COLORS,
+  type BikeSkinId,
+  type CharacterId,
+} from "@/features/player/types";
 import { fx } from "@/lib/fx";
 
 const CharacterPreview = dynamic(() => import("./CharacterPreview"), {
@@ -55,8 +64,10 @@ function Inner() {
   const nickname = usePlayerStore((s) => s.nickname);
   const saved = usePlayerStore((s) => s.character);
   const savedColor = usePlayerStore((s) => s.color);
+  const savedHairColor = usePlayerStore((s) => s.hairColor);
   const setCharacter = usePlayerStore((s) => s.setCharacter);
   const setColor = usePlayerStore((s) => s.setColor);
+  const setHairColor = usePlayerStore((s) => s.setHairColor);
   const bikeSkin = usePlayerStore((s) => s.bikeSkin);
   const setBikeSkin = usePlayerStore((s) => s.setBikeSkin);
   const achievements = usePlayerStore((s) => s.achievements);
@@ -66,7 +77,11 @@ function Inner() {
   const [pickedColor, setPickedColor] = useState<string | null>(
     saved && savedColor !== DEFAULT_COLOR[saved] ? savedColor : null,
   );
+  const [pickedHairColor, setPickedHairColor] = useState<string | null>(
+    saved && savedHairColor !== DEFAULT_HAIR_COLOR[saved] ? savedHairColor : null,
+  );
   const previewColor = (id: CharacterId) => pickedColor ?? DEFAULT_COLOR[id];
+  const previewHairColor = (id: CharacterId) => pickedHairColor ?? DEFAULT_HAIR_COLOR[id];
 
   return (
     <PageContainer>
@@ -112,7 +127,12 @@ function Inner() {
                 }}
               >
                 <Box sx={{ position: "relative", flex: 1, minHeight: 210, bgcolor: active ? C.sandSoft : "#F1F4F8" }}>
-                  <CharacterPreview character={opt.id} active={active} color={previewColor(opt.id)} />
+                  <CharacterPreview
+                    character={opt.id}
+                    active={active}
+                    color={previewColor(opt.id)}
+                    hairColor={previewHairColor(opt.id)}
+                  />
                   {active && (
                     <Box
                       sx={{
@@ -169,6 +189,42 @@ function Inner() {
                   }}
                 >
                   {on && <CheckRoundedIcon sx={{ color: "#fff", fontSize: 24 }} />}
+                </ButtonBase>
+              );
+            })}
+          </Stack>
+        </Box>
+
+        <Box>
+          <SectionLabel>💇 Pick your hair colour</SectionLabel>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ justifyContent: "center", flexWrap: "wrap" }} role="radiogroup" aria-label="Hair colour">
+            {HAIR_COLORS.map((c) => {
+              const current = selected ? previewHairColor(selected) : pickedHairColor;
+              const on = current === c.id;
+              return (
+                <ButtonBase
+                  key={c.id}
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={c.label}
+                  onClick={() => setPickedHairColor(c.id)}
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "50%",
+                    bgcolor: c.id,
+                    border: "4px solid #fff",
+                    boxShadow: on ? `0 0 0 4px ${c.id}, 0 4px 0 rgba(22,33,46,0.18)` : "0 3px 0 rgba(22,33,46,0.18)",
+                    transform: on ? "translateY(-2px)" : "none",
+                    transition: "transform 120ms ease, box-shadow 120ms ease",
+                    "&:active": { transform: "translateY(3px)" },
+                  }}
+                >
+                  {on && (
+                    <CheckRoundedIcon
+                      sx={{ color: c.id === "#EADCC8" || c.id === "#F2B134" ? C.ink : "#fff", fontSize: 24 }}
+                    />
+                  )}
                 </ButtonBase>
               );
             })}
@@ -237,6 +293,7 @@ function Inner() {
               if (!selected) return;
               setCharacter(selected);
               setColor(previewColor(selected));
+              setHairColor(previewHairColor(selected));
               setBikeSkin(pickedSkin);
               router.push("/adventure");
             }}

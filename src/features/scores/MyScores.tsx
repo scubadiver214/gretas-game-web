@@ -138,6 +138,7 @@ function Inner() {
           <Tabs value={mode} onChange={(_, v: GameMode) => setMode(v)} variant="fullWidth" textColor="primary" indicatorColor="primary">
             <Tab value="kitchen" label="Kitchen" sx={{ minHeight: 52 }} />
             <Tab value="delivery" label="Delivery" sx={{ minHeight: 52 }} />
+            <Tab value="wordle" label="Words" sx={{ minHeight: 52 }} />
           </Tabs>
 
           <Stack direction="row" spacing={1} useFlexGap sx={{ p: 1.5, flexWrap: "wrap" }}>
@@ -149,7 +150,7 @@ function Inner() {
           {rows.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center" }}>
               <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
-                🛵
+                {mode === "kitchen" ? "🍕" : mode === "delivery" ? "🛵" : "🔤"}
               </Box>
               <Typography variant="h4">No rounds yet</Typography>
               <Typography sx={{ color: "text.secondary" }}>Play {MODE_LABELS[mode]} and your rounds will show up here.</Typography>

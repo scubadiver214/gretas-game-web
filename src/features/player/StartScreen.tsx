@@ -21,6 +21,8 @@ export default function StartScreen() {
   const hydrated = usePlayerHydrated();
   const savedNickname = usePlayerStore((s) => s.nickname);
   const setNickname = usePlayerStore((s) => s.setNickname);
+  const character = usePlayerStore((s) => s.character);
+  const setCharacter = usePlayerStore((s) => s.setCharacter);
   // null = untouched; show the saved nickname until the player types.
   const [typed, setTyped] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,11 @@ export default function StartScreen() {
       return;
     }
     setNickname(normalizeNickname(value));
-    router.push("/character");
+    // The dashboard is the first stop after entering a name - default a
+    // character so games are playable right away. Players can still pick a
+    // different look later by tapping their avatar in the dashboard.
+    if (!character) setCharacter("girl");
+    router.push("/adventure");
   };
 
   return (
@@ -92,7 +98,7 @@ export default function StartScreen() {
               boxShadow: hardShadow(C.blueDeep, 4),
             }}
           >
-            Kitchen &amp; Delivery
+            3 games to play!
           </Typography>
         </Box>
 

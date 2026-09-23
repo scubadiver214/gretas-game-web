@@ -410,7 +410,7 @@ function ShakyCamera() {
   return null;
 }
 
-function Kitchen({ character, color }: { character: CharacterId; color?: string }) {
+function Kitchen({ character, color, hairColor }: { character: CharacterId; color?: string; hairColor?: string }) {
   const floor = useCheckerTexture();
   return (
     <>
@@ -506,17 +506,25 @@ function Kitchen({ character, color }: { character: CharacterId; color?: string 
         <Bowl key={t.id} id={t.id} index={i} />
       ))}
 
-      <Character character={character} color={color} pose="cook" position={[-1.15, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
+      <Character character={character} color={color} hairColor={hairColor} pose="cook" position={[-1.15, 0, -0.9]} rotation={[0, 0.25, 0]} scale={0.95} />
     </>
   );
 }
 
-export default function KitchenScene({ character, color }: { character: CharacterId; color?: string }) {
+export default function KitchenScene({
+  character,
+  color,
+  hairColor,
+}: {
+  character: CharacterId;
+  color?: string;
+  hairColor?: string;
+}) {
   return (
     <Canvas shadows="percentage" dpr={[1, 1.75]}>
       <ShakyCamera />
       <color attach="background" args={[C.blueSoft]} />
-      <Kitchen character={character} color={color} />
+      <Kitchen character={character} color={color} hairColor={hairColor} />
     </Canvas>
   );
 }

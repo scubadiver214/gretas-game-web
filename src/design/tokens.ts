@@ -31,6 +31,9 @@ export const C = {
   /** Pizza crust / cardboard box. */
   crust: "#EDAA5F",
   crustDeep: "#CE8639",
+  /** Grape: the word game's accent colour. */
+  grape: "#8B5CF6",
+  grapeDeep: "#6D28D9",
   /** Near-black used for every bit of text. */
   ink: "#16212E",
   inkSoft: "#5A6675",

@@ -19,6 +19,10 @@ export interface ShareCardInput {
 const W = 1080;
 const H = 1080;
 
+// Flat mode colours, matching the adventure cards in the hub.
+const MODE_FILL: Record<GameMode, string> = { kitchen: C.tomato, delivery: C.blue, wordle: C.grape };
+const MODE_DEEP: Record<GameMode, string> = { kitchen: C.tomatoDeep, delivery: C.blueDeep, wordle: C.grapeDeep };
+
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   g.beginPath();
   g.moveTo(x + r, y);
@@ -37,8 +41,7 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   const g = canvas.getContext("2d")!;
   const font = '"Baloo 2", "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif';
 
-  // Flat mode colour, matching the adventure cards in the hub.
-  g.fillStyle = input.mode === "kitchen" ? C.tomato : C.blue;
+  g.fillStyle = MODE_FILL[input.mode];
   g.fillRect(0, 0, W, H);
 
   // Confetti dots.
@@ -82,9 +85,9 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
 
   // Extruded score, same treatment as the results screen.
   g.font = `900 220px ${font}`;
-  g.fillStyle = input.mode === "kitchen" ? C.tomatoDeep : C.blueDeep;
+  g.fillStyle = MODE_DEEP[input.mode];
   g.fillText(String(input.score), W / 2, 752);
-  g.fillStyle = input.mode === "kitchen" ? C.tomato : C.blue;
+  g.fillStyle = MODE_FILL[input.mode];
   g.fillText(String(input.score), W / 2, 740);
 
   // Stars.

@@ -6,7 +6,16 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { dailyKey } from "@/lib/rng";
 import { evaluateAchievements } from "./achievements";
 import { EMPTY_ROUNDS, EMPTY_STARS, STARS_PER_LEVEL, dailyStreak, levelForStars, type RoundsPlayed, type StarsEarned } from "./progress";
-import { BIKE_SKIN_BY_ID, DEFAULT_COLOR, type BikeSkinId, type CharacterId, type GameMode, type GameResult, type RoundRecord } from "./types";
+import {
+  BIKE_SKIN_BY_ID,
+  DEFAULT_COLOR,
+  DEFAULT_HAIR_COLOR,
+  type BikeSkinId,
+  type CharacterId,
+  type GameMode,
+  type GameResult,
+  type RoundRecord,
+} from "./types";
 
 const HISTORY_LIMIT = 200;
 
@@ -15,6 +24,8 @@ interface PlayerState {
   character: CharacterId | null;
   /** Outfit / avatar colour (hex). */
   color: string;
+  /** Hair colour (hex). */
+  hairColor: string;
   bikeSkin: BikeSkinId;
   lastResult: GameResult | null;
   /** Achievements unlocked by the last finished round (shown on the results screen). */
@@ -34,6 +45,7 @@ interface PlayerState {
   setNickname: (nickname: string) => void;
   setCharacter: (character: CharacterId) => void;
   setColor: (color: string) => void;
+  setHairColor: (hairColor: string) => void;
   setBikeSkin: (skin: BikeSkinId) => void;
   /** Store the round result and record it in the history / progress counters. */
   finishRound: (result: GameResult) => void;
@@ -49,6 +61,7 @@ export const usePlayerStore = create<PlayerState>()(
       nickname: "",
       character: null,
       color: DEFAULT_COLOR.girl,
+      hairColor: DEFAULT_HAIR_COLOR.girl,
       bikeSkin: "classic",
       lastResult: null,
       lastUnlocked: [],
@@ -64,8 +77,13 @@ export const usePlayerStore = create<PlayerState>()(
           character,
           // Keep a custom colour, otherwise follow the character's default.
           color: s.character === null || s.color === DEFAULT_COLOR[s.character] ? DEFAULT_COLOR[character] : s.color,
+          hairColor:
+            s.character === null || s.hairColor === DEFAULT_HAIR_COLOR[s.character]
+              ? DEFAULT_HAIR_COLOR[character]
+              : s.hairColor,
         })),
       setColor: (color) => set({ color }),
+      setHairColor: (hairColor) => set({ hairColor }),
       setBikeSkin: (bikeSkin) => set({ bikeSkin }),
       finishRound: (result) =>
         set((s) => {
@@ -115,7 +133,7 @@ export const usePlayerStore = create<PlayerState>()(
     }),
     {
       name: "gretas-game:player",
-      version: 3,
+      version: 4,
       // Only touch window.localStorage in the browser (Node 26 exposes an
       // experimental global localStorage that warns when accessed on the server).
       storage: createJSONStorage(() =>
@@ -127,6 +145,7 @@ export const usePlayerStore = create<PlayerState>()(
         nickname: s.nickname,
         character: s.character,
         color: s.color,
+        hairColor: s.hairColor,
         bikeSkin: s.bikeSkin,
         lastResult: s.lastResult,
         lastUnlocked: s.lastUnlocked,
@@ -153,10 +172,20 @@ export const usePlayerStore = create<PlayerState>()(
           const perRound = STARS_PER_LEVEL / 2;
           p = {
             ...p,
-            stars: { kitchen: (rounds.kitchen ?? 0) * perRound, delivery: (rounds.delivery ?? 0) * perRound },
+            stars: { kitchen: (rounds.kitchen ?? 0) * perRound, delivery: (rounds.delivery ?? 0) * perRound, wordle: 0 },
             achievements: {},
             bikeSkin: "classic",
             lastUnlocked: [],
+          };
+        }
+        if (version < 4) {
+          // New "wordle" mode and hair colour: backfill defaults for existing players.
+          const char = p.character ?? "girl";
+          p = {
+            ...p,
+            hairColor: p.hairColor ?? DEFAULT_HAIR_COLOR[char],
+            roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+            stars: { ...EMPTY_STARS, ...p.stars },
           };
         }
         return p;

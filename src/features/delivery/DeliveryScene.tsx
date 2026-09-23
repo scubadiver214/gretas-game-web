@@ -100,12 +100,14 @@ function Wheel({ position, spin }: { position: [number, number, number]; spin: R
 function Bike({
   character,
   color,
+  hairColor,
   skin,
   pedaling,
   wobble,
 }: {
   character: CharacterId;
   color?: string;
+  hairColor?: string;
   skin: BikeSkinId;
   pedaling: boolean;
   wobble: number;
@@ -186,7 +188,7 @@ function Bike({
         <circleGeometry args={[0.1, 16]} />
         <meshStandardMaterial color="#F2542D" />
       </mesh>
-      <Character character={character} color={color} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
+      <Character character={character} color={color} hairColor={hairColor} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
     </group>
   );
 }
@@ -549,7 +551,17 @@ function Cloud({ position, scale }: { position: [number, number, number]; scale:
 // World
 // ---------------------------------------------------------------------------
 
-function World({ character, color, bikeSkin }: { character: CharacterId; color?: string; bikeSkin: BikeSkinId }) {
+function World({
+  character,
+  color,
+  hairColor,
+  bikeSkin,
+}: {
+  character: CharacterId;
+  color?: string;
+  hairColor?: string;
+  bikeSkin: BikeSkinId;
+}) {
   const phase = useDeliveryGame((s) => s.phase);
   const wobbling = useDeliveryGame((s) => s.wobbling);
   const shield = useDeliveryGame((s) => s.shield);
@@ -920,7 +932,7 @@ function World({ character, color, bikeSkin }: { character: CharacterId; color?:
 
       <group ref={player} position={[0, 0, 0]}>
         <group ref={bikeBody}>
-          <Bike character={character} color={color} skin={bikeSkin} pedaling={riding} wobble={wobbling ? 1 : 0} />
+          <Bike character={character} color={color} hairColor={hairColor} skin={bikeSkin} pedaling={riding} wobble={wobbling ? 1 : 0} />
         </group>
         {/* Shield bubble */}
         <mesh position={[0, 0.9, 0]}>
@@ -944,11 +956,21 @@ function World({ character, color, bikeSkin }: { character: CharacterId; color?:
   );
 }
 
-export default function DeliveryScene({ character, color, bikeSkin = "classic" }: { character: CharacterId; color?: string; bikeSkin?: BikeSkinId }) {
+export default function DeliveryScene({
+  character,
+  color,
+  hairColor,
+  bikeSkin = "classic",
+}: {
+  character: CharacterId;
+  color?: string;
+  hairColor?: string;
+  bikeSkin?: BikeSkinId;
+}) {
   return (
     <Canvas shadows="percentage" dpr={[1, 1.75]} camera={{ position: [0, 4, 7.2], fov: CAMERA_VFOV }}>
       <color attach="background" args={[C.blueSoft]} />
-      <World character={character} color={color} bikeSkin={bikeSkin} />
+      <World character={character} color={color} hairColor={hairColor} bikeSkin={bikeSkin} />
     </Canvas>
   );
 }

@@ -20,6 +20,8 @@ export interface CharacterProps {
   wobble?: number;
   /** Outfit colour override (the player's avatar colour). */
   color?: string;
+  /** Hair colour override. */
+  hairColor?: string;
 }
 
 /** Hip height: legs hang below this, torso/arms/head sit above it. */
@@ -47,6 +49,7 @@ export function PrimitiveCharacter({
   pedaling = false,
   wobble = 0,
   color,
+  hairColor,
 }: CharacterProps) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -54,7 +57,7 @@ export function PrimitiveCharacter({
   const rightLeg = useRef<Group>(null);
   const leftArm = useRef<Group>(null);
   const rightArm = useRef<Group>(null);
-  const style = color ? { ...STYLE[character], top: color } : STYLE[character];
+  const style = { ...STYLE[character], ...(color && { top: color }), ...(hairColor && { hair: hairColor }) };
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
