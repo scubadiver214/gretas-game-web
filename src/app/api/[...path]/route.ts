@@ -12,11 +12,13 @@ export const dynamic = "force-dynamic";
 
 const HOP_BY_HOP = ["connection", "keep-alive", "transfer-encoding", "te", "trailer", "upgrade", "host"];
 
+type RouteParams = { params: Promise<{ path: string[] }> };
+
 function apiBase(): string {
   return (process.env.API_URL ?? "http://localhost:5080").replace(/\/$/, "");
 }
 
-async function proxy(req: NextRequest, ctx: RouteContext<"/api/[...path]">): Promise<Response> {
+async function proxy(req: NextRequest, ctx: RouteParams): Promise<Response> {
   const { path } = await ctx.params;
   const target = new URL(`${apiBase()}/api/${path.map(encodeURIComponent).join("/")}`);
   target.search = req.nextUrl.search;
