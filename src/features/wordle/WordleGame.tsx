@@ -205,7 +205,7 @@ function Inner() {
           badge={levelLabel}
           accent={C.grape}
           lines={[
-            "Guess the secret word, letter by letter.",
+            "Guess the secret word. Every word is 5 letters.",
             "🟩 Green = right letter, right spot.",
             "🟨 Yellow = right letter, wrong spot.",
             `You get ${wordleDifficultyFor(setup.level).maxGuesses} tries per word.`,

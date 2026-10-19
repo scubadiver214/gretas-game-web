@@ -21,13 +21,13 @@ function seeded(seed: number) {
 }
 
 describe("wordleDifficultyFor", () => {
-  it("ramps word count, length range and guesses with level", () => {
+  it("keeps every word at 5 letters and ramps word count and guesses with level", () => {
     const l1 = wordleDifficultyFor(1);
     const l5 = wordleDifficultyFor(5);
-    expect(l1).toEqual({ level: 1, wordCount: 3, minLength: 3, maxLength: 3, maxGuesses: 6 });
+    expect(l1).toEqual({ level: 1, wordCount: 3, minLength: 5, maxLength: 5, maxGuesses: 6 });
     expect(l5).toEqual({ level: 5, wordCount: 5, minLength: 5, maxLength: 5, maxGuesses: 5 });
     expect(l5.wordCount).toBeGreaterThan(l1.wordCount);
-    expect(l5.maxLength).toBeGreaterThan(l1.maxLength);
+    expect(l5.maxGuesses).toBeLessThan(l1.maxGuesses);
   });
   it("clamps out-of-range levels", () => {
     expect(wordleDifficultyFor(0)).toEqual(wordleDifficultyFor(1));
@@ -36,14 +36,11 @@ describe("wordleDifficultyFor", () => {
 });
 
 describe("lengthForPuzzle", () => {
-  it("stays flat when min equals max", () => {
-    const d = wordleDifficultyFor(1);
-    for (let i = 0; i < d.wordCount; i++) expect(lengthForPuzzle(d, i)).toBe(3);
-  });
-  it("ramps from minLength to maxLength across the round", () => {
-    const d = wordleDifficultyFor(2); // min 3, max 4, wordCount 3
-    expect(lengthForPuzzle(d, 0)).toBe(3);
-    expect(lengthForPuzzle(d, d.wordCount - 1)).toBe(4);
+  it("is 5 letters for every puzzle at every level", () => {
+    for (let level = 1; level <= 5; level++) {
+      const d = wordleDifficultyFor(level);
+      for (let i = 0; i < d.wordCount; i++) expect(lengthForPuzzle(d, i)).toBe(5);
+    }
   });
 });
 
@@ -59,6 +56,7 @@ describe("pickWord / generatePuzzleAnswers", () => {
     for (let level = 1; level <= 5; level++) {
       const answers = generatePuzzleAnswers(wordleDifficultyFor(level), seeded(level * 11 + 3));
       expect(new Set(answers).size).toBe(answers.length);
+      expect(answers.every((word) => word.length === 5)).toBe(true);
     }
   });
   it("is deterministic for the same seed (daily challenge)", () => {

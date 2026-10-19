@@ -31,8 +31,7 @@ export interface WordleDifficulty {
   maxGuesses: number;
 }
 
-const MIN_LENGTH_BY_LEVEL: readonly WordLength[] = [3, 3, 4, 4, 5];
-const MAX_LENGTH_BY_LEVEL: readonly WordLength[] = [3, 4, 4, 5, 5];
+const WORD_LENGTH: WordLength = 5;
 const WORD_COUNT_BY_LEVEL: readonly number[] = [3, 3, 4, 4, 5];
 const MAX_GUESSES_BY_LEVEL: readonly number[] = [6, 6, 6, 5, 5];
 
@@ -41,13 +40,13 @@ export function wordleDifficultyFor(level: number): WordleDifficulty {
   return {
     level: i + 1,
     wordCount: WORD_COUNT_BY_LEVEL[i],
-    minLength: MIN_LENGTH_BY_LEVEL[i],
-    maxLength: MAX_LENGTH_BY_LEVEL[i],
+    minLength: WORD_LENGTH,
+    maxLength: WORD_LENGTH,
     maxGuesses: MAX_GUESSES_BY_LEVEL[i],
   };
 }
 
-/** Secret word length for the puzzle at `index`, ramping from minLength to maxLength. */
+/** Secret word length for the puzzle at `index`. Every word is 5 letters. */
 export function lengthForPuzzle(difficulty: WordleDifficulty, index: number): WordLength {
   const { minLength, maxLength, wordCount } = difficulty;
   if (maxLength <= minLength || wordCount <= 1) return minLength;
@@ -63,7 +62,7 @@ export function pickWord(length: WordLength, rng: Rng, exclude: ReadonlySet<stri
   return list[Math.floor(rng() * list.length)];
 }
 
-/** One secret word per puzzle in the round, ramping in length and never repeating. */
+/** One 5-letter secret word per puzzle in the round, never repeating. */
 export function generatePuzzleAnswers(difficulty: WordleDifficulty, rng: Rng = Math.random): string[] {
   const used = new Set<string>();
   const answers: string[] = [];
