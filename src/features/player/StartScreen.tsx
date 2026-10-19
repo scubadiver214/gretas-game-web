@@ -2,17 +2,17 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import PageContainer from "@/components/PageContainer";
-import Panel from "@/components/ui/Panel";
+import NeonPage from "@/components/NeonPage";
 import { SettingsToggles } from "@/components/HUD";
-import { C, hardShadow } from "@/design/tokens";
+import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
 import { usePlayerHydrated, usePlayerStore } from "./store";
 import { NICKNAME_MAX, normalizeNickname, validateNickname } from "./types";
 
@@ -44,69 +44,83 @@ export default function StartScreen() {
   };
 
   return (
-    <PageContainer>
-      <Stack spacing={2.5} sx={{ flex: 1, justifyContent: "center", py: 4 }}>
-        {/* Shop sign: a fat pizza token sitting on a tomato-topped card. */}
+    <NeonPage>
+      <Stack spacing={2} sx={{ flex: 1, justifyContent: "center", py: 3 }}>
+        {/* Wordmark */}
         <Box sx={{ textAlign: "center" }}>
-          <Box
-            sx={{
-              width: 118,
-              height: 118,
-              mx: "auto",
-              mb: 1.5,
-              borderRadius: "50%",
-              display: "grid",
-              placeItems: "center",
-              fontSize: 64,
-              lineHeight: 1,
-              bgcolor: C.sun,
-              boxShadow: hardShadow(C.sunDeep, 8),
-              animation: "signWiggle 3s ease-in-out infinite",
-              "@keyframes signWiggle": {
-                "0%, 100%": { transform: "rotate(-7deg)" },
-                "50%": { transform: "rotate(7deg)" },
-              },
-            }}
-            aria-hidden
-          >
-            🍕
-          </Box>
           <Typography
-            variant="h1"
             component="h1"
             sx={{
-              color: C.white,
-              WebkitTextStroke: `9px ${C.tomatoDeep}`,
-              paintOrder: "stroke fill",
-              filter: "drop-shadow(0 5px 0 rgba(22,33,46,0.18))",
+              fontFamily: "var(--font-arcade)",
+              fontWeight: 700,
+              fontSize: "clamp(2.4rem, 11vw, 3.4rem)",
+              lineHeight: 1,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: N.brand,
+              textShadow: textGlow(N.brand),
             }}
           >
-            Greta&apos;s Pizza
+            Greta Games
           </Typography>
           <Typography
             sx={{
-              mt: 0.5,
+              mt: 1,
               display: "inline-block",
-              px: 2,
-              py: 0.5,
-              borderRadius: 999,
-              bgcolor: C.blue,
-              color: C.white,
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: "1.1rem",
-              boxShadow: hardShadow(C.blueDeep, 4),
+              px: 1.75,
+              py: 0.4,
+              clipPath: CLIP.button,
+              bgcolor: N.pop,
+              color: N.white,
+              fontFamily: "var(--font-arcade)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              boxShadow: neonGlow(N.pop, 10),
             }}
           >
-            3 games to play!
+            for fun!
           </Typography>
+        </Box>
+
+        {/* Hero art: Greta mid-leap, framed by an angular neon panel. */}
+        <Box
+          sx={{
+            position: "relative",
+            mx: "auto",
+            width: "min(72vw, 300px)",
+            aspectRatio: "3 / 4",
+            maxHeight: "38dvh",
+            clipPath: CLIP.card,
+            boxShadow: panelGlow(N.brand),
+            bgcolor: N.panel,
+          }}
+        >
+          <Image
+            src="/characters/greta-neon.jpg"
+            alt="Greta leaping through neon lights"
+            fill
+            priority
+            sizes="(max-width: 480px) 72vw, 300px"
+            style={{ objectFit: "cover" }}
+          />
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center" }}>
           <SettingsToggles size="small" />
         </Box>
 
-        <Panel accent={C.tomato}>
+        {/* Name + play: dark panel with a neon edge. */}
+        <Box
+          sx={{
+            clipPath: CLIP.card,
+            bgcolor: N.panel,
+            boxShadow: panelGlow(N.panelEdge),
+            border: `1px solid ${N.panelEdge}`,
+            p: 2.5,
+          }}
+        >
           <Box component="form" onSubmit={onSubmit} noValidate>
             <Stack spacing={2}>
               <TextField
@@ -122,30 +136,67 @@ export default function StartScreen() {
                 autoComplete="nickname"
                 autoCapitalize="words"
                 enterKeyHint="go"
-                slotProps={{ htmlInput: { maxLength: NICKNAME_MAX, "aria-label": "Nickname" } }}
+                slotProps={{
+                  htmlInput: { maxLength: NICKNAME_MAX, "aria-label": "Nickname" },
+                  // Keep the label floated: the saved nickname arrives after
+                  // hydration and the overlap looks broken on the dark panel.
+                  inputLabel: { shrink: true },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": { bgcolor: N.bgRaise, color: N.text },
+                  "& .MuiInputLabel-root": { color: N.textSoft },
+                  "& .MuiInputLabel-root.Mui-focused": { color: N.brand },
+                  "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: N.panelEdge },
+                  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: N.textSoft },
+                  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: N.brand,
+                  },
+                  "& .MuiFormHelperText-root": { color: N.textSoft },
+                }}
               />
-              <Button
+              <ButtonBase
                 type="submit"
-                size="large"
-                variant="contained"
-                color="success"
                 disabled={!hydrated}
-                startIcon={<PlayArrowRoundedIcon />}
+                sx={{
+                  height: 56,
+                  clipPath: CLIP.button,
+                  bgcolor: N.brand,
+                  color: N.bg,
+                  fontFamily: "var(--font-arcade)",
+                  fontWeight: 700,
+                  fontSize: "1.2rem",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  boxShadow: neonGlow(N.brand),
+                  transition: "transform 90ms ease, box-shadow 90ms ease",
+                  "&:hover": { boxShadow: neonGlow(N.brand, 26) },
+                  "&:active": { transform: "translateY(2px)" },
+                  "&.Mui-disabled": { bgcolor: N.panelEdge, color: N.textSoft, boxShadow: "none" },
+                }}
               >
-                Let&apos;s play!
-              </Button>
-              <Button
-                variant="text"
-                color="primary"
-                startIcon={<EmojiEventsRoundedIcon />}
+                <PlayArrowRoundedIcon sx={{ mr: 0.75 }} /> Let&apos;s play!
+              </ButtonBase>
+              <ButtonBase
                 onClick={() => router.push("/scoreboard")}
+                sx={{
+                  height: 44,
+                  clipPath: CLIP.button,
+                  color: N.delivery,
+                  border: `1px solid ${N.delivery}66`,
+                  fontFamily: "var(--font-arcade)",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  "&:hover": { bgcolor: `${N.delivery}14`, boxShadow: `0 0 14px ${N.delivery}40` },
+                }}
               >
-                See the scoreboard
-              </Button>
+                <EmojiEventsRoundedIcon sx={{ mr: 0.75, fontSize: 20 }} /> See the scoreboard
+              </ButtonBase>
             </Stack>
           </Box>
-        </Panel>
+        </Box>
       </Stack>
-    </PageContainer>
+    </NeonPage>
   );
 }

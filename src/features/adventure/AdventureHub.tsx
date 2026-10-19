@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
@@ -10,13 +11,11 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import { useEffect } from "react";
-import PageContainer from "@/components/PageContainer";
+import NeonPage from "@/components/NeonPage";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
 import { SettingsToggles } from "@/components/HUD";
-import Panel from "@/components/ui/Panel";
-import TileButton from "@/components/ui/TileButton";
-import { C, floatShadow, hardShadow } from "@/design/tokens";
+import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { usePersonalBests } from "@/features/scores/hooks";
 import { ACHIEVEMENTS } from "@/features/player/achievements";
@@ -30,32 +29,32 @@ const ADVENTURES: {
   title: string;
   blurb: string;
   emoji: string;
-  fill: string;
-  edge: string;
+  accent: string;
+  /** Hero art shown on the card; wordle gets a glowing emoji tile instead. */
+  art?: { src: string; alt: string };
 }[] = [
   {
     mode: "kitchen",
     title: "Make pizzas",
     blurb: "Top it, bake it, serve it",
     emoji: "🍕",
-    fill: C.tomato,
-    edge: C.tomatoDeep,
+    accent: N.kitchen,
+    art: { src: "/characters/greta-neon.jpg", alt: "Greta dashing with a glowing pizza box" },
   },
   {
     mode: "delivery",
     title: "Deliver pizzas",
     blurb: "Ride fast, dodge cones",
     emoji: "🛵",
-    fill: C.blue,
-    edge: C.blueDeep,
+    accent: N.delivery,
+    art: { src: "/characters/max-neon.jpg", alt: "Max popping a wheelie on his neon scooter" },
   },
   {
     mode: "wordle",
     title: "Guess the word",
     blurb: "Crack it before you run out of tries",
     emoji: "🔤",
-    fill: C.grape,
-    edge: C.grapeDeep,
+    accent: N.wordle,
   },
 ];
 
@@ -68,9 +67,9 @@ function StarPips({ stars }: { stars: number }) {
         <StarRoundedIcon
           key={i}
           sx={{
-            fontSize: 20,
-            color: i < inLevel ? C.sun : "rgba(22,33,46,0.22)",
-            filter: i < inLevel ? "drop-shadow(0 2px 0 rgba(22,33,46,0.25))" : undefined,
+            fontSize: 18,
+            color: i < inLevel ? N.sun : "rgba(147,165,190,0.25)",
+            filter: i < inLevel ? `drop-shadow(0 0 6px ${N.sun}99)` : undefined,
           }}
         />
       ))}
@@ -78,29 +77,41 @@ function StarPips({ stars }: { stars: number }) {
   );
 }
 
-/** Small white stat pill used inside the coloured adventure cards. */
-function StatPill({ children }: { children: React.ReactNode }) {
+/** Small dark stat chip used inside the game cards. */
+function StatChip({ accent, children }: { accent: string; children: React.ReactNode }) {
   return (
     <Box
       sx={{
         display: "inline-flex",
         alignItems: "center",
         gap: 0.5,
-        px: 1.25,
-        height: 28,
-        borderRadius: 999,
-        bgcolor: C.white,
-        color: C.ink,
-        fontFamily: "var(--font-display)",
-        fontWeight: 800,
-        fontSize: "0.85rem",
-        boxShadow: "0 2px 0 rgba(22,33,46,0.18)",
+        px: 1,
+        height: 26,
+        clipPath: CLIP.button,
+        bgcolor: N.bgRaise,
+        border: `1px solid ${accent}59`,
+        color: N.text,
+        fontFamily: "var(--font-arcade)",
+        fontWeight: 600,
+        fontSize: "0.8rem",
       }}
     >
       {children}
     </Box>
   );
 }
+
+/** Floating dark pill for the header bar. */
+const pillSx = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.75,
+  height: 46,
+  px: 1.25,
+  clipPath: CLIP.button,
+  bgcolor: N.panel,
+  border: `1px solid ${N.panelEdge}`,
+} as const;
 
 function Inner() {
   const router = useRouter();
@@ -130,49 +141,20 @@ function Inner() {
   }, []);
 
   return (
-    <PageContainer>
-      <Stack spacing={2} sx={{ flex: 1, py: 1.5 }}>
+    <NeonPage>
+      <Stack spacing={1.75} sx={{ flex: 1, py: 1.5 }}>
         {/* Player bar: name badge on the left, stars + settings on the right. */}
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Box
-            onClick={() => router.push("/character")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && router.push("/character")}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              pl: 0.5,
-              pr: 1.75,
-              height: 46,
-              borderRadius: 999,
-              bgcolor: C.white,
-              boxShadow: floatShadow,
-              cursor: "pointer",
-              "&:active": { transform: "translateY(2px)" },
-            }}
-          >
-            <PlayerAvatar nickname={nickname} character={character} color={color} size={38} />
-            <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.05rem" }}>
+          <ButtonBase onClick={() => router.push("/character")} sx={{ ...pillSx, pl: 0.5, pr: 1.5, cursor: "pointer" }}>
+            <PlayerAvatar nickname={nickname} character={character} color={color} size={34} />
+            <Typography sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "1rem", color: N.text }}>
               {nickname}
             </Typography>
-          </Box>
+          </ButtonBase>
           <Box sx={{ flex: 1 }} />
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              px: 1.25,
-              height: 46,
-              borderRadius: 999,
-              bgcolor: C.white,
-              boxShadow: floatShadow,
-            }}
-          >
-            <StarRoundedIcon sx={{ color: C.sun, fontSize: 26 }} />
-            <Typography className="tnum" sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.25rem" }}>
+          <Box sx={pillSx}>
+            <StarRoundedIcon sx={{ color: N.sun, fontSize: 24, filter: `drop-shadow(0 0 6px ${N.sun}99)` }} />
+            <Typography className="tnum" sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "1.15rem", color: N.text }}>
               {totalStars}
             </Typography>
           </Box>
@@ -180,94 +162,137 @@ function Inner() {
         </Stack>
 
         <Typography
-          variant="h2"
           component="h1"
           sx={{
             textAlign: "center",
-            color: C.white,
-            WebkitTextStroke: `8px ${C.blueDeep}`,
-            paintOrder: "stroke fill",
-            filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+            fontFamily: "var(--font-arcade)",
+            fontWeight: 700,
+            fontSize: "clamp(1.6rem, 7vw, 2.1rem)",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: N.brand,
+            textShadow: textGlow(N.brand),
           }}
         >
-          Pick your shift!
+          Pick your game!
         </Typography>
 
-        {/* The game modes as fat plastic cards - tap one to pick what to play. */}
+        {/* Game cards: dark panels, per-game neon edges, hero art on the right. */}
         <Stack spacing={1.25} sx={{ flex: 1, justifyContent: "center" }}>
-          {ADVENTURES.map(({ mode, title, blurb, emoji, fill, edge }) => {
+          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art }) => {
             const modeStars = stars[mode] ?? 0;
             const level = levelForStars(modeStars);
             const best = bestFor(mode);
             return (
-              <Box
+              <ButtonBase
                 key={mode}
-                component="button"
                 onClick={() => router.push(`/play/${mode}`)}
                 aria-label={`Play ${MODE_LABELS[mode]}`}
                 sx={{
-                  appearance: "none",
-                  border: 0,
                   textAlign: "left",
-                  cursor: "pointer",
                   display: "flex",
-                  alignItems: "center",
-                  gap: 2,
+                  alignItems: "stretch",
+                  justifyContent: "flex-start",
                   flex: 1,
-                  minHeight: 112,
+                  minHeight: 116,
                   maxHeight: 190,
-                  p: 2,
-                  borderRadius: "28px",
-                  bgcolor: fill,
-                  color: C.white,
-                  boxShadow: hardShadow(edge, 8),
-                  transition: "transform 90ms ease, box-shadow 90ms ease",
-                  "&:active": { transform: "translateY(5px)", boxShadow: `0 3px 0 ${edge}` },
+                  clipPath: CLIP.card,
+                  bgcolor: N.panel,
+                  border: `1px solid ${accent}59`,
+                  boxShadow: panelGlow(accent),
+                  overflow: "hidden",
+                  transition: "transform 90ms ease, box-shadow 120ms ease",
+                  "&:hover": { boxShadow: neonGlow(accent) },
+                  "&:active": { transform: "translateY(3px)" },
                 }}
               >
-                <Box
-                  aria-hidden
-                  sx={{
-                    width: 68,
-                    height: 68,
-                    flexShrink: 0,
-                    borderRadius: "50%",
-                    bgcolor: "rgba(255,255,255,0.22)",
-                    display: "grid",
-                    placeItems: "center",
-                    fontSize: 38,
-                    lineHeight: 1,
-                    boxShadow: "inset 0 -4px 0 rgba(22,33,46,0.10)",
-                  }}
-                >
-                  {emoji}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h3" component="h2" sx={{ lineHeight: 1.1 }}>
+                {/* Accent spine on the left edge. */}
+                <Box aria-hidden sx={{ width: 5, flexShrink: 0, bgcolor: accent, boxShadow: `0 0 14px ${accent}` }} />
+                <Box sx={{ flex: 1, minWidth: 0, p: 1.75, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <Typography
+                    component="h2"
+                    sx={{
+                      fontFamily: "var(--font-arcade)",
+                      fontWeight: 700,
+                      fontSize: "1.3rem",
+                      lineHeight: 1.15,
+                      letterSpacing: "0.03em",
+                      textTransform: "uppercase",
+                      color: accent,
+                      textShadow: `0 0 10px ${accent}66`,
+                    }}
+                  >
                     {title}
                   </Typography>
-                  <Typography sx={{ opacity: 0.95, fontSize: "0.95rem", mb: 1 }}>{blurb}</Typography>
+                  <Typography sx={{ color: N.textSoft, fontSize: "0.9rem", mb: 1 }}>{blurb}</Typography>
                   <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", alignItems: "center" }}>
-                    <StatPill>
+                    <StatChip accent={accent}>
                       Lv {level} · {LEVEL_NAMES[level]}
-                    </StatPill>
+                    </StatChip>
                     {best !== undefined && (
-                      <StatPill>
-                        <EmojiEventsRoundedIcon sx={{ fontSize: 16, color: C.sunDeep }} /> {best}
-                      </StatPill>
+                      <StatChip accent={accent}>
+                        <EmojiEventsRoundedIcon sx={{ fontSize: 15, color: N.sun }} /> {best}
+                      </StatChip>
                     )}
                     <StarPips stars={modeStars} />
                   </Stack>
                 </Box>
-              </Box>
+                {/* Art column: hero render, or a glowing emoji tile for wordle. */}
+                <Box
+                  aria-hidden
+                  sx={{
+                    position: "relative",
+                    width: 104,
+                    flexShrink: 0,
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  {art ? (
+                    <Image src={art.src} alt="" fill sizes="104px" style={{ objectFit: "cover", objectPosition: "center 22%" }} />
+                  ) : (
+                    <Box
+                      sx={{
+                        fontSize: 44,
+                        lineHeight: 1,
+                        filter: `drop-shadow(0 0 16px ${accent})`,
+                      }}
+                    >
+                      {emoji}
+                    </Box>
+                  )}
+                  {/* Fade the art into the panel so it never fights the text. */}
+                  <Box aria-hidden sx={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, ${N.panel}, transparent 45%)` }} />
+                </Box>
+              </ButtonBase>
             );
           })}
         </Stack>
 
         {/* Daily challenge */}
-        <Panel accent={C.sun} padding={2}>
+        <Box
+          sx={{
+            clipPath: CLIP.card,
+            bgcolor: N.panel,
+            border: `1px solid ${N.sun}40`,
+            boxShadow: panelGlow(N.sun),
+            p: 2,
+          }}
+        >
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-            <Typography variant="h4" component="h2" sx={{ flex: 1 }}>
+            <Typography
+              component="h2"
+              sx={{
+                flex: 1,
+                fontFamily: "var(--font-arcade)",
+                fontWeight: 700,
+                fontSize: "1.05rem",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: N.sun,
+                textShadow: `0 0 10px ${N.sun}66`,
+              }}
+            >
               📅 Today&apos;s challenge
             </Typography>
             {streak > 0 && (
@@ -277,76 +302,103 @@ function Inner() {
                   alignItems: "center",
                   gap: 0.25,
                   px: 1,
-                  height: 30,
-                  borderRadius: 999,
-                  bgcolor: C.tomato,
-                  color: C.white,
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 800,
-                  boxShadow: `0 3px 0 ${C.tomatoDeep}`,
+                  height: 28,
+                  clipPath: CLIP.button,
+                  bgcolor: N.kitchen,
+                  color: N.white,
+                  fontFamily: "var(--font-arcade)",
+                  fontWeight: 700,
+                  boxShadow: neonGlow(N.kitchen, 10),
                 }}
               >
-                <LocalFireDepartmentRoundedIcon sx={{ fontSize: 18, color: C.sun }} />
+                <LocalFireDepartmentRoundedIcon sx={{ fontSize: 17, color: N.sun }} />
                 {streak}
               </Box>
             )}
           </Stack>
-          <Typography sx={{ color: C.inkSoft, fontSize: "0.95rem", mb: 1.5 }}>
+          <Typography sx={{ color: N.textSoft, fontSize: "0.9rem", mb: 1.5 }}>
             Everyone gets the same orders and the same street. One shot a day!
           </Typography>
           <Stack direction="row" spacing={1}>
-            {ADVENTURES.map(({ mode, emoji, fill, edge }) => {
+            {ADVENTURES.map(({ mode, emoji, accent }) => {
               const done = dailyDone(mode);
               return (
-                <TileButton
+                <ButtonBase
                   key={mode}
-                  tone="white"
                   onClick={() => router.push(`/play/${mode}?daily=1`)}
-                  ariaLabel={`Play today's ${MODE_LABELS[mode]} challenge`}
-                  sx={{ flex: 1, flexDirection: "row", gap: 0.75, py: 1.25 }}
+                  aria-label={`Play today's ${MODE_LABELS[mode]} challenge`}
+                  sx={{
+                    flex: 1,
+                    gap: 0.75,
+                    py: 1.1,
+                    clipPath: CLIP.button,
+                    bgcolor: N.bgRaise,
+                    border: `1px solid ${done ? N.brand : accent}59`,
+                    color: N.text,
+                    fontFamily: "var(--font-arcade)",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    "&:hover": { boxShadow: `0 0 12px ${done ? N.brand : accent}40` },
+                    "&:active": { transform: "translateY(2px)" },
+                  }}
                 >
                   <Box
                     aria-hidden
                     sx={{
-                      width: 28,
-                      height: 28,
+                      width: 26,
+                      height: 26,
                       borderRadius: "50%",
-                      bgcolor: done ? C.money : fill,
+                      bgcolor: done ? N.brand : "transparent",
+                      border: done ? "none" : `1px solid ${accent}73`,
                       display: "grid",
                       placeItems: "center",
-                      fontSize: 16,
-                      boxShadow: `0 2px 0 ${done ? C.moneyDeep : edge}`,
+                      fontSize: 14,
+                      boxShadow: done ? `0 0 10px ${N.brand}99` : undefined,
                     }}
                   >
-                    {done ? <CheckRoundedIcon sx={{ fontSize: 18, color: C.white }} /> : emoji}
+                    {done ? <CheckRoundedIcon sx={{ fontSize: 17, color: N.bg }} /> : emoji}
                   </Box>
                   {MODE_LABELS[mode].split(" ")[1]}
-                </TileButton>
+                </ButtonBase>
               );
             })}
           </Stack>
-        </Panel>
+        </Box>
 
+        {/* Footer nav */}
         <Stack direction="row" spacing={1}>
-          <Button fullWidth size="small" variant="outlined" color="primary" onClick={() => router.push("/scoreboard")}>
-            Ranks
-          </Button>
-          <Button fullWidth size="small" variant="outlined" color="primary" onClick={() => router.push("/my-scores")}>
-            My runs
-          </Button>
-          <Button
-            fullWidth
-            size="small"
-            variant="outlined"
-            color="primary"
-            onClick={() => router.push("/trophies")}
-            startIcon={<EmojiEventsRoundedIcon />}
-          >
-            {trophyCount}/{ACHIEVEMENTS.length}
-          </Button>
+          {(
+            [
+              { label: "Ranks", to: "/scoreboard" },
+              { label: "My runs", to: "/my-scores" },
+              { label: `${trophyCount}/${ACHIEVEMENTS.length}`, to: "/trophies", icon: true },
+            ] as const
+          ).map(({ label, to, ...rest }) => (
+            <ButtonBase
+              key={to}
+              onClick={() => router.push(to)}
+              sx={{
+                flex: 1,
+                height: 40,
+                gap: 0.5,
+                clipPath: CLIP.button,
+                color: N.delivery,
+                border: `1px solid ${N.delivery}59`,
+                fontFamily: "var(--font-arcade)",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                "&:hover": { bgcolor: `${N.delivery}14`, boxShadow: `0 0 12px ${N.delivery}40` },
+              }}
+            >
+              {"icon" in rest && <EmojiEventsRoundedIcon sx={{ fontSize: 17 }} />}
+              {label}
+            </ButtonBase>
+          ))}
         </Stack>
       </Stack>
-    </PageContainer>
+    </NeonPage>
   );
 }
 
