@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { fx, music, useJuice } from "@/lib/fx";
+import { fx, useJuice } from "@/lib/fx";
 import { seededRng } from "@/lib/rng";
 import {
   BAKE_ZONES,
@@ -126,8 +126,6 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
 
   startRound: () => {
     set({ phase: "topping", startedAt: Date.now() });
-    music.play("kitchen");
-    music.intensity(0.2);
     startPatience(set, get);
   },
 
@@ -183,7 +181,6 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
     const started = performance.now();
     const duration = s.difficulty.bakeDurationMs;
     set({ phase: "baking", bakeProgress: 0, score: s.score + bonus, stats: { ...s.stats, speedy: s.stats.speedy + (bonus > 0 ? 1 : 0) } });
-    music.intensity(0.55);
     bakeTimer = setInterval(() => {
       const p = (performance.now() - started) / duration;
       if (!dinged && p >= BAKE_ZONES.perfectStart) {
@@ -237,7 +234,6 @@ export const useKitchenGame = create<KitchenState>()((set, get) => ({
 
   reset: () => {
     clearTimers();
-    music.stop();
     set({ ...initial });
   },
 }));
@@ -253,7 +249,6 @@ function advance(set: Set, get: Get, delayMs: number) {
     const isLast = s.orderIndex >= s.orders.length - 1;
     if (isLast) {
       clearTimers();
-      music.stop(0.8);
       set({ phase: "finished" });
     } else {
       set({
@@ -265,7 +260,6 @@ function advance(set: Set, get: Get, delayMs: number) {
         patience: 1,
         lastBake: null,
       });
-      music.intensity(0.2 + 0.15 * (s.orderIndex + 1));
       startPatience(set, get);
     }
   }, delayMs);
@@ -295,7 +289,6 @@ function startPatience(set: Set, get: Get) {
     if (left <= 0.3 && !hurried) {
       hurried = true;
       fx.hurry();
-      music.intensity(0.8);
     }
     if (left <= 0) {
       if (patienceTimer) clearInterval(patienceTimer);

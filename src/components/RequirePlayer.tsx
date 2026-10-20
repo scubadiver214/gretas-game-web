@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Box from "@mui/material/Box";
+import BootSplash from "@/components/BootSplash";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
-import { N } from "@/design/neon";
 
 /**
  * Guards game screens: waits for the persisted player to load, then bounces
@@ -30,31 +29,7 @@ export default function RequirePlayer({
     else if (needCharacter && !character) router.replace("/character");
   }, [hydrated, nickname, character, needCharacter, router]);
 
-  if (!ready) return <Spinner />;
+  if (!ready) return <BootSplash />;
   // Suspense so children may use useSearchParams() (daily-challenge routes).
-  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
-}
-
-/** Bouncing pizza instead of a spinner: on-theme and no layout shift. */
-function Spinner() {
-  return (
-    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center", bgcolor: N.bg }}>
-      <Box
-        aria-label="Loading"
-        role="status"
-        sx={{
-          fontSize: 56,
-          lineHeight: 1,
-          filter: `drop-shadow(0 0 18px ${N.brand}99)`,
-          animation: "loadBounce 900ms ease-in-out infinite",
-          "@keyframes loadBounce": {
-            "0%,100%": { transform: "translateY(0) rotate(-8deg)" },
-            "50%": { transform: "translateY(-18px) rotate(8deg)" },
-          },
-        }}
-      >
-        🍕
-      </Box>
-    </Box>
-  );
+  return <Suspense fallback={<BootSplash />}>{children}</Suspense>;
 }

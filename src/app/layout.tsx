@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Baloo_2, Chakra_Petch, Nunito } from "next/font/google";
+import BootSplash from "@/components/BootSplash";
+import { BOOT_BG, BOOT_SPLASH_CSS } from "@/components/bootSplashStyles";
 import ServiceWorker from "@/components/ServiceWorker";
 import Providers from "./providers";
 import "./globals.css";
@@ -47,8 +49,20 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${arcade.variable}`}>
-      <body>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${arcade.variable}`}
+      style={{ backgroundColor: BOOT_BG, colorScheme: "dark" }}
+      suppressHydrationWarning
+    >
+      <body style={{ backgroundColor: BOOT_BG, margin: 0, color: "#EAF2FF" }} suppressHydrationWarning>
+        <style dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_CSS }} />
+        <BootSplash id="boot-splash" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var d=false;function hide(){if(d)return;d=true;var e=document.getElementById("boot-splash");if(!e)return;e.style.display="none";e.setAttribute("hidden","");e.setAttribute("aria-busy","false")}window.addEventListener("gretas-app-ready",hide);setTimeout(hide,2500)})();`,
+          }}
+        />
         <Providers>{children}</Providers>
         <ServiceWorker />
       </body>

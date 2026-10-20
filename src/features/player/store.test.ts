@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_ROUNDS, EMPTY_STARS } from "./progress";
-import { migratePlayerState } from "./store";
+import { migratePlayerState, usePlayerStore } from "./store";
 
 describe("persisted player migration", () => {
   it("adds zeroed frogger counters to a version 4 save without touching other progress", () => {
@@ -23,5 +23,11 @@ describe("persisted player migration", () => {
     expect(migrated.roundsPlayed).toEqual(EMPTY_ROUNDS);
     expect(migrated.stars).toEqual(EMPTY_STARS);
     expect(migrated.hairColor).toBeDefined();
+  });
+});
+
+describe("player store hydration", () => {
+  it("marks the store ready after persist rehydration even when storage is empty", () => {
+    expect(usePlayerStore.getState().hydrated).toBe(true);
   });
 });

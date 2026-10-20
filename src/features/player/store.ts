@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { dailyKey } from "@/lib/rng";
@@ -157,7 +157,17 @@ export const usePlayerStore = create<PlayerState>()(
         history: s.history,
       }),
       migrate: (persisted, version) => migratePlayerState(persisted, version) as PlayerState,
-      onRehydrateStorage: () => (state) => state?.setHydrated(),
+      onRehydrateStorage: () => (state) => {
+        // Persist rehydrates synchronously while `create()` is still running, so
+        // `usePlayerStore` is in the temporal dead zone here. Use the snapshot
+        // persist already passed in; fall back to a microtask if rehydration
+        // failed and that snapshot is missing.
+        if (state) {
+          state.setHydrated();
+          return;
+        }
+        queueMicrotask(() => usePlayerStore.getState().setHydrated());
+      },
     },
   ),
 );
@@ -227,14 +237,11 @@ export function isBikeSkinUnlocked(skin: BikeSkinId, achievements: Readonly<Reco
  * True only after the component has mounted on the client AND the persisted
  * store has been read. Gating on mount avoids SSR/CSR markup mismatches.
  */
-const noopSubscribe = () => () => {};
 export function usePlayerHydrated(): boolean {
   const hydrated = usePlayerStore((s) => s.hydrated);
-  // false during SSR and the hydration render, true afterwards.
-  const mounted = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   return mounted && hydrated;
 }

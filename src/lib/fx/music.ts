@@ -8,8 +8,8 @@
  * music bus as the old procedural sequencer. Volume, muting and ducking all
  * continue to work exactly as before.
  *
- * All the "tracks" (menu, kitchen, delivery, frogger) play the same recording – just
- * loop it continuously. If you later want per-mode tracks, swap the src below.
+ * All track ids currently play the same recording. The soundtrack is only used
+ * on hub screens (character select, adventure, scores); games stay silent.
  *
  * setMusicIntensity() is kept as a no-op so the call sites throughout the game
  * don't need to change.

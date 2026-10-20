@@ -45,7 +45,19 @@ export default function StartScreen() {
 
   return (
     <NeonPage>
-      <Stack spacing={2} sx={{ flex: 1, justifyContent: "center", py: 3 }}>
+      <Stack
+        spacing={2}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          justifyContent: "center",
+          py: 3,
+          // Cap so flex-grow cannot stretch past the visible column.
+          maxHeight:
+            "calc(100dvh - max(16px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)))",
+          overflow: "hidden",
+        }}
+      >
         {/* Wordmark */}
         <Box sx={{ textAlign: "center" }}>
           <Typography
@@ -61,7 +73,7 @@ export default function StartScreen() {
               textShadow: textGlow(N.brand),
             }}
           >
-            Greta Games
+            Greta&apos;s Games
           </Typography>
           <Typography
             sx={{
@@ -84,27 +96,48 @@ export default function StartScreen() {
           </Typography>
         </Box>
 
-        {/* Hero art: Greta mid-leap, framed by an angular neon panel. */}
+        {/* Hero art: leftover column, 3:4, centered, never past 864×1152.
+            Absolute fill gives the frame a definite box so height: 100% works. */}
         <Box
           sx={{
+            flex: 1,
+            minHeight: 0,
             position: "relative",
-            mx: "auto",
-            width: "min(72vw, 300px)",
-            aspectRatio: "3 / 4",
-            maxHeight: "38dvh",
-            clipPath: CLIP.card,
-            boxShadow: panelGlow(N.brand),
-            bgcolor: N.panel,
+            width: "100%",
           }}
         >
-          <Image
-            src="/characters/greta-neon.jpg"
-            alt="Greta leaping through neon lights"
-            fill
-            priority
-            sizes="(max-width: 480px) 72vw, 300px"
-            style={{ objectFit: "cover" }}
-          />
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                position: "relative",
+                height: "100%",
+                aspectRatio: "3 / 4",
+                maxWidth: "min(100%, 864px)",
+                maxHeight: 1152,
+                overflow: "hidden",
+                clipPath: CLIP.card,
+                boxShadow: panelGlow(N.brand),
+                bgcolor: N.panel,
+              }}
+            >
+              <Image
+                src="/characters/greta-neon.jpg"
+                alt="Greta leaping through neon lights"
+                fill
+                priority
+                sizes="(max-width: 480px) 92vw, 448px"
+                style={{ objectFit: "cover", objectPosition: "center" }}
+              />
+            </Box>
+          </Box>
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center" }}>

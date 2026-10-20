@@ -10,7 +10,6 @@ import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
-import { useEffect } from "react";
 import NeonPage from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
@@ -21,7 +20,6 @@ import { usePersonalBests } from "@/features/scores/hooks";
 import { ACHIEVEMENTS } from "@/features/player/achievements";
 import { LEVEL_NAMES, STARS_PER_LEVEL, dailyStreak, levelForStars } from "@/features/player/progress";
 import { MODE_LABELS, MODE_SHORT_LABELS, type GameMode } from "@/features/player/types";
-import { music } from "@/lib/fx";
 import { dailyKey } from "@/lib/rng";
 
 const ADVENTURES: {
@@ -144,13 +142,6 @@ function Inner() {
   );
   const trophyCount = Object.keys(achievements).length;
   const totalStars = (stars.kitchen ?? 0) + (stars.delivery ?? 0);
-
-  // Mellow hub music (only audible once the player has tapped something, per browser rules).
-  useEffect(() => {
-    music.play("menu");
-    music.intensity(0);
-    return () => music.stop(0.6);
-  }, []);
 
   return (
     <NeonPage maxWidth={1080}>

@@ -15,7 +15,7 @@ import { N } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { useRoundSetup } from "@/features/player/useRoundConfig";
 import { usePersonalBests } from "@/features/scores/hooks";
-import { celebrate, fx, music, useJuice } from "@/lib/fx";
+import { celebrate, fx, useJuice } from "@/lib/fx";
 import { bindFroggerFx } from "./audio";
 import { startSession } from "./api";
 import DPad from "./components/DPad";
@@ -99,7 +99,6 @@ function Inner() {
   const onGameOver = useEffectEvent(() => {
     const s = engine.summary();
     const roundId = roundIdRef.current;
-    music.stop(0.8);
     setSummary(s);
     setUi("gameOver");
     finishRound({
@@ -138,7 +137,6 @@ function Inner() {
       off();
       useFroggerHud.getState().clear();
       useJuice.getState().clear();
-      music.stop();
     };
   }, [engine]);
 
@@ -182,7 +180,6 @@ function Inner() {
   const onCountdownDone = useCallback(() => {
     engine.start();
     setUi("playing");
-    music.play("frogger");
   }, [engine]);
 
   const quit = () => router.push("/adventure");

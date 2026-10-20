@@ -18,7 +18,7 @@ export const N = {
   /** Default panel border. */
   panelEdge: "#24314B",
 
-  /** Brand: neon green, the "Greta Games" signature colour. */
+  /** Brand: neon green, the "Greta's Games" signature colour. */
   brand: "#3DFF88",
   brandDeep: "#17B35A",
   /** Hot magenta used for the "for fun!" energy + highlights. */

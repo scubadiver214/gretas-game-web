@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { fx, music, useJuice } from "@/lib/fx";
+import { fx, useJuice } from "@/lib/fx";
 import { seededRng } from "@/lib/rng";
 import {
   evaluateGuess,
@@ -107,8 +107,6 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
 
   startRound: () => {
     set({ phase: "playing", startedAt: Date.now() });
-    music.play("menu");
-    music.intensity(0);
   },
 
   typeLetter: (letter) => {
@@ -205,7 +203,6 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
 
   reset: () => {
     clearTimers();
-    music.stop();
     set({ ...initial });
   },
 }));
@@ -221,7 +218,6 @@ function advance(set: Set, get: Get, delayMs: number) {
     const isLast = s.puzzleIndex >= s.puzzles.length - 1;
     if (isLast) {
       clearTimers();
-      music.stop(0.8);
       set({ phase: "finished" });
     } else {
       set({ phase: "playing", puzzleIndex: s.puzzleIndex + 1, currentGuess: "", message: null });

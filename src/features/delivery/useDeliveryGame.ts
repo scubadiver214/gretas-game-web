@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { fx, music, useJuice } from "@/lib/fx";
+import { fx, useJuice } from "@/lib/fx";
 import { seededRng, type Rng } from "@/lib/rng";
 import {
   JUMP_SECONDS,
@@ -136,8 +136,6 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
     clearTimers();
     const startedAt = Date.now();
     set({ phase: "riding", startedAt, timeLeft: ROUND_SECONDS });
-    music.play("delivery");
-    music.intensity(0.25);
     tick = setInterval(() => {
       const now = Date.now();
       const left = ROUND_SECONDS - (now - startedAt) / 1000;
@@ -145,11 +143,8 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
       // Expire timed power-ups.
       const powerUp = s.powerUp && s.powerUp.until <= now ? null : s.powerUp;
       if (s.powerUp && !powerUp) fx.tap();
-      // Music heats up as the ride goes on (and during turbo).
-      music.intensity(Math.min(1, 0.25 + (1 - left / ROUND_SECONDS) * 0.6 + (isTurbo(s) ? 0.2 : 0)));
       if (left <= 0) {
         clearTimers();
-        music.stop(0.8);
         set({ timeLeft: 0, phase: "finished", powerUp: null });
       } else {
         set({ timeLeft: left, powerUp });
@@ -255,7 +250,6 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
 
   reset: () => {
     clearTimers();
-    music.stop();
     set({ ...initial });
   },
 }));

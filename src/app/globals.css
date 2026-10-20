@@ -5,6 +5,10 @@
      have not been reskinned yet - they paint their own light backdrops. */
   --neon-bg: #0b0f17;
   --neon-text: #eaf2ff;
+  --neon-text-soft: #93a5be;
+  --neon-brand: #3dff88;
+  --neon-pop: #ff4fd8;
+  --neon-panel-edge: #24314b;
   /* Shop palette, mirrored from src/design/tokens.ts for plain-CSS use. */
   --sand: #f6e4b0;
   --sand-soft: #fdf4da;
@@ -41,3 +45,6 @@ canvas {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* Boot landing CSS is inlined in the root layout (bootSplashStyles.ts) so the
+   first paint is never a white flash while /_next/static CSS is in flight. */
