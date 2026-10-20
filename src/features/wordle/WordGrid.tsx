@@ -1,18 +1,18 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import { C, RADIUS } from "@/design/tokens";
+import { N } from "@/design/neon";
 import type { LetterStatus } from "./scoring";
 import type { PuzzleState } from "./useWordleGame";
 
 const TONE: Record<LetterStatus, { bg: string; edge: string; fg: string }> = {
-  correct: { bg: C.money, edge: C.moneyDeep, fg: C.white },
-  present: { bg: C.sun, edge: C.sunDeep, fg: C.ink },
-  absent: { bg: "#AEB8C2", edge: "#8C99A6", fg: C.white },
+  correct: { bg: N.brand, edge: N.brandDeep, fg: N.bg },
+  present: { bg: N.sun, edge: N.sunDeep, fg: N.bg },
+  absent: { bg: N.panelEdge, edge: N.bgRaise, fg: N.textSoft },
 };
 
 function Tile({ letter, status, filled, delayMs }: { letter: string; status?: LetterStatus; filled: boolean; delayMs: number }) {
-  const tone = status ? TONE[status] : filled ? { bg: C.white, edge: C.ink, fg: C.ink } : { bg: C.white, edge: C.sandDeep, fg: C.ink };
+  const tone = status ? TONE[status] : filled ? { bg: N.bgRaise, edge: N.wordle, fg: N.text } : { bg: N.bgRaise, edge: N.panelEdge, fg: N.text };
   return (
     <Box
       sx={{
@@ -20,7 +20,7 @@ function Tile({ letter, status, filled, delayMs }: { letter: string; status?: Le
         width: "100%",
         display: "grid",
         placeItems: "center",
-        borderRadius: `${RADIUS.tile - 6}px`,
+        borderRadius: "14px",
         bgcolor: tone.bg,
         color: tone.fg,
         border: `3px solid ${tone.edge}`,
@@ -29,7 +29,7 @@ function Tile({ letter, status, filled, delayMs }: { letter: string; status?: Le
         fontSize: "clamp(1.1rem, 6vw, 1.7rem)",
         textTransform: "uppercase",
         lineHeight: 1,
-        boxShadow: status ? `0 3px 0 ${tone.edge}` : "none",
+        boxShadow: status ? `0 0 10px ${tone.edge}99` : "none",
         transition: "background-color 120ms, border-color 120ms",
         ...(status && {
           animation: `tileFlip 380ms ${delayMs}ms cubic-bezier(.2,1.4,.4,1) both`,

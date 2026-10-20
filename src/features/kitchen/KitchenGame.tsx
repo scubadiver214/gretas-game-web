@@ -15,7 +15,7 @@ import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FlashOverlay, IntroCard, PatienceBar, QuitButton, ScorePill, ScorePopups, SettingsToggles } from "@/components/HUD";
 import SpeechBubble from "@/components/ui/SpeechBubble";
 import TileButton from "@/components/ui/TileButton";
-import { C, RADIUS, floatShadow } from "@/design/tokens";
+import { CLIP, N, neonGlow, panelGlow } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { useRoundSetup } from "@/features/player/useRoundConfig";
 import { LEVEL_NAMES } from "@/features/player/progress";
@@ -35,14 +35,14 @@ function BakeMeter({ progress }: { progress: number }) {
         height: 30,
         borderRadius: 999,
         overflow: "hidden",
-        bgcolor: C.slate,
-        boxShadow: inPerfect ? `0 0 0 4px ${C.money}` : "inset 0 2px 0 rgba(22,33,46,0.10)",
+        bgcolor: N.panelEdge,
+        boxShadow: inPerfect ? `0 0 0 4px ${N.brand}, 0 0 16px ${N.brand}99` : "inset 0 2px 0 rgba(0,0,0,0.35)",
         transition: "box-shadow 80ms",
       }}
     >
-      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.okStart), right: pct(1 - BAKE_ZONES.okEnd), bgcolor: C.sun }} />
-      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.perfectStart), right: pct(1 - BAKE_ZONES.perfectEnd), bgcolor: C.money }} />
-      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.okEnd), right: 0, bgcolor: C.tomato }} />
+      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.okStart), right: pct(1 - BAKE_ZONES.okEnd), bgcolor: N.sun }} />
+      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.perfectStart), right: pct(1 - BAKE_ZONES.perfectEnd), bgcolor: N.brand }} />
+      <Box sx={{ position: "absolute", inset: 0, left: pct(BAKE_ZONES.okEnd), right: 0, bgcolor: N.kitchen }} />
       <Box
         sx={{
           position: "absolute",
@@ -51,8 +51,8 @@ function BakeMeter({ progress }: { progress: number }) {
           left: `calc(${pct(progress)} - 5px)`,
           width: 10,
           borderRadius: 5,
-          bgcolor: C.ink,
-          boxShadow: `0 0 0 3px ${C.white}`,
+          bgcolor: N.text,
+          boxShadow: `0 0 0 3px ${N.bg}`,
         }}
       />
     </Box>
@@ -72,8 +72,9 @@ function ToppingDisc({ emoji, done, wrong = false }: { emoji: string; done?: boo
         placeItems: "center",
         fontSize: 22,
         lineHeight: 1,
-        bgcolor: wrong ? C.tomato : done ? C.money : C.sandSoft,
-        boxShadow: `0 3px 0 ${wrong ? C.tomatoDeep : done ? C.moneyDeep : C.sandDeep}`,
+        bgcolor: wrong ? N.kitchen : done ? N.brand : N.bgRaise,
+        border: `1px solid ${wrong ? N.kitchenDeep : done ? N.brandDeep : N.panelEdge}`,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
         filter: wrong ? "grayscale(0.4)" : "none",
       }}
     >
@@ -87,16 +88,16 @@ function ToppingDisc({ emoji, done, wrong = false }: { emoji: string; done?: boo
             width: 20,
             height: 20,
             borderRadius: "50%",
-            bgcolor: wrong ? C.tomatoDeep : C.moneyDeep,
+            bgcolor: wrong ? N.kitchenDeep : N.brandDeep,
             display: "grid",
             placeItems: "center",
-            border: `2px solid ${C.white}`,
+            border: `2px solid ${N.bg}`,
           }}
         >
           {wrong ? (
-            <CloseRoundedIcon sx={{ fontSize: 12, color: C.white }} />
+            <CloseRoundedIcon sx={{ fontSize: 12, color: N.white }} />
           ) : (
-            <CheckRoundedIcon sx={{ fontSize: 12, color: C.white }} />
+            <CheckRoundedIcon sx={{ fontSize: 12, color: N.white }} />
           )}
         </Box>
       )}
@@ -189,7 +190,7 @@ function Inner() {
           {playing && order && (
             <SpeechBubble
               tail="bottom"
-              tone={order.rush ? C.tomato : C.white}
+              tone={order.rush ? N.kitchen : undefined}
               sx={{
                 display: "block",
                 alignSelf: "flex-start",
@@ -198,11 +199,10 @@ function Inner() {
                 maxWidth: 360,
                 px: 1.75,
                 py: 1.5,
-                color: order.rush ? C.white : C.ink,
                 animation: order.rush && phase === "topping" ? "rushGlow 900ms ease-in-out infinite" : undefined,
                 "@keyframes rushGlow": {
-                  "0%,100%": { boxShadow: floatShadow },
-                  "50%": { boxShadow: `0 0 0 6px rgba(239,81,54,0.35), ${floatShadow}` },
+                  "0%,100%": { boxShadow: `0 0 14px ${N.kitchen}40, 0 6px 18px rgba(0,0,0,0.45)` },
+                  "50%": { boxShadow: neonGlow(N.kitchen) },
                 },
               }}
             >
@@ -217,8 +217,8 @@ function Inner() {
                         px: 1,
                         height: 26,
                         borderRadius: 999,
-                        bgcolor: C.sun,
-                        color: C.ink,
+                        bgcolor: N.sun,
+                        color: N.bg,
                         fontFamily: "var(--font-display)",
                         fontWeight: 800,
                         fontSize: "0.85rem",
@@ -231,7 +231,7 @@ function Inner() {
                 <Typography
                   className="tnum"
                   variant="caption"
-                  sx={{ color: order.rush ? "rgba(255,255,255,0.9)" : C.inkSoft }}
+                  sx={{ color: N.textSoft }}
                 >
                   {orderIndex + 1} / {orders.length}
                 </Typography>
@@ -255,7 +255,7 @@ function Inner() {
       }
       bottom={
         playing ? (
-          <Box sx={{ bgcolor: C.white, borderRadius: `${RADIUS.panel}px`, boxShadow: floatShadow, p: 1.5 }}>
+          <Box sx={{ bgcolor: N.panel, border: `1px solid ${N.panelEdge}`, clipPath: CLIP.card, boxShadow: panelGlow(N.kitchen), p: 1.5 }}>
             {phase === "topping" && (
               <Stack spacing={1.5}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
@@ -329,7 +329,7 @@ function Inner() {
             <IntroCard
               title="🍕 Pizza Kitchen"
               badge={levelLabel}
-              accent={C.tomato}
+              accent={N.kitchen}
               lines={[
                 "Read the order card and tap the toppings it asks for.",
                 "Wrong toppings cost points!",

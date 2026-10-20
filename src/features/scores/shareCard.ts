@@ -1,6 +1,6 @@
 "use client";
 
-import { C } from "@/design/tokens";
+import { N } from "@/design/neon";
 import { CHARACTER_LABELS, MODE_LABELS, type CharacterId, type GameMode } from "@/features/player/types";
 
 export interface ShareCardInput {
@@ -19,9 +19,9 @@ export interface ShareCardInput {
 const W = 1080;
 const H = 1080;
 
-// Flat mode colours, matching the adventure cards in the hub.
-const MODE_FILL: Record<GameMode, string> = { kitchen: C.tomato, delivery: C.blue, wordle: C.grape };
-const MODE_DEEP: Record<GameMode, string> = { kitchen: C.tomatoDeep, delivery: C.blueDeep, wordle: C.grapeDeep };
+// Neon mode accents, matching the adventure cards in the hub.
+const MODE_FILL: Record<GameMode, string> = { kitchen: N.kitchen, delivery: N.delivery, wordle: N.wordle };
+const MODE_DEEP: Record<GameMode, string> = { kitchen: N.kitchenDeep, delivery: N.deliveryDeep, wordle: N.wordleDeep };
 
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   g.beginPath();
@@ -41,11 +41,11 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   const g = canvas.getContext("2d")!;
   const font = '"Baloo 2", "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif';
 
-  g.fillStyle = MODE_FILL[input.mode];
+  g.fillStyle = N.bg;
   g.fillRect(0, 0, W, H);
 
   // Confetti dots.
-  const colors = [C.sun, "#FFFFFF", C.grass, C.blueSoft, C.crust];
+  const colors = [N.sun, N.white, N.brand, N.delivery, N.pop];
   let seed = input.score + 17;
   const rnd = () => {
     seed = (seed * 9301 + 49297) % 233280;
@@ -62,11 +62,11 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
 
   // Card.
   roundRect(g, 80, 140, W - 160, H - 280, 72);
-  g.fillStyle = "#FFFFFF";
+  g.fillStyle = N.panel;
   g.fill();
 
   g.textAlign = "center";
-  g.fillStyle = C.inkSoft;
+  g.fillStyle = N.textSoft;
   g.font = `800 40px ${font}`;
   g.fillText(input.challengeDate ? `Daily challenge · ${MODE_LABELS[input.mode]}` : MODE_LABELS[input.mode], W / 2, 230);
 
@@ -75,11 +75,11 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   g.arc(W / 2, 360, 84, 0, Math.PI * 2);
   g.fillStyle = input.color;
   g.fill();
-  g.fillStyle = "#FFFFFF";
+  g.fillStyle = N.white;
   g.font = `900 84px ${font}`;
   g.fillText(input.nickname.slice(0, 1).toUpperCase(), W / 2, 392);
 
-  g.fillStyle = C.ink;
+  g.fillStyle = N.text;
   g.font = `900 64px ${font}`;
   g.fillText(`${input.nickname} as ${CHARACTER_LABELS[input.character]}`, W / 2, 520);
 
@@ -93,19 +93,19 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   // Stars.
   const starY = 810;
   for (let i = 0; i < 3; i++) {
-    g.fillStyle = i < input.stars ? C.sun : C.slate;
+    g.fillStyle = i < input.stars ? N.sun : N.panelEdge;
     g.font = `900 72px ${font}`;
     g.fillText("★", W / 2 + (i - 1) * 90, starY + 26);
   }
 
-  g.fillStyle = C.inkSoft;
+  g.fillStyle = N.textSoft;
   g.font = `800 40px ${font}`;
   const bits = [`Level ${input.level}`];
   if (input.rank) bits.push(`Rank #${input.rank}`);
   if (input.personalBest) bits.push("New personal best!");
   g.fillText(bits.join("  ·  "), W / 2, 890);
 
-  g.fillStyle = "#FFFFFF";
+  g.fillStyle = N.text;
   g.font = `900 44px ${font}`;
   g.fillText("Greta's Game for fun 🍕", W / 2, H - 70);
 

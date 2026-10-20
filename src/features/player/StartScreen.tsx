@@ -10,7 +10,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import NeonPage from "@/components/NeonPage";
+import NeonPage from "@/components/PageContainer";
 import { SettingsToggles } from "@/components/HUD";
 import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
 import { usePlayerHydrated, usePlayerStore } from "./store";

@@ -16,7 +16,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import Tooltip from "@mui/material/Tooltip";
 import PageContainer from "@/components/PageContainer";
 import RequirePlayer from "@/components/RequirePlayer";
-import { C, RADIUS, hardShadow, pressedShadow } from "@/design/tokens";
+import { CLIP, N, neonGlow, textGlow } from "@/design/neon";
 import { ACHIEVEMENT_BY_ID } from "@/features/player/achievements";
 import { isBikeSkinUnlocked, usePlayerStore } from "@/features/player/store";
 import {
@@ -36,9 +36,9 @@ const CharacterPreview = dynamic(() => import("./CharacterPreview"), {
   loading: () => <Skeleton variant="rounded" width="100%" height="100%" />,
 });
 
-const OPTIONS: { id: CharacterId; tagline: string; fill: string; edge: string }[] = [
-  { id: "girl", tagline: "Loves extra cheese", fill: C.tomato, edge: C.tomatoDeep },
-  { id: "boy", tagline: "Fastest bike in town", fill: C.blue, edge: C.blueDeep },
+const OPTIONS: { id: CharacterId; tagline: string; fill: string; onFill: string }[] = [
+  { id: "girl", tagline: "Loves extra cheese", fill: N.kitchen, onFill: N.white },
+  { id: "boy", tagline: "Fastest bike in town", fill: N.delivery, onFill: N.bg },
 ];
 
 /** Section label styled like a little shop sign. */
@@ -51,7 +51,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontFamily: "var(--font-display)",
         fontWeight: 800,
         fontSize: "1.05rem",
-        color: C.ink,
+        color: N.text,
       }}
     >
       {children}
@@ -91,15 +91,16 @@ function Inner() {
             variant="h2"
             component="h1"
             sx={{
-              color: C.white,
-              WebkitTextStroke: `8px ${C.blueDeep}`,
-              paintOrder: "stroke fill",
-              filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+              fontFamily: "var(--font-arcade)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: N.brand,
+              textShadow: textGlow(N.brand),
             }}
           >
             Hi {nickname}!
           </Typography>
-          <Typography sx={{ color: C.ink, fontWeight: 700 }}>Who is on shift today?</Typography>
+          <Typography sx={{ color: N.textSoft, fontWeight: 700 }}>Who is on shift today?</Typography>
         </Box>
 
         <Stack direction="row" spacing={1.5} sx={{ flex: 1 }}>
@@ -115,18 +116,17 @@ function Inner() {
                   flex: 1,
                   flexDirection: "column",
                   alignItems: "stretch",
-                  borderRadius: `${RADIUS.panel}px`,
+                  clipPath: CLIP.card,
                   overflow: "hidden",
-                  bgcolor: C.white,
-                  boxShadow: hardShadow(active ? opt.edge : C.sandDeep, 7),
-                  outline: active ? `5px solid ${opt.fill}` : "5px solid transparent",
-                  outlineOffset: -1,
+                  bgcolor: N.panel,
+                  border: `2px solid ${active ? opt.fill : N.panelEdge}`,
+                  boxShadow: active ? neonGlow(opt.fill) : "0 4px 14px rgba(0,0,0,0.4)",
                   transform: active ? "translateY(-3px)" : "none",
-                  transition: "transform 150ms ease, outline-color 150ms ease, box-shadow 150ms ease",
-                  "&:active": { transform: "translateY(4px)", boxShadow: pressedShadow(opt.edge) },
+                  transition: "transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease",
+                  "&:active": { transform: "translateY(4px)", boxShadow: "0 2px 8px rgba(0,0,0,0.4)" },
                 }}
               >
-                <Box sx={{ position: "relative", flex: 1, minHeight: 210, bgcolor: active ? C.sandSoft : "#F1F4F8" }}>
+                <Box sx={{ position: "relative", flex: 1, minHeight: 210, bgcolor: N.bgRaise }}>
                   <CharacterPreview
                     character={opt.id}
                     active={active}
@@ -142,17 +142,17 @@ function Inner() {
                         width: 34,
                         height: 34,
                         borderRadius: "50%",
-                        bgcolor: C.money,
+                        bgcolor: N.brand,
                         display: "grid",
                         placeItems: "center",
-                        boxShadow: `0 3px 0 ${C.moneyDeep}`,
+                        boxShadow: `0 0 12px ${N.brand}99`,
                       }}
                     >
-                      <CheckRoundedIcon sx={{ color: C.white, fontSize: 22 }} />
+                      <CheckRoundedIcon sx={{ color: N.bg, fontSize: 22 }} />
                     </Box>
                   )}
                 </Box>
-                <Box sx={{ p: 1.5, textAlign: "center", bgcolor: active ? opt.fill : C.white, color: active ? C.white : C.ink }}>
+                <Box sx={{ p: 1.5, textAlign: "center", bgcolor: active ? opt.fill : N.panel, color: active ? opt.onFill : N.text }}>
                   <Typography variant="h4">{CHARACTER_LABELS[opt.id]}</Typography>
                   <Typography variant="body2" sx={{ opacity: active ? 0.95 : 0.7 }}>
                     {opt.tagline}
@@ -181,8 +181,8 @@ function Inner() {
                     height: 46,
                     borderRadius: "50%",
                     bgcolor: c.id,
-                    border: "4px solid #fff",
-                    boxShadow: on ? `0 0 0 4px ${c.id}, 0 4px 0 rgba(22,33,46,0.18)` : "0 3px 0 rgba(22,33,46,0.18)",
+                    border: on ? `3px solid ${N.white}` : `3px solid ${N.panelEdge}`,
+                    boxShadow: on ? `0 0 14px ${c.id}` : "0 3px 8px rgba(0,0,0,0.4)",
                     transform: on ? "translateY(-2px)" : "none",
                     transition: "transform 120ms ease, box-shadow 120ms ease",
                     "&:active": { transform: "translateY(3px)" },
@@ -213,8 +213,8 @@ function Inner() {
                     height: 46,
                     borderRadius: "50%",
                     bgcolor: c.id,
-                    border: "4px solid #fff",
-                    boxShadow: on ? `0 0 0 4px ${c.id}, 0 4px 0 rgba(22,33,46,0.18)` : "0 3px 0 rgba(22,33,46,0.18)",
+                    border: on ? `3px solid ${N.white}` : `3px solid ${N.panelEdge}`,
+                    boxShadow: on ? `0 0 14px ${c.id}` : "0 3px 8px rgba(0,0,0,0.4)",
                     transform: on ? "translateY(-2px)" : "none",
                     transition: "transform 120ms ease, box-shadow 120ms ease",
                     "&:active": { transform: "translateY(3px)" },
@@ -222,7 +222,7 @@ function Inner() {
                 >
                   {on && (
                     <CheckRoundedIcon
-                      sx={{ color: c.id === "#EADCC8" || c.id === "#F2B134" ? C.ink : "#fff", fontSize: 24 }}
+                      sx={{ color: c.id === "#EADCC8" || c.id === "#F2B134" ? N.bg : N.white, fontSize: 24 }}
                     />
                   )}
                 </ButtonBase>
@@ -261,13 +261,13 @@ function Inner() {
                       height: 42,
                       borderRadius: 999,
                       gap: 0.5,
-                      bgcolor: unlocked ? s.frame : C.slate,
-                      color: unlocked ? "#fff" : C.inkSoft,
+                      bgcolor: unlocked ? s.frame : N.panelEdge,
+                      color: unlocked ? N.white : N.textSoft,
                       fontFamily: "var(--font-display)",
                       fontWeight: 800,
                       fontSize: "0.95rem",
-                      border: "3px solid #fff",
-                      boxShadow: on ? `0 0 0 4px ${s.frame}, 0 4px 0 rgba(22,33,46,0.18)` : "0 3px 0 rgba(22,33,46,0.18)",
+                      border: on ? `3px solid ${N.white}` : `3px solid ${N.panelEdge}`,
+                      boxShadow: on ? `0 0 14px ${s.frame}` : "0 3px 8px rgba(0,0,0,0.4)",
                       transform: on ? "translateY(-2px)" : "none",
                       transition: "transform 120ms ease, box-shadow 120ms ease",
                       "&:active": { transform: "translateY(3px)" },

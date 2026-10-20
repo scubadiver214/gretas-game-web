@@ -11,7 +11,7 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import { useEffect } from "react";
-import NeonPage from "@/components/NeonPage";
+import NeonPage from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
 import { SettingsToggles } from "@/components/HUD";
@@ -55,6 +55,7 @@ const ADVENTURES: {
     blurb: "Crack it before you run out of tries",
     emoji: "🔤",
     accent: N.wordle,
+    art: { src: "/characters/wordle-owl.jpg", alt: "A glowing purple owl perched on a letter cube" },
   },
 ];
 

@@ -2,21 +2,25 @@
 
 import ButtonBase from "@mui/material/ButtonBase";
 import type { ReactNode } from "react";
-import { C, RADIUS, hardShadow, pressedShadow } from "@/design/tokens";
+import { CLIP, N } from "@/design/neon";
 
 export type TileTone = "white" | "sand" | "blue" | "sun" | "money" | "tomato";
 
+/**
+ * Tone names kept from the light theme so call sites don't change:
+ * "white"/"sand" are now dark raised tiles, the colour tones are neon fills.
+ */
 const TONES: Record<TileTone, { bg: string; edge: string; fg: string }> = {
-  white: { bg: C.white, edge: C.sandDeep, fg: C.ink },
-  sand: { bg: C.sandSoft, edge: C.sandDeep, fg: C.ink },
-  blue: { bg: C.blue, edge: C.blueDeep, fg: C.white },
-  sun: { bg: C.sun, edge: C.sunDeep, fg: C.ink },
-  money: { bg: C.money, edge: C.moneyDeep, fg: C.white },
-  tomato: { bg: C.tomato, edge: C.tomatoDeep, fg: C.white },
+  white: { bg: N.bgRaise, edge: N.panelEdge, fg: N.text },
+  sand: { bg: N.panel, edge: N.panelEdge, fg: N.text },
+  blue: { bg: N.delivery, edge: N.deliveryDeep, fg: N.bg },
+  sun: { bg: N.sun, edge: N.sunDeep, fg: N.bg },
+  money: { bg: N.brand, edge: N.brandDeep, fg: N.bg },
+  tomato: { bg: N.kitchen, edge: N.kitchenDeep, fg: N.white },
 };
 
 /**
- * Pressable plastic tile. The whole UI is built from these: topping buttons,
+ * Pressable arcade tile. The whole UI is built from these: topping buttons,
  * adventure cards, colour swatches. `wanted` draws the attention ring used to
  * point a young player at the thing they should tap next.
  */
@@ -33,9 +37,9 @@ export default function TileButton({
 }: {
   children: ReactNode;
   tone?: TileTone;
-  /** Chosen state: solid ring in the tile's own edge colour. */
+  /** Chosen state: solid neon ring in the tile's own edge colour. */
   selected?: boolean;
-  /** "Tap me next" state: pulsing tomato ring. */
+  /** "Tap me next" state: pulsing neon ring. */
   wanted?: boolean;
   disabled?: boolean;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -44,6 +48,7 @@ export default function TileButton({
   sx?: object;
 }) {
   const t = TONES[tone];
+  const ringColor = tone === "white" || tone === "sand" ? N.brand : t.edge;
   return (
     <ButtonBase
       onClick={onClick}
@@ -55,21 +60,22 @@ export default function TileButton({
         gap: 0.25,
         px: 1.5,
         py: 1.25,
-        borderRadius: `${RADIUS.tile}px`,
-        bgcolor: disabled ? C.slate : t.bg,
-        color: disabled ? C.inkSoft : t.fg,
+        clipPath: CLIP.button,
+        bgcolor: disabled ? N.panelEdge : t.bg,
+        color: disabled ? N.textSoft : t.fg,
+        border: `1px solid ${disabled ? N.panelEdge : `${t.edge}73`}`,
         fontFamily: "var(--font-display)",
         fontWeight: 800,
-        boxShadow: hardShadow(disabled ? C.slateDeep : t.edge, 5),
-        outline: selected ? `4px solid ${t.edge}` : wanted ? `4px solid ${C.tomato}` : "4px solid transparent",
-        outlineOffset: 1,
-        transition: "transform 80ms ease, box-shadow 80ms ease, outline-color 150ms ease",
-        "&:active": { transform: "translateY(4px)", boxShadow: pressedShadow(t.edge) },
+        outline: selected ? `3px solid ${ringColor}` : wanted ? `3px solid ${N.kitchen}` : "3px solid transparent",
+        outlineOffset: -3,
+        transition: "transform 80ms ease, outline-color 150ms ease, filter 80ms ease",
+        "&:hover": { filter: "brightness(1.08)" },
+        "&:active": { transform: "translateY(3px)" },
         ...(wanted && {
           animation: "tileWanted 1100ms ease-in-out infinite",
           "@keyframes tileWanted": {
-            "0%,100%": { outlineColor: C.tomato },
-            "50%": { outlineColor: "rgba(239,81,54,0.25)" },
+            "0%,100%": { outlineColor: N.kitchen },
+            "50%": { outlineColor: "rgba(255,106,87,0.25)" },
           },
         }),
         ...sx,

@@ -33,7 +33,7 @@ import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
-import { C } from "@/design/tokens";
+import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { LEVEL_NAMES, levelForStars } from "@/features/player/progress";
 import { MODE_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
@@ -63,7 +63,7 @@ const columns = helper.columns([
       <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
         <Typography
           className="tnum"
-          sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.1rem", color: C.tomato }}
+          sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.1rem", color: N.kitchen }}
         >
           {getValue()}
         </Typography>
@@ -122,10 +122,8 @@ function Inner() {
             component="h1"
             sx={{
               flex: 1,
-              color: C.white,
-              WebkitTextStroke: `8px ${C.blueDeep}`,
-              paintOrder: "stroke fill",
-              filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+              color: N.delivery,
+              textShadow: textGlow(N.delivery),
             }}
           >
             My runs
@@ -134,7 +132,7 @@ function Inner() {
         </Stack>
         <Typography sx={{ color: "text.secondary" }}>Rounds played on this device. Scores also live on the global scoreboard.</Typography>
 
-        <Paper sx={{ overflow: "hidden" }}>
+        <Paper sx={{ overflow: "hidden", clipPath: CLIP.card, border: `1px solid ${N.delivery}59` }}>
           <Tabs value={mode} onChange={(_, v: GameMode) => setMode(v)} variant="fullWidth" textColor="primary" indicatorColor="primary">
             <Tab value="kitchen" label="Kitchen" sx={{ minHeight: 52 }} />
             <Tab value="delivery" label="Delivery" sx={{ minHeight: 52 }} />
@@ -180,7 +178,7 @@ function Inner() {
                 </TableHead>
                 <TableBody>
                   {table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} sx={{ "& td": { py: 1, borderColor: "rgba(22,33,46,0.08)" } }}>
+                    <TableRow key={row.id} sx={{ "& td": { py: 1, borderColor: "rgba(234,242,255,0.08)" } }}>
                       {row.getAllCells().map((cell) => (
                         <TableCell key={cell.id}>
                           <table.FlexRender cell={cell} />
