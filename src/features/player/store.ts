@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { dailyKey } from "@/lib/rng";
@@ -233,15 +233,17 @@ export function isBikeSkinUnlocked(skin: BikeSkinId, achievements: Readonly<Reco
   return !req || !!achievements[req];
 }
 
+const subscribeToNothing = () => () => {};
+const isClient = () => true;
+const isServer = () => false;
+
 /**
  * True only after the component has mounted on the client AND the persisted
- * store has been read. Gating on mount avoids SSR/CSR markup mismatches.
+ * store has been read. The client snapshot stays false during SSR and
+ * hydration so the first paint matches the server markup.
  */
 export function usePlayerHydrated(): boolean {
   const hydrated = usePlayerStore((s) => s.hydrated);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribeToNothing, isClient, isServer);
   return mounted && hydrated;
 }
