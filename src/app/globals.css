@@ -1,5 +1,10 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  /* Neon-arcade palette, mirrored from src/design/neon.ts for plain-CSS use.
+     The old shop palette lives on in src/design/tokens.ts for screens that
+     have not been reskinned yet - they paint their own light backdrops. */
+  --neon-bg: #0b0f17;
+  --neon-text: #eaf2ff;
   /* Shop palette, mirrored from src/design/tokens.ts for plain-CSS use. */
   --sand: #f6e4b0;
   --sand-soft: #fdf4da;
@@ -18,8 +23,8 @@ body {
 }
 
 body {
-  background: var(--sand-soft);
-  color: var(--ink);
+  background: var(--neon-bg);
+  color: var(--neon-text);
   touch-action: manipulation;
 }
 

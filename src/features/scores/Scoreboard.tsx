@@ -28,7 +28,7 @@ import PedalBikeRoundedIcon from "@mui/icons-material/PedalBikeRounded";
 import AbcRoundedIcon from "@mui/icons-material/AbcRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
-import { C } from "@/design/tokens";
+import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
 import { CHARACTER_LABELS, MODE_LABELS, type GameMode } from "@/features/player/types";
 import { dailyKey } from "@/lib/rng";
@@ -43,9 +43,8 @@ const columns = helper.columns([
     cell: ({ getValue }) => {
       const r = getValue();
       const medal = r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : null;
-      // Top three get a coloured disc; everyone else a plain grey one.
-      const fill = r === 1 ? C.sun : r === 2 ? "#B9C4CF" : r === 3 ? C.crust : C.sand;
-      const edge = r === 1 ? C.sunDeep : r === 2 ? "#8C99A6" : r === 3 ? C.crustDeep : C.sandDeep;
+      // Top three keep their glowing metal discs; everyone else a dark one.
+      const fill = r === 1 ? N.sun : r === 2 ? "#B9C4CF" : r === 3 ? "#CE8639" : null;
       return (
         <Box
           sx={{
@@ -54,8 +53,10 @@ const columns = helper.columns([
             borderRadius: "50%",
             display: "grid",
             placeItems: "center",
-            bgcolor: fill,
-            boxShadow: `0 3px 0 ${edge}`,
+            bgcolor: fill ?? N.bgRaise,
+            border: fill ? "none" : `1px solid ${N.panelEdge}`,
+            boxShadow: fill ? `0 0 10px ${fill}66` : "none",
+            color: fill ? N.bg : N.text,
             fontFamily: "var(--font-display)",
             fontWeight: 800,
             fontSize: medal ? 18 : 15,
@@ -85,7 +86,7 @@ const columns = helper.columns([
     cell: ({ getValue }) => (
       <Typography
         className="tnum"
-        sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.15rem", color: C.tomato }}
+        sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.15rem", color: N.kitchen }}
       >
         {getValue()}
       </Typography>
@@ -173,8 +174,8 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
               <TableRow
                 key={row.id}
                 sx={{
-                  bgcolor: mine ? C.sandSoft : undefined,
-                  "& td": { py: 1, borderColor: "rgba(22,33,46,0.08)" },
+                  bgcolor: mine ? N.bgRaise : undefined,
+                  "& td": { py: 1, borderColor: "rgba(234,242,255,0.08)" },
                 }}
               >
                 {row.getAllCells().map((cell) => (
@@ -213,10 +214,8 @@ export default function Scoreboard() {
             component="h1"
             sx={{
               flex: 1,
-              color: C.white,
-              WebkitTextStroke: `8px ${C.blueDeep}`,
-              paintOrder: "stroke fill",
-              filter: "drop-shadow(0 4px 0 rgba(22,33,46,0.16))",
+              color: N.delivery,
+              textShadow: textGlow(N.delivery),
             }}
           >
             Top pizzaiolos
@@ -231,13 +230,12 @@ export default function Scoreboard() {
           value={board}
           onChange={(_, v: Board | null) => v && setBoard(v)}
           aria-label="Leaderboard period"
-          sx={{ bgcolor: "#fff", borderRadius: 3, "& .MuiToggleButton-root": { fontWeight: 800, textTransform: "none", borderRadius: 3 } }}
         >
           <ToggleButton value="all">All time</ToggleButton>
           <ToggleButton value="daily">Today&apos;s challenge</ToggleButton>
         </ToggleButtonGroup>
 
-        <Paper sx={{ overflow: "hidden" }}>
+        <Paper sx={{ overflow: "hidden", clipPath: CLIP.card, border: `1px solid ${N.delivery}59` }}>
           <Tabs
             value={mode}
             onChange={(_, v: GameMode) => setMode(v)}

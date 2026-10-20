@@ -6,7 +6,7 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import { useEffect } from "react";
-import { C, hardShadow, pressedShadow } from "@/design/tokens";
+import { N } from "@/design/neon";
 
 interface TouchControlsProps {
   onLeft: () => void;
@@ -35,16 +35,17 @@ export default function TouchControls({ onLeft, onRight, onJump, disabled }: Tou
     return () => window.removeEventListener("keydown", onKey);
   }, [onLeft, onRight, onJump, disabled]);
 
-  const round = (bg: string, edge: string, fg: string, size: number) =>
+  const round = (accent: string, size: number) =>
     ({
       width: size,
       height: size,
       borderRadius: "50%",
-      bgcolor: bg,
-      color: fg,
-      boxShadow: hardShadow(edge, 7),
+      bgcolor: "rgba(13,19,31,0.85)",
+      color: accent,
+      border: `2px solid ${accent}99`,
+      boxShadow: `0 0 16px ${accent}40, 0 6px 16px rgba(0,0,0,0.45)`,
       transition: "transform 80ms ease, box-shadow 80ms ease",
-      "&:active": { transform: "translateY(5px)", boxShadow: pressedShadow(edge, 3) },
+      "&:active": { transform: "translateY(4px)", boxShadow: `0 0 22px ${accent}66` },
     }) as const;
 
   return (
@@ -52,7 +53,7 @@ export default function TouchControls({ onLeft, onRight, onJump, disabled }: Tou
       <ButtonBase
         aria-label="Move left"
         disabled={disabled}
-        sx={round(C.white, C.sandDeep, C.blue, 86)}
+        sx={round(N.delivery, 86)}
         onPointerDown={onLeft}
       >
         <ArrowBackRoundedIcon sx={{ fontSize: 46 }} />
@@ -61,7 +62,7 @@ export default function TouchControls({ onLeft, onRight, onJump, disabled }: Tou
         <ButtonBase
           aria-label="Jump"
           disabled={disabled}
-          sx={round(C.sun, C.sunDeep, C.ink, 74)}
+          sx={round(N.sun, 74)}
           onPointerDown={onJump}
         >
           <ArrowUpwardRoundedIcon sx={{ fontSize: 42 }} />
@@ -70,7 +71,7 @@ export default function TouchControls({ onLeft, onRight, onJump, disabled }: Tou
       <ButtonBase
         aria-label="Move right"
         disabled={disabled}
-        sx={round(C.white, C.sandDeep, C.blue, 86)}
+        sx={round(N.delivery, 86)}
         onPointerDown={onRight}
       >
         <ArrowForwardRoundedIcon sx={{ fontSize: 46 }} />

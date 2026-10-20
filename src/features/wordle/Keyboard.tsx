@@ -3,7 +3,7 @@
 import ButtonBase from "@mui/material/ButtonBase";
 import Stack from "@mui/material/Stack";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
-import { C, RADIUS } from "@/design/tokens";
+import { N } from "@/design/neon";
 import type { LetterStatus } from "./scoring";
 import type { PuzzleState } from "./useWordleGame";
 
@@ -15,11 +15,11 @@ interface KeyTone {
   fg: string;
 }
 
-const UNUSED: KeyTone = { bg: C.white, edge: C.sandDeep, fg: C.ink };
+const UNUSED: KeyTone = { bg: N.bgRaise, edge: N.panelEdge, fg: N.text };
 const TONE: Record<LetterStatus, KeyTone> = {
-  correct: { bg: C.money, edge: C.moneyDeep, fg: C.white },
-  present: { bg: C.sun, edge: C.sunDeep, fg: C.ink },
-  absent: { bg: "#AEB8C2", edge: "#8C99A6", fg: C.white },
+  correct: { bg: N.brand, edge: N.brandDeep, fg: N.bg },
+  present: { bg: N.sun, edge: N.sunDeep, fg: N.bg },
+  absent: { bg: N.panelEdge, edge: N.bgRaise, fg: N.textSoft },
 };
 
 /** Best status seen for `letter` across every guess made on this puzzle so far. */
@@ -63,18 +63,18 @@ function Key({
         flex: wide ? 1.5 : 1,
         minWidth: 0,
         height: 50,
-        borderRadius: `${RADIUS.tile - 6}px`,
+        borderRadius: "14px",
         display: "grid",
         placeItems: "center",
-        bgcolor: disabled ? C.slate : tone.bg,
-        color: disabled ? C.inkSoft : tone.fg,
+        bgcolor: disabled ? N.panel : tone.bg,
+        color: disabled ? N.textSoft : tone.fg,
         fontFamily: "var(--font-display)",
         fontWeight: 800,
         fontSize: wide ? "0.75rem" : "1rem",
         textTransform: "uppercase",
-        boxShadow: `0 3px 0 ${disabled ? C.slateDeep : tone.edge}`,
-        transition: "transform 80ms ease, box-shadow 80ms ease, background-color 150ms",
-        "&:active": { transform: "translateY(3px)", boxShadow: "none" },
+        border: `1px solid ${disabled ? N.panelEdge : tone.edge}`,
+        transition: "transform 80ms ease, background-color 150ms",
+        "&:active": { transform: "translateY(3px)" },
       }}
     >
       {label}
@@ -105,7 +105,7 @@ export default function Keyboard({
       {ROWS.map((row, ri) => (
         <Stack key={row} direction="row" spacing={0.5} sx={{ justifyContent: "center", px: ri === 1 ? "5%" : 0 }}>
           {ri === 2 && (
-            <Key label="Enter" wide tone={{ bg: C.blue, edge: C.blueDeep, fg: C.white }} onClick={onEnter} disabled={disabled} ariaLabel="Submit guess" />
+            <Key label="Enter" wide tone={{ bg: N.brand, edge: N.brandDeep, fg: N.bg }} onClick={onEnter} disabled={disabled} ariaLabel="Submit guess" />
           )}
           {row.split("").map((letter) => (
             <Key
@@ -121,7 +121,7 @@ export default function Keyboard({
             <Key
               label={<BackspaceRoundedIcon sx={{ fontSize: 20 }} />}
               wide
-              tone={{ bg: C.tomato, edge: C.tomatoDeep, fg: C.white }}
+              tone={{ bg: N.kitchen, edge: N.kitchenDeep, fg: N.bg }}
               onClick={onBackspace}
               disabled={disabled}
               ariaLabel="Backspace"

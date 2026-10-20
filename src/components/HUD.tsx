@@ -18,11 +18,11 @@ import MusicOffRoundedIcon from "@mui/icons-material/MusicOffRounded";
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/features/settings/store";
 import { fx, useJuice, type PopupTone } from "@/lib/fx";
-import { C, floatShadow, hardShadow } from "@/design/tokens";
+import { N, textGlow } from "@/design/neon";
 import CountPill from "@/components/ui/CountPill";
 import Panel from "@/components/ui/Panel";
 
-/** Money-style score counter, top right. */
+/** Score counter, top right. */
 export function ScorePill({ score }: { score: number }) {
   return <CountPill icon={<LocalPizzaRoundedIcon />} value={score} tone="sun" label={`Score ${score}`} />;
 }
@@ -49,15 +49,16 @@ export function QuitButton({ onQuit }: { onQuit: () => void }) {
 }
 
 const POPUP_COLORS: Record<PopupTone, string> = {
-  good: C.money,
-  great: C.sun,
-  bad: C.tomato,
-  neutral: C.ink,
+  good: N.brand,
+  great: N.sun,
+  bad: N.kitchen,
+  neutral: N.text,
 };
 
 /**
- * Floating "+10" stickers anchored where the action happened. The white stroke
- * around the glyphs is what keeps them legible over a busy 3D scene.
+ * Floating "+10" stickers anchored where the action happened. The dark stroke
+ * around the glyphs keeps them legible over both bright 3D scenes and the
+ * dark arcade screens.
  */
 export function ScorePopups() {
   const popups = useJuice((s) => s.popups);
@@ -78,9 +79,9 @@ export function ScorePopups() {
             lineHeight: 1.1,
             whiteSpace: "nowrap",
             color: POPUP_COLORS[p.tone],
-            WebkitTextStroke: "5px #FFFFFF",
+            WebkitTextStroke: `5px ${N.bg}`,
             paintOrder: "stroke fill",
-            filter: "drop-shadow(0 4px 6px rgba(22,33,46,0.25))",
+            filter: `drop-shadow(0 0 10px ${POPUP_COLORS[p.tone]}80)`,
             animation: "popupRise 950ms cubic-bezier(.2,.8,.3,1) forwards",
             "@keyframes popupRise": {
               "0%": { opacity: 0, transform: "translate(-50%, -30%) scale(0.6)" },
@@ -134,12 +135,13 @@ export function ComboMeter({ combo, every }: { combo: number; every: number }) {
         pr: 1.5,
         height: 46,
         borderRadius: 999,
-        bgcolor: hot ? C.tomato : C.white,
-        color: hot ? C.white : C.ink,
-        boxShadow: floatShadow,
-        fontFamily: "var(--font-display)",
-        fontWeight: 800,
-        fontSize: "1.2rem",
+        bgcolor: hot ? N.kitchen : N.panel,
+        color: hot ? N.white : N.text,
+        border: `1px solid ${hot ? N.kitchenDeep : N.panelEdge}`,
+        boxShadow: hot ? `0 0 18px ${N.kitchen}80` : "0 4px 14px rgba(0,0,0,0.4)",
+        fontFamily: "var(--font-arcade)",
+        fontWeight: 700,
+        fontSize: "1.15rem",
         animation: "comboPop 260ms cubic-bezier(.2,1.6,.4,1)",
         "@keyframes comboPop": { from: { transform: "scale(1.2)" }, to: { transform: "scale(1)" } },
       }}
@@ -151,7 +153,7 @@ export function ComboMeter({ combo, every }: { combo: number; every: number }) {
           borderRadius: "50%",
           display: "grid",
           placeItems: "center",
-          background: `conic-gradient(${hot ? C.sun : C.blue} ${pct}%, ${hot ? "rgba(255,255,255,0.35)" : C.slate} 0)`,
+          background: `conic-gradient(${hot ? N.sun : N.delivery} ${pct}%, ${hot ? "rgba(255,255,255,0.35)" : N.panelEdge} 0)`,
         }}
       >
         <Box
@@ -159,12 +161,12 @@ export function ComboMeter({ combo, every }: { combo: number; every: number }) {
             width: 26,
             height: 26,
             borderRadius: "50%",
-            bgcolor: hot ? C.tomato : C.white,
+            bgcolor: hot ? N.kitchen : N.panel,
             display: "grid",
             placeItems: "center",
           }}
         >
-          <LocalFireDepartmentRoundedIcon sx={{ fontSize: 18, color: hot ? C.sun : C.blue }} />
+          <LocalFireDepartmentRoundedIcon sx={{ fontSize: 18, color: hot ? N.sun : N.delivery }} />
         </Box>
       </Box>
       <span className="tnum">x{combo}</span>
@@ -175,7 +177,7 @@ export function ComboMeter({ combo, every }: { combo: number; every: number }) {
 /** Customer patience: a chunky bar with a mood face riding on the front. */
 export function PatienceBar({ value, label }: { value: number; label?: string }) {
   const pct = Math.max(0, Math.min(100, value * 100));
-  const color = value > 0.5 ? C.money : value > 0.25 ? C.sun : C.tomato;
+  const color = value > 0.5 ? N.brand : value > 0.25 ? N.sun : N.kitchen;
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <Box
@@ -189,7 +191,7 @@ export function PatienceBar({ value, label }: { value: number; label?: string })
           fontSize: 18,
           lineHeight: 1,
           bgcolor: color,
-          boxShadow: `0 2px 0 rgba(22,33,46,0.18)`,
+          boxShadow: `0 0 10px ${color}80`,
           animation: value <= 0.25 ? "faceShake 500ms ease-in-out infinite" : undefined,
           "@keyframes faceShake": {
             "0%,100%": { transform: "rotate(-8deg)" },
@@ -208,8 +210,8 @@ export function PatienceBar({ value, label }: { value: number; label?: string })
           flex: 1,
           height: 16,
           borderRadius: 999,
-          bgcolor: C.slate,
-          boxShadow: "inset 0 2px 0 rgba(22,33,46,0.10)",
+          bgcolor: N.bgRaise,
+          border: `1px solid ${N.panelEdge}`,
           overflow: "hidden",
         }}
       >
@@ -219,6 +221,7 @@ export function PatienceBar({ value, label }: { value: number; label?: string })
             height: "100%",
             borderRadius: 999,
             bgcolor: color,
+            boxShadow: `0 0 10px ${color}99`,
             transition: "width 120ms linear, background-color 300ms",
           }}
         />
@@ -247,24 +250,24 @@ export function CountdownOverlay({ onDone }: { onDone: () => void }) {
         inset: 0,
         display: "grid",
         placeItems: "center",
-        bgcolor: "rgba(22,33,46,0.30)",
+        bgcolor: "rgba(5,8,13,0.55)",
         pointerEvents: "none",
       }}
     >
       <Typography
         key={n}
-        variant="h1"
         sx={{
+          fontFamily: "var(--font-arcade)",
+          fontWeight: 700,
           fontSize: "7rem",
-          color: n === 0 ? C.sun : C.white,
-          WebkitTextStroke: `10px ${C.blueDeep}`,
-          paintOrder: "stroke fill",
-          filter: "drop-shadow(0 8px 10px rgba(22,33,46,0.35))",
+          lineHeight: 1,
+          color: n === 0 ? N.brand : N.text,
+          textShadow: textGlow(n === 0 ? N.brand : N.delivery),
           animation: "pop 700ms ease-out",
           "@keyframes pop": { from: { transform: "scale(1.6)", opacity: 0 }, to: { transform: "scale(1)", opacity: 1 } },
         }}
       >
-        {n === 0 ? "Go!" : n}
+        {n === 0 ? "GO!" : n}
       </Typography>
     </Box>
   );
@@ -275,7 +278,7 @@ export function IntroCard({
   badge,
   lines,
   cta,
-  accent = C.blue,
+  accent = N.delivery,
   onStart,
 }: {
   title: string;
@@ -294,17 +297,21 @@ export function IntroCard({
         display: "grid",
         placeItems: "center",
         p: 2,
-        bgcolor: "rgba(22,33,46,0.45)",
+        bgcolor: "rgba(5,8,13,0.72)",
       }}
     >
       <Panel accent={accent} padding={2.5} sx={{ maxWidth: 400, width: "100%" }}>
         <Stack spacing={1.5}>
           <Box sx={{ textAlign: "center" }}>
-            <Typography variant="h2" component="h2">
+            <Typography
+              variant="h2"
+              component="h2"
+              sx={{ color: accent, textShadow: `0 0 12px ${accent}66` }}
+            >
               {title}
             </Typography>
             {badge && (
-              <Chip label={badge} sx={{ mt: 0.75, bgcolor: accent, color: C.white }} />
+              <Chip label={badge} sx={{ mt: 0.75, bgcolor: accent, color: N.bg, fontWeight: 700 }} />
             )}
           </Box>
           <Stack component="ul" spacing={0.75} sx={{ listStyle: "none", m: 0, p: 0 }}>
@@ -313,16 +320,16 @@ export function IntroCard({
                 <Box
                   aria-hidden
                   sx={{
-                    mt: "3px",
-                    width: 10,
-                    height: 10,
+                    mt: "4px",
+                    width: 9,
+                    height: 9,
                     flexShrink: 0,
                     borderRadius: "50%",
                     bgcolor: accent,
-                    boxShadow: `0 2px 0 rgba(22,33,46,0.15)`,
+                    boxShadow: `0 0 8px ${accent}99`,
                   }}
                 />
-                <Typography sx={{ fontSize: "1.02rem", lineHeight: 1.35 }}>{l}</Typography>
+                <Typography sx={{ fontSize: "1.02rem", lineHeight: 1.35, color: N.text }}>{l}</Typography>
               </Stack>
             ))}
           </Stack>
@@ -351,10 +358,11 @@ export function SettingsToggles({ size = "medium" }: { size?: "small" | "medium"
     ({
       width: dim,
       height: dim,
-      bgcolor: active ? C.sun : C.white,
-      color: C.ink,
-      boxShadow: hardShadow(active ? C.sunDeep : C.sandDeep, 4),
-      "&:hover": { bgcolor: active ? C.sun : C.sandSoft },
+      bgcolor: N.panel,
+      color: active ? N.brand : N.textSoft,
+      border: `1px solid ${active ? `${N.brand}80` : N.panelEdge}`,
+      boxShadow: active ? `0 0 10px ${N.brand}40` : undefined,
+      "&:hover": { bgcolor: N.bgRaise },
     }) as const;
   return (
     <Stack direction="row" spacing={0.75}>

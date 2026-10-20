@@ -2,22 +2,22 @@
 
 import Box from "@mui/material/Box";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { C, floatShadow } from "@/design/tokens";
+import { N } from "@/design/neon";
 
 export type PillTone = "money" | "sun" | "blue" | "tomato" | "ink";
 
 const TONE: Record<PillTone, string> = {
-  money: C.money,
-  sun: C.sun,
-  blue: C.blue,
-  tomato: C.tomato,
-  ink: C.ink,
+  money: N.brand,
+  sun: N.sun,
+  blue: N.delivery,
+  tomato: N.kitchen,
+  ink: N.textSoft,
 };
 
 /**
- * The HUD counter from the reference art: a white lozenge with a coloured icon
- * badge on the left and a fat number on the right. It punches whenever the
- * value changes so gains feel physical.
+ * HUD counter: a dark lozenge with a neon icon badge on the left and a fat
+ * number on the right. It punches whenever the value changes so gains feel
+ * physical.
  */
 export default function CountPill({
   icon,
@@ -46,6 +46,7 @@ export default function CountPill({
 
   const h = size === "sm" ? 38 : 46;
   const badge = h - 10;
+  const accent = TONE[tone];
   return (
     <Box
       aria-label={label}
@@ -57,9 +58,10 @@ export default function CountPill({
         pl: 0.625,
         pr: 1.75,
         borderRadius: 999,
-        bgcolor: urgent ? C.tomato : C.white,
-        color: urgent ? C.white : C.ink,
-        boxShadow: floatShadow,
+        bgcolor: urgent ? N.kitchen : N.panel,
+        color: urgent ? N.white : N.text,
+        border: `1px solid ${urgent ? N.kitchenDeep : `${accent}59`}`,
+        boxShadow: urgent ? `0 0 16px ${N.kitchen}80` : `0 0 10px ${accent}26, 0 4px 14px rgba(0,0,0,0.4)`,
         animation: urgent ? "pillUrgent 620ms ease-in-out infinite" : undefined,
         "@keyframes pillUrgent": { "0%,100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.07)" } },
       }}
@@ -71,10 +73,11 @@ export default function CountPill({
           borderRadius: "50%",
           display: "grid",
           placeItems: "center",
-          bgcolor: urgent ? "rgba(255,255,255,0.25)" : TONE[tone],
-          color: tone === "sun" ? C.ink : C.white,
+          bgcolor: urgent ? "rgba(255,255,255,0.25)" : accent,
+          color: N.bg,
           fontSize: size === "sm" ? 18 : 22,
           lineHeight: 1,
+          boxShadow: urgent ? undefined : `0 0 10px ${accent}66`,
           "& .MuiSvgIcon-root": { fontSize: size === "sm" ? 20 : 24 },
         }}
       >
@@ -84,9 +87,9 @@ export default function CountPill({
         key={punch}
         className="tnum"
         sx={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 800,
-          fontSize: size === "sm" ? "1.15rem" : "1.45rem",
+          fontFamily: "var(--font-arcade)",
+          fontWeight: 700,
+          fontSize: size === "sm" ? "1.1rem" : "1.35rem",
           lineHeight: 1,
           minWidth: 22,
           textAlign: "center",

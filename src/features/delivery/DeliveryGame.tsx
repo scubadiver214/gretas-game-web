@@ -15,7 +15,7 @@ import { ComboMeter, CountdownOverlay, FlashOverlay, IntroCard, QuitButton, Scor
 import { usePlayerStore } from "@/features/player/store";
 import { useRoundSetup } from "@/features/player/useRoundConfig";
 import { LEVEL_NAMES } from "@/features/player/progress";
-import { C } from "@/design/tokens";
+import { N, neonGlow } from "@/design/neon";
 import { COMBO_EVERY, ROUND_SECONDS, deliveryStars, type PowerUpKind } from "./scoring";
 import { useDeliveryGame } from "./useDeliveryGame";
 
@@ -31,9 +31,9 @@ const POWER_UP_ICON: Record<PowerUpKind, typeof BoltRoundedIcon> = {
 };
 
 const POWER_UP_FILL: Record<PowerUpKind, { fill: string; edge: string }> = {
-  magnet: { fill: "#8B5CF6", edge: "#6D28D9" },
-  shield: { fill: C.blue, edge: C.blueDeep },
-  turbo: { fill: C.sun, edge: C.sunDeep },
+  magnet: { fill: N.wordle, edge: N.wordleDeep },
+  shield: { fill: N.delivery, edge: N.deliveryDeep },
+  turbo: { fill: N.sun, edge: N.sunDeep },
 };
 
 /** `now` is derived from the store's clock so this stays a pure render. */
@@ -54,8 +54,8 @@ function PowerUpChip({ kind, until, now }: { kind: PowerUpKind; until: number; n
         height: 46,
         borderRadius: 999,
         bgcolor: fill,
-        color: kind === "turbo" ? C.ink : C.white,
-        boxShadow: `0 4px 0 ${edge}, 0 8px 16px rgba(22,33,46,0.18)`,
+        color: kind === "magnet" ? N.white : N.bg,
+        boxShadow: `0 0 0 1px ${edge}, ${neonGlow(fill, 10)}`,
         fontFamily: "var(--font-display)",
         fontWeight: 800,
         fontSize: "1.05rem",
@@ -219,7 +219,7 @@ function Inner() {
             <IntroCard
               title="🛵 Bike Delivery"
               badge={levelLabel}
-              accent={C.blue}
+              accent={N.delivery}
               lines={[
                 "Ride through town and hit the glowing mailboxes to deliver pizzas.",
                 "Swipe or tap the arrows to change lanes. Tap the screen or swipe up to jump!",

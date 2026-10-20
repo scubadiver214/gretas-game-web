@@ -2,7 +2,7 @@
 
 import Box from "@mui/material/Box";
 import type { ReactNode } from "react";
-import { C } from "@/design/tokens";
+import { N } from "@/design/neon";
 
 /**
  * Full-viewport game frame. The 3D canvas fills the background; HUD slots are
@@ -25,7 +25,7 @@ export default function GameShell({
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        bgcolor: C.blueSoft,
+        bgcolor: N.bg,
         userSelect: "none",
       }}
     >

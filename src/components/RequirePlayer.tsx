@@ -4,7 +4,7 @@ import { Suspense, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
-import { C } from "@/design/tokens";
+import { N } from "@/design/neon";
 
 /**
  * Guards game screens: waits for the persisted player to load, then bounces
@@ -38,13 +38,14 @@ export default function RequirePlayer({
 /** Bouncing pizza instead of a spinner: on-theme and no layout shift. */
 function Spinner() {
   return (
-    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center", bgcolor: C.sandSoft }}>
+    <Box sx={{ minHeight: "100dvh", display: "grid", placeItems: "center", bgcolor: N.bg }}>
       <Box
         aria-label="Loading"
         role="status"
         sx={{
           fontSize: 56,
           lineHeight: 1,
+          filter: `drop-shadow(0 0 18px ${N.brand}99)`,
           animation: "loadBounce 900ms ease-in-out infinite",
           "@keyframes loadBounce": {
             "0%,100%": { transform: "translateY(0) rotate(-8deg)" },

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, Nunito } from "next/font/google";
+import { Baloo_2, Chakra_Petch, Nunito } from "next/font/google";
 import ServiceWorker from "@/components/ServiceWorker";
 import Providers from "./providers";
 import "./globals.css";
@@ -19,6 +19,14 @@ const body = Nunito({
   display: "swap",
 });
 
+// Techy squared face for the neon-arcade reskin (wordmark + headings).
+const arcade = Chakra_Petch({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-arcade",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Greta's Game for fun",
   description:
@@ -34,12 +42,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#2E8DEF",
+  themeColor: "#0B0F17",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${arcade.variable}`}>
       <body>
         <Providers>{children}</Providers>
         <ServiceWorker />

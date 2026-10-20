@@ -9,7 +9,7 @@ import Typography from "@mui/material/Typography";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
 import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FlashOverlay, IntroCard, QuitButton, ScorePill, ScorePopups, SettingsToggles } from "@/components/HUD";
-import { C, RADIUS, floatShadow } from "@/design/tokens";
+import { CLIP, N } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { useRoundSetup } from "@/features/player/useRoundConfig";
 import { LEVEL_NAMES } from "@/features/player/progress";
@@ -108,7 +108,7 @@ function Inner() {
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        bgcolor: C.sandSoft,
+        bgcolor: N.bg,
         display: "flex",
         flexDirection: "column",
         userSelect: "none",
@@ -128,12 +128,13 @@ function Inner() {
               sx={{
                 px: 1.25,
                 height: 30,
-                borderRadius: 999,
-                bgcolor: C.grape,
-                color: C.white,
+                clipPath: CLIP.button,
+                bgcolor: N.panel,
+                border: `1px solid ${N.wordle}59`,
+                color: N.text,
                 display: "grid",
                 placeItems: "center",
-                fontFamily: "var(--font-display)",
+                fontFamily: "var(--font-arcade)",
                 fontWeight: 800,
                 fontSize: "0.85rem",
               }}
@@ -144,12 +145,13 @@ function Inner() {
               sx={{
                 px: 1.25,
                 height: 30,
-                borderRadius: 999,
-                bgcolor: C.white,
-                boxShadow: floatShadow,
+                clipPath: CLIP.button,
+                bgcolor: N.panel,
+                border: `1px solid ${N.wordle}59`,
+                color: N.text,
                 display: "grid",
                 placeItems: "center",
-                fontFamily: "var(--font-display)",
+                fontFamily: "var(--font-arcade)",
                 fontWeight: 800,
                 fontSize: "0.85rem",
               }}
@@ -162,7 +164,7 @@ function Inner() {
 
           <Box sx={{ minHeight: 28, textAlign: "center" }}>
             {message && (
-              <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: phase === "result" ? C.ink : C.tomato }}>
+              <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: phase === "result" ? N.text : N.kitchen }}>
                 {message}
               </Typography>
             )}
@@ -173,9 +175,8 @@ function Inner() {
       {playing && puzzle && (
         <Box
           sx={{
-            bgcolor: C.white,
-            borderRadius: `${RADIUS.panel}px ${RADIUS.panel}px 0 0`,
-            boxShadow: floatShadow,
+            bgcolor: N.panel,
+            borderTop: `1px solid ${N.panelEdge}`,
             p: 1.5,
             pb: "max(16px, env(safe-area-inset-bottom))",
           }}
@@ -203,7 +204,7 @@ function Inner() {
         <IntroCard
           title="🔤 Word Quest"
           badge={levelLabel}
-          accent={C.grape}
+          accent={N.wordle}
           lines={[
             "Guess the secret word. Every word is 5 letters.",
             "🟩 Green = right letter, right spot.",

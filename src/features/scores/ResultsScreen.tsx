@@ -17,7 +17,7 @@ import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import PageContainer from "@/components/PageContainer";
 import RequirePlayer from "@/components/RequirePlayer";
 import Panel from "@/components/ui/Panel";
-import { C, hardShadow } from "@/design/tokens";
+import { N, neonGlow, textGlow } from "@/design/neon";
 import { ACHIEVEMENT_BY_ID } from "@/features/player/achievements";
 import { usePlayerStore, useStars } from "@/features/player/store";
 import { LEVEL_NAMES, levelForStars, starsToNextLevel } from "@/features/player/progress";
@@ -41,8 +41,8 @@ function StarRow({ stars }: { stars: number }) {
               borderRadius: "50%",
               display: "grid",
               placeItems: "center",
-              bgcolor: on ? C.sun : C.slate,
-              boxShadow: hardShadow(on ? C.sunDeep : C.slateDeep, 5),
+              bgcolor: on ? N.sun : N.panelEdge,
+              boxShadow: on ? neonGlow(N.sun, 12) : "0 4px 14px rgba(0,0,0,0.4)",
               // The middle star sits a little higher, like a podium.
               mt: i === 1 ? -1.5 : 0,
               animation: on ? `starIn 520ms ${180 + i * 200}ms cubic-bezier(.2,1.7,.4,1) both` : undefined,
@@ -52,7 +52,7 @@ function StarRow({ stars }: { stars: number }) {
               },
             }}
           >
-            <StarRoundedIcon sx={{ fontSize: 40, color: on ? C.white : "rgba(22,33,46,0.25)" }} />
+            <StarRoundedIcon sx={{ fontSize: 40, color: on ? N.bg : "rgba(147,165,190,0.35)" }} />
           </Box>
         );
       })}
@@ -129,7 +129,7 @@ function Inner() {
   const unlockedSkins = BIKE_SKINS.filter((s) => s.unlockedBy && lastUnlocked.includes(s.unlockedBy));
   const headline =
     result.stars >= 3 ? "Perfetto!" : result.stars >= 2 ? "Great job!" : result.stars >= 1 ? "Nice work!" : "Good try!";
-  const accent = result.stars >= 2 ? C.money : result.stars >= 1 ? C.blue : C.crust;
+  const accent = result.stars >= 2 ? N.brand : result.stars >= 1 ? N.delivery : N.sun;
 
   const onShare = async () => {
     if (!character) return;
@@ -161,23 +161,21 @@ function Inner() {
             variant="h1"
             component="h1"
             sx={{
-              color: C.white,
-              WebkitTextStroke: `9px ${accent === C.money ? C.moneyDeep : accent === C.blue ? C.blueDeep : C.crustDeep}`,
-              paintOrder: "stroke fill",
-              filter: "drop-shadow(0 5px 0 rgba(22,33,46,0.18))",
+              color: accent,
+              textShadow: textGlow(accent),
             }}
           >
             {headline}
           </Typography>
           <Stack direction="row" spacing={0.75} useFlexGap sx={{ justifyContent: "center", flexWrap: "wrap", mt: 0.5 }}>
-            <Chip label={MODE_LABELS[result.mode]} sx={{ bgcolor: C.ink, color: C.white }} />
-            {result.challengeDate && <Chip label="📅 Daily" sx={{ bgcolor: C.sun, color: C.ink }} />}
+            <Chip label={MODE_LABELS[result.mode]} sx={{ bgcolor: N.bgRaise, color: N.text, border: `1px solid ${N.panelEdge}` }} />
+            {result.challengeDate && <Chip label="📅 Daily" sx={{ bgcolor: N.sun, color: N.bg }} />}
           </Stack>
         </Box>
 
         <Panel accent={accent} padding={3}>
           <StarRow stars={result.stars} />
-          <Typography sx={{ color: C.inkSoft, fontWeight: 800, mt: 1.5, textAlign: "center" }}>Your score</Typography>
+          <Typography sx={{ color: N.textSoft, fontWeight: 800, mt: 1.5, textAlign: "center" }}>Your score</Typography>
           <Typography
             className="tnum"
             sx={{
@@ -186,9 +184,9 @@ function Inner() {
               fontSize: "5.2rem",
               fontWeight: 800,
               lineHeight: 1,
-              // Extruded numerals rather than an outline: easier to read big.
-              color: C.tomato,
-              textShadow: `0 6px 0 ${C.tomatoDeep}`,
+              // Glowing numerals: the neon take on the old extruded look.
+              color: N.kitchen,
+              textShadow: textGlow(N.kitchen),
               my: 1,
               animation: "bounceIn 600ms cubic-bezier(.2,1.5,.4,1)",
               "@keyframes bounceIn": { from: { transform: "scale(0.4)", opacity: 0 }, to: { transform: "scale(1)", opacity: 1 } },
@@ -204,10 +202,10 @@ function Inner() {
                 <Chip
                   icon={<EmojiEventsRoundedIcon />}
                   label={result.challengeDate ? `#${submit.data.rank} today` : `#${submit.data.rank} all time`}
-                  sx={{ bgcolor: C.blue, color: C.white, "& .MuiChip-icon": { color: C.sun } }}
+                  sx={{ bgcolor: N.delivery, color: N.bg, "& .MuiChip-icon": { color: N.sun } }}
                 />
                 {submit.data.isPersonalBest && (
-                  <Chip label="⭐ New best!" sx={{ bgcolor: C.money, color: C.white }} />
+                  <Chip label="⭐ New best!" sx={{ bgcolor: N.brand, color: N.bg }} />
                 )}
               </Stack>
             )}
@@ -228,20 +226,20 @@ function Inner() {
         </Panel>
 
         {leveledUp ? (
-          <Alert icon={<TrendingUpRoundedIcon />} severity="success" sx={{ bgcolor: C.money, color: C.white, "& .MuiAlert-icon": { color: C.white } }}>
+          <Alert icon={<TrendingUpRoundedIcon />} severity="success" sx={{ bgcolor: N.brand, color: N.bg, "& .MuiAlert-icon": { color: N.bg } }}>
             Level up! You are now a level {levelNow} {LEVEL_NAMES[levelNow]}.
           </Alert>
         ) : (
           !result.challengeDate &&
           toNext !== null && (
-            <Typography sx={{ textAlign: "center", color: C.ink, fontWeight: 700 }}>
+            <Typography sx={{ textAlign: "center", color: N.text, fontWeight: 700 }}>
               Level {levelNow} {LEVEL_NAMES[levelNow]} · {toNext} more {toNext === 1 ? "star" : "stars"} to level {levelNow + 1}
             </Typography>
           )
         )}
 
         {lastUnlocked.length > 0 && (
-          <Panel accent={C.sun} padding={2}>
+          <Panel accent={N.sun} padding={2}>
             <Typography variant="h4" sx={{ mb: 1 }}>
               🏅 New {lastUnlocked.length === 1 ? "trophy" : "trophies"}!
             </Typography>
@@ -266,18 +264,18 @@ function Inner() {
                         height: 46,
                         flexShrink: 0,
                         borderRadius: "50%",
-                        bgcolor: C.sandSoft,
+                        bgcolor: N.bgRaise,
                         display: "grid",
                         placeItems: "center",
                         fontSize: 26,
-                        boxShadow: `0 3px 0 ${C.sandDeep}`,
+                        border: `1px solid ${N.sun}59`,
                       }}
                     >
                       {a.emoji}
                     </Box>
                     <Box>
                       <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800 }}>{a.title}</Typography>
-                      <Typography variant="body2" sx={{ color: C.inkSoft }}>
+                      <Typography variant="body2" sx={{ color: N.textSoft }}>
                         {a.description}
                       </Typography>
                     </Box>

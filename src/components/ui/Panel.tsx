@@ -1,10 +1,10 @@
 import Box from "@mui/material/Box";
 import type { ReactNode } from "react";
-import { C, RADIUS, floatShadow } from "@/design/tokens";
+import { CLIP, N, panelGlow } from "@/design/neon";
 
 /**
- * Flat white card with a fat radius. `accent` paints a solid colour strip along
- * the top, which is how the shop signage is built in the reference art.
+ * Dark angular panel, the building block of the neon-arcade look. `accent`
+ * paints a glowing spine along the top edge and tints the panel's halo.
  */
 export default function Panel({
   children,
@@ -21,14 +21,17 @@ export default function Panel({
     <Box
       sx={{
         position: "relative",
-        bgcolor: C.white,
-        borderRadius: `${RADIUS.panel}px`,
-        boxShadow: floatShadow,
+        bgcolor: N.panel,
+        clipPath: CLIP.card,
+        border: `1px solid ${accent ? `${accent}59` : N.panelEdge}`,
+        boxShadow: panelGlow(accent ?? N.panelEdge),
         overflow: "hidden",
         ...sx,
       }}
     >
-      {accent && <Box aria-hidden sx={{ height: 10, bgcolor: accent }} />}
+      {accent && (
+        <Box aria-hidden sx={{ height: 4, bgcolor: accent, boxShadow: `0 0 14px ${accent}` }} />
+      )}
       <Box sx={{ p: padding }}>{children}</Box>
     </Box>
   );
