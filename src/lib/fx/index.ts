@@ -46,6 +46,10 @@ export const fx = {
   levelup: () => fire("levelup", "success", 0.5),
   /** Achievement / cosmetic unlocked. */
   unlocked: () => fire("unlock", "success", 0.3),
+  hop: () => fire("hop"),
+  home: () => fire("home", "success", 0.25),
+  levelClear: () => fire("levelclear", "success", 0.5),
+  gameOver: () => fire("gameover", "heavy", 0.5),
   /** Call from a user gesture (e.g. the Start button) so iOS allows audio. */
   unlock: () => unlockAudio(),
 };

@@ -36,7 +36,7 @@ import RequirePlayer from "@/components/RequirePlayer";
 import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { LEVEL_NAMES, levelForStars } from "@/features/player/progress";
-import { MODE_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
+import { MODE_EMOJI, MODE_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
 import { formatWhen } from "./Scoreboard";
 
 const features = tableFeatures({
@@ -101,6 +101,8 @@ function Inner() {
   const rows = useMemo(() => history.filter((h) => h.mode === mode), [history, mode]);
   const best = rows.reduce((m, r) => Math.max(m, r.score), 0);
   const level = levelForStars(stars[mode] ?? 0);
+  // Frogger is an arcade game: show the furthest level reached instead of a star level.
+  const topLevel = rows.reduce((m, r) => Math.max(m, r.level), 1);
 
   const table = useTable({
     features,
@@ -137,18 +139,23 @@ function Inner() {
             <Tab value="kitchen" label="Kitchen" sx={{ minHeight: 52 }} />
             <Tab value="delivery" label="Delivery" sx={{ minHeight: 52 }} />
             <Tab value="wordle" label="Words" sx={{ minHeight: 52 }} />
+            <Tab value="frogger" label="Frogger" sx={{ minHeight: 52 }} />
           </Tabs>
 
           <Stack direction="row" spacing={1} useFlexGap sx={{ p: 1.5, flexWrap: "wrap" }}>
             <Chip label={`${rows.length} ${rows.length === 1 ? "round" : "rounds"}`} />
             <Chip label={`Best: ${best}`} color="primary" variant="outlined" />
-            <Chip label={`Level ${level} · ${LEVEL_NAMES[level]}`} color="secondary" variant="outlined" />
+            {mode === "frogger" ? (
+              <Chip label={`Top level ${topLevel}`} color="secondary" variant="outlined" />
+            ) : (
+              <Chip label={`Level ${level} · ${LEVEL_NAMES[level]}`} color="secondary" variant="outlined" />
+            )}
           </Stack>
 
           {rows.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center" }}>
               <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
-                {mode === "kitchen" ? "🍕" : mode === "delivery" ? "🛵" : "🔤"}
+                {MODE_EMOJI[mode]}
               </Box>
               <Typography variant="h4">No rounds yet</Typography>
               <Typography sx={{ color: "text.secondary" }}>Play {MODE_LABELS[mode]} and your rounds will show up here.</Typography>

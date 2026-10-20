@@ -53,6 +53,11 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: "flawless-round", title: "Flawless round", description: "Solve every word in a round with no hints.", emoji: "🌈", tier: "gold", check: (c) => c.result.mode === "wordle" && m(c, "words") >= 3 && m(c, "solved") === m(c, "words") && m(c, "hints") === 0 },
   { id: "triple-shift", title: "Triple shift", description: "Play the kitchen, delivery and word game.", emoji: "🎪", tier: "silver", check: (c) => ["kitchen", "delivery", "wordle"].every((mode) => c.history.some((h) => h.mode === mode)) },
 
+  // --- frogger ---------------------------------------------------------------
+  { id: "first-frog-home", title: "Home sweet pond", description: "Get a frog safely onto a lily pad.", emoji: "🐸", tier: "bronze", check: (c) => c.result.mode === "frogger" && m(c, "homes") >= 1 },
+  { id: "frogger-level-3", title: "Pond hopper", description: "Clear level 3 in Frogger Adventure.", emoji: "🪷", tier: "silver", check: (c) => c.result.mode === "frogger" && m(c, "levelsCompleted") >= 3 },
+  { id: "frogger-perfect", title: "Not a splash", description: "Clear a Frogger level without losing a life.", emoji: "💚", tier: "gold", check: (c) => c.result.mode === "frogger" && m(c, "perfectLevels") >= 1 },
+
   // --- progression ---------------------------------------------------------
   { id: "three-stars", title: "Three stars", description: "Earn a three-star round.", emoji: "🌟", tier: "bronze", check: (c) => c.result.stars >= 3 },
   { id: "kitchen-legend", title: "Kitchen legend", description: "Reach level 5 in the kitchen.", emoji: "🏆", tier: "gold", check: (c) => c.result.mode === "kitchen" && c.levelAfter >= MAX_LEVEL },

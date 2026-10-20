@@ -20,7 +20,7 @@ import { usePlayerStore } from "@/features/player/store";
 import { usePersonalBests } from "@/features/scores/hooks";
 import { ACHIEVEMENTS } from "@/features/player/achievements";
 import { LEVEL_NAMES, STARS_PER_LEVEL, dailyStreak, levelForStars } from "@/features/player/progress";
-import { MODE_LABELS, type GameMode } from "@/features/player/types";
+import { MODE_LABELS, MODE_SHORT_LABELS, type GameMode } from "@/features/player/types";
 import { music } from "@/lib/fx";
 import { dailyKey } from "@/lib/rng";
 
@@ -32,6 +32,8 @@ const ADVENTURES: {
   accent: string;
   /** Hero art shown on the card; wordle gets a glowing emoji tile instead. */
   art?: { src: string; alt: string };
+  /** Arcade games always start at level 1, so the card shows no star level. */
+  arcade?: boolean;
 }[] = [
   {
     mode: "kitchen",
@@ -56,6 +58,15 @@ const ADVENTURES: {
     emoji: "🔤",
     accent: N.wordle,
     art: { src: "/characters/wordle-owl.jpg", alt: "A glowing purple owl perched on a letter cube" },
+  },
+  {
+    mode: "frogger",
+    title: "Frogger Adventure",
+    blurb: "Dodge cars, ride logs",
+    emoji: "🐸",
+    accent: N.frogger,
+    art: { src: "/characters/frogger-neon.jpg", alt: "A happy green frog leaping over a glowing river" },
+    arcade: true,
   },
 ];
 
@@ -183,12 +194,12 @@ function Inner() {
           sx={{
             flex: { xs: 1, md: "none" },
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
             gridAutoRows: { xs: "minmax(116px, 1fr)", md: "auto" },
             gap: { xs: 1.25, md: 2.5 },
           }}
         >
-          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art }) => {
+          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art, arcade }) => {
             const modeStars = stars[mode] ?? 0;
             const level = levelForStars(modeStars);
             const best = bestFor(mode);
@@ -253,15 +264,13 @@ function Inner() {
                   </Typography>
                   <Typography sx={{ color: N.textSoft, fontSize: "0.9rem", mb: 1 }}>{blurb}</Typography>
                   <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", alignItems: "center" }}>
-                    <StatChip accent={accent}>
-                      Lv {level} · {LEVEL_NAMES[level]}
-                    </StatChip>
+                    <StatChip accent={accent}>{arcade ? "Arcade · 3 lives" : `Lv ${level} · ${LEVEL_NAMES[level]}`}</StatChip>
                     {best !== undefined && (
                       <StatChip accent={accent}>
                         <EmojiEventsRoundedIcon sx={{ fontSize: 15, color: N.sun }} /> {best}
                       </StatChip>
                     )}
-                    <StarPips stars={modeStars} />
+                    {!arcade && <StarPips stars={modeStars} />}
                   </Stack>
                 </Box>
                 {/* Art column: hero render, or a glowing emoji tile for wordle. */}
@@ -363,7 +372,7 @@ function Inner() {
               )}
             </Stack>
             <Typography sx={{ color: N.textSoft, fontSize: "0.9rem", mb: 1.5 }}>
-              Everyone gets the same orders and the same street. One shot a day!
+              Everyone gets the same orders, street, words and pond. One shot a day!
             </Typography>
             <Stack direction="row" spacing={1}>
               {ADVENTURES.map(({ mode, emoji, accent }) => {
@@ -404,7 +413,7 @@ function Inner() {
                     >
                       {done ? <CheckRoundedIcon sx={{ fontSize: 17, color: N.bg }} /> : emoji}
                     </Box>
-                    {MODE_LABELS[mode].split(" ")[1]}
+                    {MODE_SHORT_LABELS[mode]}
                   </ButtonBase>
                 );
               })}

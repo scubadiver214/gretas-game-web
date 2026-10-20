@@ -32,6 +32,8 @@ export const N = {
   deliveryDeep: "#1E8FC9",
   wordle: "#B78AFF",
   wordleDeep: "#8A4DFF",
+  frogger: "#B6FF3B",
+  froggerDeep: "#6FC21A",
 
   /** Stars, coins, streaks. */
   sun: "#FFD54D",

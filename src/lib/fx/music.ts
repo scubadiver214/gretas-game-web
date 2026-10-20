@@ -8,7 +8,7 @@
  * music bus as the old procedural sequencer. Volume, muting and ducking all
  * continue to work exactly as before.
  *
- * All three "tracks" (menu, kitchen, delivery) play the same recording – just
+ * All the "tracks" (menu, kitchen, delivery, frogger) play the same recording – just
  * loop it continuously. If you later want per-mode tracks, swap the src below.
  *
  * setMusicIntensity() is kept as a no-op so the call sites throughout the game
@@ -17,7 +17,7 @@
 
 import { getAudioContext, getMusicBus } from "./mixer";
 
-export type MusicTrackId = "menu" | "kitchen" | "delivery";
+export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger";
 
 // ---------------------------------------------------------------------------
 // Module-level state

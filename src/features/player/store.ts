@@ -18,6 +18,7 @@ import {
 } from "./types";
 
 const HISTORY_LIMIT = 200;
+const STORE_VERSION = 5;
 
 interface PlayerState {
   nickname: string;
@@ -133,7 +134,7 @@ export const usePlayerStore = create<PlayerState>()(
     }),
     {
       name: "gretas-game:player",
-      version: 4,
+      version: STORE_VERSION,
       // Only touch window.localStorage in the browser (Node 26 exposes an
       // experimental global localStorage that warns when accessed on the server).
       storage: createJSONStorage(() =>
@@ -155,45 +156,56 @@ export const usePlayerStore = create<PlayerState>()(
         achievements: s.achievements,
         history: s.history,
       }),
-      migrate: (persisted, version) => {
-        let p = (persisted ?? {}) as Partial<PlayerState>;
-        if (version < 2) {
-          p = {
-            ...p,
-            color: p.color ?? (p.character ? DEFAULT_COLOR[p.character] : DEFAULT_COLOR.girl),
-            roundsPlayed: p.roundsPlayed ?? EMPTY_ROUNDS,
-            history: p.history ?? [],
-          };
-        }
-        if (version < 3) {
-          // Levels used to unlock every 2 rounds; grant the equivalent stars so
-          // nobody loses a level they had already reached.
-          const rounds = p.roundsPlayed ?? EMPTY_ROUNDS;
-          const perRound = STARS_PER_LEVEL / 2;
-          p = {
-            ...p,
-            stars: { kitchen: (rounds.kitchen ?? 0) * perRound, delivery: (rounds.delivery ?? 0) * perRound, wordle: 0 },
-            achievements: {},
-            bikeSkin: "classic",
-            lastUnlocked: [],
-          };
-        }
-        if (version < 4) {
-          // New "wordle" mode and hair colour: backfill defaults for existing players.
-          const char = p.character ?? "girl";
-          p = {
-            ...p,
-            hairColor: p.hairColor ?? DEFAULT_HAIR_COLOR[char],
-            roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
-            stars: { ...EMPTY_STARS, ...p.stars },
-          };
-        }
-        return p;
-      },
+      migrate: (persisted, version) => migratePlayerState(persisted, version) as PlayerState,
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     },
   ),
 );
+
+/** Upgrades persisted player state from any older version to STORE_VERSION. */
+export function migratePlayerState(persisted: unknown, version: number): Partial<PlayerState> {
+  let p = (persisted ?? {}) as Partial<PlayerState>;
+  if (version < 2) {
+    p = {
+      ...p,
+      color: p.color ?? (p.character ? DEFAULT_COLOR[p.character] : DEFAULT_COLOR.girl),
+      roundsPlayed: p.roundsPlayed ?? EMPTY_ROUNDS,
+      history: p.history ?? [],
+    };
+  }
+  if (version < 3) {
+    // Levels used to unlock every 2 rounds; grant the equivalent stars so
+    // nobody loses a level they had already reached.
+    const rounds = p.roundsPlayed ?? EMPTY_ROUNDS;
+    const perRound = STARS_PER_LEVEL / 2;
+    p = {
+      ...p,
+      stars: { ...EMPTY_STARS, kitchen: (rounds.kitchen ?? 0) * perRound, delivery: (rounds.delivery ?? 0) * perRound, wordle: 0 },
+      achievements: {},
+      bikeSkin: "classic",
+      lastUnlocked: [],
+    };
+  }
+  if (version < 4) {
+    // New "wordle" mode and hair colour: backfill defaults for existing players.
+    const char = p.character ?? "girl";
+    p = {
+      ...p,
+      hairColor: p.hairColor ?? DEFAULT_HAIR_COLOR[char],
+      roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+      stars: { ...EMPTY_STARS, ...p.stars },
+    };
+  }
+  if (version < 5) {
+    // New "frogger" mode: give existing players zeroed frogger counters.
+    p = {
+      ...p,
+      roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+      stars: { ...EMPTY_STARS, ...p.stars },
+    };
+  }
+  return p;
+}
 
 /** Stars earned in a mode on this device. */
 export function useStars(mode: GameMode): number {

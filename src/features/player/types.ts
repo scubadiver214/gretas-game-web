@@ -1,13 +1,29 @@
 export type CharacterId = "boy" | "girl";
 
-export type GameMode = "kitchen" | "delivery" | "wordle";
+export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger";
 
-export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle"] as const;
+export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger"] as const;
 
 export const MODE_LABELS: Record<GameMode, string> = {
   kitchen: "Pizza Kitchen",
   delivery: "Bike Delivery",
   wordle: "Word Quest",
+  frogger: "Frogger Adventure",
+};
+
+/** One-word labels for tabs and small buttons. */
+export const MODE_SHORT_LABELS: Record<GameMode, string> = {
+  kitchen: "Kitchen",
+  delivery: "Delivery",
+  wordle: "Words",
+  frogger: "Frogger",
+};
+
+export const MODE_EMOJI: Record<GameMode, string> = {
+  kitchen: "🍕",
+  delivery: "🛵",
+  wordle: "🔤",
+  frogger: "🐸",
 };
 
 export const CHARACTER_LABELS: Record<CharacterId, string> = {

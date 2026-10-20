@@ -36,7 +36,11 @@ export type SoundId =
   | "fanfare" // results screen
   | "best" // new personal best sting
   | "levelup" // level unlocked
-  | "unlock"; // achievement / cosmetic unlocked
+  | "unlock" // achievement / cosmetic unlocked
+  | "hop" // frog hop
+  | "home" // frog reached a home bay
+  | "levelclear" // all five bays filled
+  | "gameover"; // last life lost
 
 /**
  * Optional recorded samples. Paths are relative to /public. Provide one or
@@ -413,6 +417,43 @@ const SYNTH: Record<SoundId, { variation: number; alternates: ((v: Voice) => voi
         tone(v, { type: "sine", from: 1568, duration: 0.5, gain: 0.1, attack: 0.002 });
         tone(v, { type: "sine", from: 2093, start: 0.12, duration: 0.6, gain: 0.1, attack: 0.002 });
         tone(v, { type: "sine", from: 2637, start: 0.24, duration: 0.8, gain: 0.08, attack: 0.002 });
+      },
+    ],
+  },
+  hop: {
+    variation: 0.08,
+    alternates: [
+      (v) => tone(v, { type: "square", from: 380, to: 760, duration: 0.07, gain: 0.06, lowpass: 2600, attack: 0.003 }),
+      (v) => tone(v, { type: "square", from: 420, to: 820, duration: 0.065, gain: 0.06, lowpass: 2600, attack: 0.003 }),
+    ],
+  },
+  home: {
+    variation: 0.01,
+    alternates: [
+      (v) => {
+        [G5, C6, E6].forEach((f, i) => pluck(v, f, i * 0.07, 0.2, 0.14));
+        tone(v, { type: "sine", from: 2093, start: 0.2, duration: 0.4, gain: 0.05, attack: 0.002 });
+      },
+    ],
+  },
+  levelclear: {
+    variation: 0,
+    alternates: [
+      (v) => {
+        [C5, E5, G5, C6, G5, C6, E6].forEach((f, i) => pluck(v, f, i * 0.09, i === 6 ? 0.6 : 0.16, 0.15));
+        chord(v, [C5, E5, G5, C6], 0.63, 0.9, 0.06, "sine");
+        noise(v, { duration: 0.8, start: 0.63, gain: 0.03, type: "highpass", frequency: 5000, attack: 0.05 });
+      },
+    ],
+  },
+  gameover: {
+    variation: 0,
+    alternates: [
+      (v) => {
+        [G5, E5, C5, G5 / 2].forEach((f, i) => {
+          tone(v, { type: "triangle", from: f, start: i * 0.2, duration: i === 3 ? 0.7 : 0.22, gain: 0.13 });
+          tone(v, { type: "square", from: f / 2, start: i * 0.2, duration: i === 3 ? 0.7 : 0.2, gain: 0.03, lowpass: 900 });
+        });
       },
     ],
   },

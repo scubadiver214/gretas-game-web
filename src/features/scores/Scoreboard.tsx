@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -30,7 +30,7 @@ import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
-import { CHARACTER_LABELS, MODE_LABELS, type GameMode } from "@/features/player/types";
+import { CHARACTER_LABELS, GAME_MODES, MODE_EMOJI, MODE_LABELS, type GameMode } from "@/features/player/types";
 import { dailyKey } from "@/lib/rng";
 import { useTopScores } from "./hooks";
 import type { Board, ScoreEntry } from "./api";
@@ -143,7 +143,7 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
         <Box sx={{ fontSize: 56, lineHeight: 1, mb: 1 }} aria-hidden>
-          {mode === "kitchen" ? "🍕" : mode === "delivery" ? "🛵" : "🔤"}
+          {MODE_EMOJI[mode]}
         </Box>
         <Typography variant="h4">{board === "daily" ? "Nobody has played today yet" : "No scores yet"}</Typography>
         <Typography sx={{ color: "text.secondary" }}>
@@ -199,7 +199,11 @@ export default function Scoreboard() {
   const hydrated = usePlayerHydrated();
   const storedNickname = usePlayerStore((s) => s.nickname);
   const nickname = hydrated ? storedNickname : "";
-  const [mode, setMode] = useState<GameMode>("kitchen");
+  // /scoreboard?mode=frogger opens straight onto that game's tab.
+  const requested = useSearchParams().get("mode");
+  const [mode, setMode] = useState<GameMode>(() =>
+    GAME_MODES.includes(requested as GameMode) ? (requested as GameMode) : "kitchen",
+  );
   const [board, setBoard] = useState<Board>("all");
 
   return (
@@ -242,10 +246,22 @@ export default function Scoreboard() {
             variant="fullWidth"
             textColor="primary"
             indicatorColor="primary"
+            sx={{ "& .MuiTab-root": { minWidth: 0, px: { xs: 0.5, sm: 1.5 }, gap: { xs: 0.25, sm: 0.75 } } }}
           >
             <Tab value="kitchen" icon={<LocalPizzaRoundedIcon />} iconPosition="start" label="Kitchen" sx={{ minHeight: 56 }} />
             <Tab value="delivery" icon={<PedalBikeRoundedIcon />} iconPosition="start" label="Delivery" sx={{ minHeight: 56 }} />
             <Tab value="wordle" icon={<AbcRoundedIcon />} iconPosition="start" label="Words" sx={{ minHeight: 56 }} />
+            <Tab
+              value="frogger"
+              icon={
+                <Box component="span" aria-hidden sx={{ fontSize: 20, lineHeight: 1 }}>
+                  🐸
+                </Box>
+              }
+              iconPosition="start"
+              label="Frogger"
+              sx={{ minHeight: 56 }}
+            />
           </Tabs>
           <ScoreTable mode={mode} board={board} me={nickname} />
         </Paper>
