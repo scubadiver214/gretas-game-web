@@ -11,11 +11,13 @@ function Turntable({
   active,
   color,
   hairColor,
+  skinColor,
 }: {
   character: CharacterId;
   active: boolean;
   color?: string;
   hairColor?: string;
+  skinColor?: string;
 }) {
   const ref = useRef<Group>(null);
   useFrame((_, delta) => {
@@ -24,7 +26,7 @@ function Turntable({
   });
   return (
     <group ref={ref}>
-      <Character character={character} pose="idle" position={[0, -0.9, 0]} color={color} hairColor={hairColor} />
+      <Character character={character} pose="idle" position={[0, -0.9, 0]} color={color} hairColor={hairColor} skinColor={skinColor} />
       <mesh position={[0, -0.95, 0]} receiveShadow>
         <cylinderGeometry args={[0.9, 0.9, 0.1, 32]} />
         <meshStandardMaterial color={active ? "#FDE68A" : "#EADFD0"} />
@@ -38,11 +40,13 @@ export default function CharacterPreview({
   active,
   color,
   hairColor,
+  skinColor,
 }: {
   character: CharacterId;
   active: boolean;
   color?: string;
   hairColor?: string;
+  skinColor?: string;
 }) {
   return (
     <Canvas
@@ -54,7 +58,7 @@ export default function CharacterPreview({
       <ambientLight intensity={0.9} />
       <directionalLight position={[3, 5, 4]} intensity={1.4} castShadow />
       <Suspense fallback={null}>
-        <Turntable character={character} active={active} color={color} hairColor={hairColor} />
+        <Turntable character={character} active={active} color={color} hairColor={hairColor} skinColor={skinColor} />
       </Suspense>
     </Canvas>
   );

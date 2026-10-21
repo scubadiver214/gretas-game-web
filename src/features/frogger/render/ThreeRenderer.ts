@@ -27,7 +27,7 @@ import { buildFrog, type FrogRig } from "./meshes/frog";
 import { LOG_RADIUS, LOG_Y, buildLog } from "./meshes/log";
 import { buildTurtleGroup, type TurtleGroupRig } from "./meshes/turtle";
 import { buildVehicle } from "./meshes/vehicles";
-import { Particles } from "./particles";
+import { Particles } from "@/components/three/particles";
 import { WATER_Y, Water } from "./water";
 
 interface LaneItem {

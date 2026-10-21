@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { CharacterId } from "@/features/player/types";
 
-export type CharacterPose = "idle" | "cook" | "bike";
+export type CharacterPose = "idle" | "cook" | "bike" | "run";
 
 export interface CharacterProps {
   character: CharacterId;
@@ -22,6 +22,8 @@ export interface CharacterProps {
   color?: string;
   /** Hair colour override. */
   hairColor?: string;
+  /** Skin tone override. */
+  skinColor?: string;
 }
 
 /** Hip height: legs hang below this, torso/arms/head sit above it. */
@@ -32,8 +34,8 @@ const STYLE: Record<
   CharacterId,
   { top: string; bottom: string; hair: string; shoes: string; accent: string }
 > = {
-  boy: { top: "#3B82F6", bottom: "#2B2D42", hair: "#5A3A1B", shoes: "#F2542D", accent: "#FDE68A" },
-  girl: { top: "#E85D9A", bottom: "#7C3AED", hair: "#F2B134", shoes: "#0E9594", accent: "#FDE68A" },
+  boy: { top: "#2B2D42", bottom: "#3B2F26", hair: "#E6E8EE", shoes: "#202020", accent: "#FDE68A" },
+  girl: { top: "#2B2D42", bottom: "#1D1C22", hair: "#E6E8EE", shoes: "#2A2930", accent: "#FDE68A" },
 };
 
 /**
@@ -50,6 +52,7 @@ export function PrimitiveCharacter({
   wobble = 0,
   color,
   hairColor,
+  skinColor,
 }: CharacterProps) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -57,7 +60,12 @@ export function PrimitiveCharacter({
   const rightLeg = useRef<Group>(null);
   const leftArm = useRef<Group>(null);
   const rightArm = useRef<Group>(null);
-  const style = { ...STYLE[character], ...(color && { top: color }), ...(hairColor && { hair: hairColor }) };
+  const style = {
+    ...STYLE[character],
+    skin: skinColor ?? SKIN,
+    ...(color && { top: color }),
+    ...(hairColor && { hair: hairColor }),
+  };
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -81,6 +89,12 @@ export function PrimitiveCharacter({
       if (rightArm.current) rightArm.current.rotation.x = -1.1 - a;
       if (leftLeg.current) leftLeg.current.rotation.x = 0;
       if (rightLeg.current) rightLeg.current.rotation.x = 0;
+    } else if (pose === "run") {
+      const a = Math.sin(t * 14) * 0.8;
+      if (leftLeg.current) leftLeg.current.rotation.x = a;
+      if (rightLeg.current) rightLeg.current.rotation.x = -a;
+      if (leftArm.current) leftArm.current.rotation.x = -a * 0.8;
+      if (rightArm.current) rightArm.current.rotation.x = a * 0.8;
     } else {
       const a = Math.sin(t * 2.2) * 0.12;
       if (leftArm.current) leftArm.current.rotation.x = a;
@@ -143,7 +157,7 @@ export function PrimitiveCharacter({
           </mesh>
           <mesh position={[0, -0.52, 0]}>
             <sphereGeometry args={[0.09, 12, 12]} />
-            <meshStandardMaterial color={SKIN} />
+            <meshStandardMaterial color={style.skin} />
           </mesh>
         </group>
         <group ref={rightArm} position={[0.33, 0.58, 0]}>
@@ -153,7 +167,7 @@ export function PrimitiveCharacter({
           </mesh>
           <mesh position={[0, -0.52, 0]}>
             <sphereGeometry args={[0.09, 12, 12]} />
-            <meshStandardMaterial color={SKIN} />
+            <meshStandardMaterial color={style.skin} />
           </mesh>
         </group>
 
@@ -161,7 +175,7 @@ export function PrimitiveCharacter({
         <group position={[0, 0.98, 0]}>
           <mesh castShadow>
             <sphereGeometry args={[0.3, 24, 24]} />
-            <meshStandardMaterial color={SKIN} />
+            <meshStandardMaterial color={style.skin} />
           </mesh>
           {/* Eyes */}
           <mesh position={[-0.1, 0.04, 0.26]}>

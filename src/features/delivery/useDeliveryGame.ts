@@ -219,7 +219,7 @@ export const useDeliveryGame = create<DeliveryState>()((set, get) => ({
     const next = applyObstacle(s);
     if (kind === "puddle") fx.splash();
     else fx.crash();
-    juice.popup(kind === "puddle" ? "-10 Splash!" : "-10 Whoa!", "bad", at);
+    juice.popup(kind === "puddle" ? "-10 Splash!" : kind === "car" ? "-10 Car!" : "-10 Whoa!", "bad", at);
     juice.shakeCamera(kind === "puddle" ? 0.12 : 0.22);
     juice.hitStop(kind === "puddle" ? 40 : 80);
     juice.flashScreen("rgba(242,84,45,0.3)");

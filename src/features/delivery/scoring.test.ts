@@ -19,6 +19,8 @@ import {
   deliveryStars,
   jumpHeight,
   pickSpawn,
+  carIntervalFor,
+  pickCarLane,
   spawnIntervalFor,
   speedFor,
 } from "./scoring";
@@ -44,10 +46,20 @@ describe("applyObstacle", () => {
 });
 
 describe("speed + spawning", () => {
-  it("ramps from base speed and caps", () => {
+  it("ramps from base speed and hits top speed before the ride is half over", () => {
     expect(speedFor(0)).toBe(BASE_SPEED);
-    expect(speedFor(10_000)).toBe(MAX_SPEED);
     expect(speedFor(20)).toBeGreaterThan(BASE_SPEED);
+    expect(speedFor(24)).toBeLessThan(MAX_SPEED);
+    expect(speedFor(25)).toBe(MAX_SPEED);
+    expect(speedFor(10_000)).toBe(MAX_SPEED);
+  });
+  it("sends oncoming cars at a random gap that shrinks with level", () => {
+    const easy = deliveryDifficultyFor(1);
+    const hard = deliveryDifficultyFor(5);
+    expect(carIntervalFor(() => 0, easy)).toBeGreaterThan(carIntervalFor(() => 0, hard));
+    expect(carIntervalFor(() => 1, easy)).toBeGreaterThan(carIntervalFor(() => 0, easy));
+    expect(pickCarLane(() => 0)).toBe(0);
+    expect(pickCarLane(() => 0.99)).toBe(LANE_COUNT - 1);
   });
   it("spawns faster at higher speed but not below the floor", () => {
     expect(spawnIntervalFor(MAX_SPEED)).toBeLessThan(spawnIntervalFor(BASE_SPEED));

@@ -13,7 +13,10 @@ export const POINTS_COMBO = 15;
 
 export const BASE_SPEED = 9; // world units per second
 export const MAX_SPEED = 16;
-export const SPEED_RAMP = 0.11; // per second elapsed
+/** Per second elapsed. Reaches top speed about 25s into a 60s ride. */
+export const SPEED_RAMP = 0.28;
+/** Extra speed of an oncoming car, on top of the bike's own pace. */
+export const CAR_SPEED = 8;
 
 /** Bike hop: total airtime and peak height (world units). */
 export const JUMP_SECONDS = 0.7;
@@ -21,7 +24,7 @@ export const JUMP_HEIGHT = 1.15;
 /** Above this height the bike clears ground obstacles (and misses mailboxes). */
 export const CLEAR_HEIGHT = 0.35;
 
-export type ItemKind = "mailbox" | "cone" | "puddle" | "barrier" | "star";
+export type ItemKind = "mailbox" | "cone" | "puddle" | "barrier" | "star" | "car";
 export type PowerUpKind = "magnet" | "shield" | "turbo";
 
 export const POWER_UP_SECONDS: Record<PowerUpKind, number> = { magnet: 9, shield: 0, turbo: 6 };
@@ -88,6 +91,21 @@ export function speedFor(elapsedSeconds: number, d: DeliveryDifficulty = LEVEL_1
 /** Seconds between spawns; shrinks slightly as speed rises to keep density up. */
 export function spawnIntervalFor(speed: number, d: DeliveryDifficulty = LEVEL_1): number {
   return Math.max(0.55, d.spawnBase * (d.baseSpeed / speed));
+}
+
+/**
+ * Random wait before the next oncoming car. Higher levels leave a shorter gap,
+ * and each call rolls somewhere between the short and long end of that gap.
+ */
+export function carIntervalFor(rng: Rng, d: DeliveryDifficulty = LEVEL_1): number {
+  const min = Math.max(1.5, 2.6 - (d.level - 1) * 0.22);
+  const span = Math.max(1.2, 2.6 - (d.level - 1) * 0.2);
+  return min + rng() * span;
+}
+
+/** Lane for the next oncoming car. */
+export function pickCarLane(rng: Rng): number {
+  return Math.floor(rng() * LANE_COUNT);
 }
 
 export function clampLane(lane: number): number {

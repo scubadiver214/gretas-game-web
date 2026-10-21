@@ -24,8 +24,10 @@ import {
   CHARACTER_LABELS,
   DEFAULT_COLOR,
   DEFAULT_HAIR_COLOR,
+  DEFAULT_SKIN_COLOR,
   HAIR_COLORS,
   PLAYER_COLORS,
+  SKIN_COLORS,
   type BikeSkinId,
   type CharacterId,
 } from "@/features/player/types";
@@ -65,9 +67,11 @@ function Inner() {
   const saved = usePlayerStore((s) => s.character);
   const savedColor = usePlayerStore((s) => s.color);
   const savedHairColor = usePlayerStore((s) => s.hairColor);
+  const savedSkinColor = usePlayerStore((s) => s.skinColor);
   const setCharacter = usePlayerStore((s) => s.setCharacter);
   const setColor = usePlayerStore((s) => s.setColor);
   const setHairColor = usePlayerStore((s) => s.setHairColor);
+  const setSkinColor = usePlayerStore((s) => s.setSkinColor);
   const bikeSkin = usePlayerStore((s) => s.bikeSkin);
   const setBikeSkin = usePlayerStore((s) => s.setBikeSkin);
   const achievements = usePlayerStore((s) => s.achievements);
@@ -80,8 +84,12 @@ function Inner() {
   const [pickedHairColor, setPickedHairColor] = useState<string | null>(
     saved && savedHairColor !== DEFAULT_HAIR_COLOR[saved] ? savedHairColor : null,
   );
+  const [pickedSkinColor, setPickedSkinColor] = useState<string | null>(
+    saved && savedSkinColor !== DEFAULT_SKIN_COLOR[saved] ? savedSkinColor : null,
+  );
   const previewColor = (id: CharacterId) => pickedColor ?? DEFAULT_COLOR[id];
   const previewHairColor = (id: CharacterId) => pickedHairColor ?? DEFAULT_HAIR_COLOR[id];
+  const previewSkinColor = (id: CharacterId) => pickedSkinColor ?? DEFAULT_SKIN_COLOR[id];
 
   return (
     <PageContainer>
@@ -132,6 +140,7 @@ function Inner() {
                     active={active}
                     color={previewColor(opt.id)}
                     hairColor={previewHairColor(opt.id)}
+                    skinColor={previewSkinColor(opt.id)}
                   />
                   {active && (
                     <Box
@@ -162,6 +171,39 @@ function Inner() {
             );
           })}
         </Stack>
+
+        <Box>
+          <SectionLabel>✋ Pick your skin colour</SectionLabel>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ justifyContent: "center", flexWrap: "wrap" }} role="radiogroup" aria-label="Skin colour">
+            {SKIN_COLORS.map((c) => {
+              const current = selected ? previewSkinColor(selected) : pickedSkinColor;
+              const on = current === c.id;
+              const light = c.id === "#FBE4D6" || c.id === "#F6C9A0" || c.id === "#E8B48A" || c.id === "#CEAD86";
+              return (
+                <ButtonBase
+                  key={c.id}
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={c.label}
+                  onClick={() => setPickedSkinColor(c.id)}
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "50%",
+                    bgcolor: c.id,
+                    border: on ? `3px solid ${N.white}` : `3px solid ${N.panelEdge}`,
+                    boxShadow: on ? `0 0 14px ${c.id}` : "0 3px 8px rgba(0,0,0,0.4)",
+                    transform: on ? "translateY(-2px)" : "none",
+                    transition: "transform 120ms ease, box-shadow 120ms ease",
+                    "&:active": { transform: "translateY(3px)" },
+                  }}
+                >
+                  {on && <CheckRoundedIcon sx={{ color: light ? N.bg : N.white, fontSize: 24 }} />}
+                </ButtonBase>
+              );
+            })}
+          </Stack>
+        </Box>
 
         <Box>
           <SectionLabel>🎨 Pick your colour</SectionLabel>
@@ -222,7 +264,7 @@ function Inner() {
                 >
                   {on && (
                     <CheckRoundedIcon
-                      sx={{ color: c.id === "#EADCC8" || c.id === "#F2B134" ? N.bg : N.white, fontSize: 24 }}
+                      sx={{ color: ["#E6E8EE", "#EADCC8", "#F2B134"].includes(c.id) ? N.bg : N.white, fontSize: 24 }}
                     />
                   )}
                 </ButtonBase>
@@ -294,6 +336,7 @@ function Inner() {
               setCharacter(selected);
               setColor(previewColor(selected));
               setHairColor(previewHairColor(selected));
+              setSkinColor(previewSkinColor(selected));
               setBikeSkin(pickedSkin);
               router.push("/adventure");
             }}

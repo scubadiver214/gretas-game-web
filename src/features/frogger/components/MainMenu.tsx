@@ -7,7 +7,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import { SettingsToggles } from "@/components/HUD";
+import { BackToShopButton, SettingsToggles } from "@/components/HUD";
 import Panel from "@/components/ui/Panel";
 import { N } from "@/design/neon";
 import { LIVES } from "../config";
@@ -28,6 +28,7 @@ export default function MainMenu({
   stats,
   onPlay,
   onRanks,
+  onClose,
 }: {
   nickname: string;
   isDaily: boolean;
@@ -35,12 +36,14 @@ export default function MainMenu({
   stats: FroggerStats | undefined;
   onPlay: () => void;
   onRanks: () => void;
+  onClose: () => void;
 }) {
   return (
     <Box sx={{ position: "fixed", inset: 0, zIndex: 10, display: "flex", p: 2, bgcolor: "rgba(5,8,13,0.62)", overflow: "auto" }}>
-      <Panel accent={N.frogger} padding={2.25} sx={{ maxWidth: 440, width: "100%", m: "auto" }}>
+      <Box sx={{ position: "relative", maxWidth: 440, width: "100%", m: "auto" }}>
+      <Panel accent={N.frogger} padding={2.25}>
         <Stack spacing={1.5}>
-          <Box sx={{ textAlign: "center" }}>
+          <Box sx={{ textAlign: "center", px: 4 }}>
             <Typography variant="h2" component="h1" sx={{ color: N.frogger, textShadow: `0 0 14px ${N.frogger}66` }}>
               🐸 Frogger Adventure
             </Typography>
@@ -90,6 +93,8 @@ export default function MainMenu({
           </Box>
         </Stack>
       </Panel>
+      <BackToShopButton onClick={onClose} />
+      </Box>
     </Box>
   );
 }

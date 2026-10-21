@@ -1,3 +1,4 @@
+import { Emitter } from "@/lib/game/events";
 import { seededRng } from "@/lib/rng";
 import {
   COLS,
@@ -13,7 +14,6 @@ import {
 import { levelDef } from "../levelConfig";
 import type { DeathCause, Dir, EnginePhase, FroggerEvent, FrogState, GameSummary, HudSnapshot, Lane } from "../types";
 import { bayAt, hitsVehicle } from "./collision";
-import { Emitter } from "./events";
 import { advanceHop, createFrog, frogY, isRiverRow, requestMove, startHop } from "./frog";
 import { laneVelocity, platformUnder } from "./lanes";
 import { buildLanes, laneForRow } from "./levels";

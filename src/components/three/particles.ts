@@ -19,6 +19,7 @@ interface P {
 const SPLASH = ["#E0F2FF", "#9AD4FF", "#FFFFFF", "#5FB4FF"];
 const SPARKLE = ["#FFD54D", "#3DFF88", "#FFFFFF", "#B6FF3B"];
 const FIREWORK = ["#FF4FD8", "#41C9FF", "#FFD54D", "#3DFF88", "#FF6A57", "#B78AFF"];
+const SMOKE = ["#4B4F58", "#6B7080", "#3A3D44"];
 
 /**
  * One instanced mesh for every effect particle (splashes, sparkles, dust,
@@ -77,6 +78,15 @@ export class Particles {
     for (let i = 0; i < 6; i++) {
       const a = Math.random() * Math.PI * 2;
       this.spawn(x, 0.05, z, Math.cos(a) * 0.8, 0.4 + Math.random() * 0.4, Math.sin(a) * 0.8, "#D9DCE3", 0.35, 0.04, 1);
+    }
+  }
+
+  /** Slow grey puffs that drift upwards (burnt food). */
+  smoke(x: number, y: number, z: number): void {
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const grey = SMOKE[i % SMOKE.length];
+      this.spawn(x + Math.cos(a) * 0.15, y, z + Math.sin(a) * 0.15, Math.cos(a) * 0.15, 0.7 + Math.random() * 0.4, Math.sin(a) * 0.15, grey, 1.1 + Math.random() * 0.5, 0.09 + Math.random() * 0.05, -0.2);
     }
   }
 

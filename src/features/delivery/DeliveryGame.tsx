@@ -9,6 +9,7 @@ import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import AttractionsRoundedIcon from "@mui/icons-material/AttractionsRounded";
 import GameShell from "@/components/GameShell";
+import { useRoundMusic } from "@/components/MusicDirector";
 import RequirePlayer from "@/components/RequirePlayer";
 import TouchControls from "@/components/TouchControls";
 import { ComboMeter, CountdownOverlay, FlashOverlay, IntroCard, QuitButton, ScorePill, ScorePopups, SettingsToggles, TimerPill } from "@/components/HUD";
@@ -86,11 +87,13 @@ function Inner() {
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
   const hairColor = usePlayerStore((s) => s.hairColor);
+  const skinColor = usePlayerStore((s) => s.skinColor);
   const bikeSkin = usePlayerStore((s) => s.bikeSkin);
   const finishRound = usePlayerStore((s) => s.finishRound);
   const setup = useRoundSetup("delivery");
 
   const phase = useDeliveryGame((s) => s.phase);
+  useRoundMusic(phase === "countdown" || phase === "riding");
   const config = useDeliveryGame((s) => s.config);
   const score = useDeliveryGame((s) => s.score);
   const combo = useDeliveryGame((s) => s.combo);
@@ -176,7 +179,7 @@ function Inner() {
     <GameShell
       scene={
         <>
-          <DeliveryScene character={character} color={color} hairColor={hairColor} bikeSkin={bikeSkin} />
+          <DeliveryScene character={character} color={color} hairColor={hairColor} skinColor={skinColor} bikeSkin={bikeSkin} />
           {riding && (
             <Box
               aria-hidden
@@ -223,13 +226,15 @@ function Inner() {
               lines={[
                 "Ride through town and hit the glowing mailboxes to deliver pizzas.",
                 "Swipe or tap the arrows to change lanes. Tap the screen or swipe up to jump!",
-                "Dodge cones and puddles, hop over barriers. You have 60 seconds.",
+                "Dodge cones, puddles, and oncoming cars. Hop over barriers. You have 60 seconds.",
+                "The bike speeds up as you ride. Change lanes to miss the cars — a jump will not clear them.",
                 "Grab stars for a magnet, shield or turbo boost.",
                 ...(setup.isDaily ? ["Everyone rides the same street today. Beat the world!"] : []),
-                ...(setup.level > 1 && !setup.isDaily ? [`Level ${setup.level}: faster bike, more cones!`] : []),
+                ...(setup.level > 1 && !setup.isDaily ? [`Level ${setup.level}: faster bike, more cones, and tighter traffic.`] : []),
               ]}
               cta="Start riding"
               onStart={onStart}
+              onClose={() => router.push("/adventure")}
             />
           )}
           {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

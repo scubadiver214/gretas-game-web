@@ -48,6 +48,30 @@ export function QuitButton({ onQuit }: { onQuit: () => void }) {
   );
 }
 
+/** X on a pre-game card. Leaves the round before it starts and returns to the shop. */
+export function BackToShopButton({ onClick }: { onClick: () => void }) {
+  return (
+    <IconButton
+      aria-label="Back to shop"
+      onClick={onClick}
+      sx={{
+        position: "absolute",
+        top: 10,
+        right: 10,
+        zIndex: 1,
+        width: 40,
+        height: 40,
+        color: N.text,
+        bgcolor: N.bgRaise,
+        border: `1px solid ${N.panelEdge}`,
+        "&:hover": { bgcolor: N.panel },
+      }}
+    >
+      <CloseRoundedIcon />
+    </IconButton>
+  );
+}
+
 const POPUP_COLORS: Record<PopupTone, string> = {
   good: N.brand,
   great: N.sun,
@@ -280,6 +304,7 @@ export function IntroCard({
   cta,
   accent = N.delivery,
   onStart,
+  onClose,
 }: {
   title: string;
   /** Small chip under the title, e.g. the level or "Daily challenge". */
@@ -288,6 +313,8 @@ export function IntroCard({
   cta: string;
   accent?: string;
   onStart: () => void;
+  /** Leave before the round starts. */
+  onClose?: () => void;
 }) {
   return (
     <Box
@@ -298,11 +325,13 @@ export function IntroCard({
         placeItems: "center",
         p: 2,
         bgcolor: "rgba(5,8,13,0.72)",
+        zIndex: 2,
       }}
     >
       <Panel accent={accent} padding={2.5} sx={{ maxWidth: 400, width: "100%" }}>
+        {onClose && <BackToShopButton onClick={onClose} />}
         <Stack spacing={1.5}>
-          <Box sx={{ textAlign: "center" }}>
+          <Box sx={{ textAlign: "center", px: onClose ? 4 : 0 }}>
             <Typography
               variant="h2"
               component="h2"

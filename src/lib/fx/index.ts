@@ -60,9 +60,12 @@ export const fx = {
 // the time. The settings-store subscriber uses this to resume when the player
 // turns sound back on mid-session.
 let lastWanted: MusicTrackId | null = null;
+/** True from a game's countdown until that round ends. play() is ignored. */
+let roundSilenced = false;
 
 export const music = {
   play: (track: MusicTrackId) => {
+    if (roundSilenced) return;
     lastWanted = track; // remember even when currently muted
     const { soundOn, musicOn } = useSettingsStore.getState();
     if (!soundOn || !musicOn) return;
@@ -71,6 +74,16 @@ export const music = {
   stop: (fade = 0.5) => {
     lastWanted = null;
     stopMusic(fade);
+  },
+  /** Drop the soundtrack for a round. Taps and the music toggle cannot bring it back. */
+  holdForRound: () => {
+    roundSilenced = true;
+    lastWanted = null;
+    stopMusic(0.4);
+  },
+  /** Allow the soundtrack again. Does not start it; the next play() does. */
+  releaseRound: () => {
+    roundSilenced = false;
   },
   /** 0..1 – no-op for recorded audio, kept for call-site compatibility. */
   intensity: (v: number) => setMusicIntensity(v),
@@ -84,7 +97,8 @@ useSettingsStore.subscribe((s) => {
   setLevels({ master: s.soundOn ? 1 : 0, sfx: s.sfxVolume, music: s.musicOn ? s.musicVolume : 0 });
   const playing = currentMusic();
   if ((!s.soundOn || !s.musicOn) && playing) {
-    stopMusic(0.3);
+    // Keep the playlist so turning music back on resumes the same song.
+    stopMusic(0.3, true);
   } else if (s.soundOn && s.musicOn && !playing && lastWanted) {
     startMusic(lastWanted);
   }

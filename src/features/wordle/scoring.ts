@@ -2,6 +2,7 @@
  * Pure game rules for the kids' word game. No React, so this file is
  * trivially unit-testable (see scoring.test.ts).
  *
+ * Secret words come only from kids_wordle_words.txt (see words.ts).
  * Unlike the original Wordle, guesses only need to match the secret word's
  * length - there is no "not in word list" rejection. That keeps things
  * forgiving for younger players who are still building their vocabulary.

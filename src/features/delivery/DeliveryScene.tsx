@@ -8,7 +8,7 @@ import { C } from "@/design/tokens";
 import { Character } from "@/features/characters/Character";
 import { BIKE_SKIN_BY_ID, type BikeSkinId, type CharacterId } from "@/features/player/types";
 import { isFrozen, shakeOffset, useJuice } from "@/lib/fx";
-import { CLEAR_HEIGHT, LANE_X, jumpHeight, pickSpawn, spawnIntervalFor, speedFor, type ItemKind, type PowerUpKind } from "./scoring";
+import { CAR_SPEED, CLEAR_HEIGHT, LANE_X, carIntervalFor, jumpHeight, pickCarLane, pickSpawn, spawnIntervalFor, speedFor, type ItemKind, type PowerUpKind } from "./scoring";
 import { isMagnet, isTurbo, useDeliveryGame } from "./useDeliveryGame";
 
 const CAMERA_VFOV = 55;
@@ -36,6 +36,8 @@ interface PoolItem {
   active: boolean;
   done: boolean;
   powerUp?: PowerUpKind;
+  /** Paint for oncoming cars. */
+  color?: string;
 }
 
 interface Particle {
@@ -101,6 +103,7 @@ function Bike({
   character,
   color,
   hairColor,
+  skinColor,
   skin,
   pedaling,
   wobble,
@@ -108,6 +111,7 @@ function Bike({
   character: CharacterId;
   color?: string;
   hairColor?: string;
+  skinColor?: string;
   skin: BikeSkinId;
   pedaling: boolean;
   wobble: number;
@@ -188,7 +192,7 @@ function Bike({
         <circleGeometry args={[0.1, 16]} />
         <meshStandardMaterial color="#F2542D" />
       </mesh>
-      <Character character={character} color={color} hairColor={hairColor} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
+      <Character character={character} color={color} hairColor={hairColor} skinColor={skinColor} pose="bike" pedaling={pedaling} wobble={wobble} position={[0, 0.72, 0.28]} rotation={[0, Math.PI, 0]} scale={0.85} />
     </group>
   );
 }
@@ -197,7 +201,7 @@ function Bike({
 // Items
 // ---------------------------------------------------------------------------
 
-function ItemMesh({ kind }: { kind: ItemKind }) {
+function ItemMesh({ kind, color = "#F2542D" }: { kind: ItemKind; color?: string }) {
   if (kind === "mailbox") {
     return (
       <group>
@@ -263,6 +267,38 @@ function ItemMesh({ kind }: { kind: ItemKind }) {
           <boxGeometry args={[1.8, 0.08, 0.06]} />
           <meshStandardMaterial color="#FFFFFF" />
         </mesh>
+      </group>
+    );
+  }
+  if (kind === "car") {
+    return (
+      <group>
+        <mesh position={[0, 0.42, 0]} castShadow>
+          <boxGeometry args={[1.15, 0.48, 2.15]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <mesh position={[0, 0.82, -0.15]} castShadow>
+          <boxGeometry args={[1.0, 0.42, 1.05]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <mesh position={[0, 0.82, 0.12]}>
+          <boxGeometry args={[0.9, 0.28, 0.72]} />
+          <meshStandardMaterial color="#BFE7FF" />
+        </mesh>
+        {[-0.38, 0.38].map((x) => (
+          <mesh key={x} position={[x, 0.4, 1.08]}>
+            <boxGeometry args={[0.22, 0.14, 0.06]} />
+            <meshStandardMaterial color="#FDE68A" emissive="#FDE68A" emissiveIntensity={1.6} />
+          </mesh>
+        ))}
+        {[-0.68, 0.68].map((z) =>
+          [-0.58, 0.58].map((x) => (
+            <mesh key={`${x}${z}`} position={[x, 0.2, z]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.22, 0.22, 0.14, 12]} />
+              <meshStandardMaterial color="#1F2937" />
+            </mesh>
+          )),
+        )}
       </group>
     );
   }
@@ -555,11 +591,13 @@ function World({
   character,
   color,
   hairColor,
+  skinColor,
   bikeSkin,
 }: {
   character: CharacterId;
   color?: string;
   hairColor?: string;
+  skinColor?: string;
   bikeSkin: BikeSkinId;
 }) {
   const phase = useDeliveryGame((s) => s.phase);
@@ -583,13 +621,13 @@ function World({
   // Object pool: fixed set of meshes per kind, moved around by the simulation.
   const pool = useMemo<PoolItem[]>(() => {
     const mk = (kind: ItemKind, n: number) => Array.from({ length: n }, () => ({ kind, lane: 0, x: 0, z: 0, active: false, done: false }));
-    return [...mk("mailbox", 7), ...mk("cone", 4), ...mk("puddle", 4), ...mk("barrier", 3), ...mk("star", 2)];
+    return [...mk("mailbox", 7), ...mk("cone", 4), ...mk("puddle", 4), ...mk("barrier", 3), ...mk("star", 2), ...mk("car", 4)];
   }, []);
   // Particles live in a ref: they are mutated every frame and never drive React renders.
   const particles = useRef<Particle[]>(
     Array.from({ length: PARTICLE_COUNT }, () => ({ life: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, color: new Color("#fff"), size: 0.1 })),
   );
-  const sim = useRef({ spawnIn: 1.2, lastLane: 1, wasAirborne: false, landedAt: 0, lastLaneChange: 0, lastDeliveries: 0, lastHits: 0, lastPowerUps: 0 });
+  const sim = useRef({ spawnIn: 1.2, carIn: 3, wasRiding: false, lastLane: 1, wasAirborne: false, landedAt: 0, lastLaneChange: 0, lastDeliveries: 0, lastHits: 0, lastPowerUps: 0 });
 
   const emit = (x: number, y: number, z: number, colors: string[], count: number, speed = 3) => {
     let n = 0;
@@ -739,7 +777,22 @@ function World({
       (m.material as MeshStandardMaterial).color.copy(p.color);
     });
 
-    if (s.phase !== "riding") return;
+    if (s.phase !== "riding") {
+      if (sim.current.wasRiding) {
+        sim.current.wasRiding = false;
+        pool.forEach((p, i) => {
+          if (p.kind !== "car") return;
+          p.active = false;
+          const g = itemRefs.current[i];
+          if (g) g.visible = false;
+        });
+      }
+      return;
+    }
+    if (!sim.current.wasRiding) {
+      sim.current.wasRiding = true;
+      sim.current.carIn = carIntervalFor(s.rng, s.difficulty);
+    }
 
     // Spawn.
     sim.current.spawnIn -= dt;
@@ -758,6 +811,25 @@ function World({
       sim.current.spawnIn = spawnIntervalFor(speed, s.difficulty);
     }
 
+    // Oncoming traffic on its own random timer, separate from cones and mailboxes.
+    sim.current.carIn -= dt;
+    if (sim.current.carIn <= 0) {
+      const lane = pickCarLane(s.rng);
+      const blocked = pool.some((p) => p.kind === "car" && p.active && p.lane === lane && p.z < -8);
+      const slot = blocked ? undefined : pool.find((p) => p.kind === "car" && !p.active);
+      if (slot) {
+        slot.active = true;
+        slot.done = false;
+        slot.lane = lane;
+        slot.x = LANE_X[lane];
+        slot.z = SPAWN_Z;
+        slot.color = CAR_COLORS[Math.floor(s.rng() * CAR_COLORS.length)];
+        sim.current.carIn = carIntervalFor(s.rng, s.difficulty);
+      } else {
+        sim.current.carIn = 0.45;
+      }
+    }
+
     // Advance + collide.
     pool.forEach((p, i) => {
       const g = itemRefs.current[i];
@@ -766,7 +838,7 @@ function World({
         g.visible = false;
         return;
       }
-      p.z += move;
+      p.z += p.kind === "car" ? move + CAR_SPEED * dt : move;
       // Magnet: pull nearby mailboxes into the player's lane.
       if (magnet && p.kind === "mailbox" && !p.done && p.z > -MAGNET_RANGE && p.lane !== s.lane) p.lane = s.lane;
       p.x = MathUtils.lerp(p.x, LANE_X[p.lane], 1 - Math.pow(0.001, rawDt));
@@ -777,7 +849,8 @@ function World({
         g.rotation.y += rawDt * 3;
         g.position.y = Math.sin(state.clock.elapsedTime * 4 + i) * 0.12;
       }
-      if (!p.done && p.lane === s.lane && Math.abs(p.z) < HIT_RADIUS) {
+      const reach = p.kind === "car" ? 1.35 : HIT_RADIUS;
+      if (!p.done && p.lane === s.lane && Math.abs(p.z) < reach) {
         if (p.kind === "star") {
           p.done = true;
           p.active = false;
@@ -788,8 +861,8 @@ function World({
             p.active = false;
             s.deliver();
           }
-        } else if (airborne) {
-          // Cleared it in the air.
+        } else if (p.kind !== "car" && airborne) {
+          // Hop clears cones, puddles, and barriers. Cars are too tall.
           p.done = true;
         } else {
           p.done = true;
@@ -913,7 +986,7 @@ function World({
           }}
           visible={false}
         >
-          <ItemMesh kind={p.kind} />
+          <ItemMesh kind={p.kind} color={p.color} />
         </group>
       ))}
 
@@ -932,7 +1005,7 @@ function World({
 
       <group ref={player} position={[0, 0, 0]}>
         <group ref={bikeBody}>
-          <Bike character={character} color={color} hairColor={hairColor} skin={bikeSkin} pedaling={riding} wobble={wobbling ? 1 : 0} />
+          <Bike character={character} color={color} hairColor={hairColor} skinColor={skinColor} skin={bikeSkin} pedaling={riding} wobble={wobbling ? 1 : 0} />
         </group>
         {/* Shield bubble */}
         <mesh position={[0, 0.9, 0]}>
@@ -960,17 +1033,19 @@ export default function DeliveryScene({
   character,
   color,
   hairColor,
+  skinColor,
   bikeSkin = "classic",
 }: {
   character: CharacterId;
   color?: string;
   hairColor?: string;
+  skinColor?: string;
   bikeSkin?: BikeSkinId;
 }) {
   return (
     <Canvas shadows="percentage" dpr={[1, 1.75]} camera={{ position: [0, 4, 7.2], fov: CAMERA_VFOV }}>
       <color attach="background" args={[C.blueSoft]} />
-      <World character={character} color={color} hairColor={hairColor} bikeSkin={bikeSkin} />
+      <World character={character} color={color} hairColor={hairColor} skinColor={skinColor} bikeSkin={bikeSkin} />
     </Canvas>
   );
 }

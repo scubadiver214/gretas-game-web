@@ -10,7 +10,8 @@ import {
   wordleDifficultyFor,
   wordleStars,
 } from "./scoring";
-import { WORDS_BY_LENGTH } from "./words";
+import { readFileSync } from "node:fs";
+import { KIDS_WORDS, parseKidsWordList } from "./words";
 
 function seeded(seed: number) {
   let s = seed;
@@ -44,19 +45,27 @@ describe("lengthForPuzzle", () => {
   });
 });
 
+describe("kids word list", () => {
+  it("is the kids_wordle_words.txt file, one 5-letter word per line", () => {
+    const raw = readFileSync(new URL("./kids_wordle_words.txt", import.meta.url), "utf8");
+    expect(KIDS_WORDS).toEqual(parseKidsWordList(raw));
+    expect(KIDS_WORDS.length).toBeGreaterThan(0);
+    expect(KIDS_WORDS.every((word) => /^[a-z]{5}$/.test(word))).toBe(true);
+    expect(new Set(KIDS_WORDS).size).toBe(KIDS_WORDS.length);
+  });
+});
+
 describe("pickWord / generatePuzzleAnswers", () => {
-  it("picks a word of the requested length", () => {
-    for (const len of [3, 4, 5] as const) {
-      const w = pickWord(len, seeded(len));
-      expect(w).toHaveLength(len);
-      expect(WORDS_BY_LENGTH[len]).toContain(w);
-    }
+  it("picks a 5-letter word from the kids list", () => {
+    const w = pickWord(5, seeded(5));
+    expect(w).toHaveLength(5);
+    expect(KIDS_WORDS).toContain(w);
   });
   it("never repeats an answer within the same round", () => {
     for (let level = 1; level <= 5; level++) {
       const answers = generatePuzzleAnswers(wordleDifficultyFor(level), seeded(level * 11 + 3));
       expect(new Set(answers).size).toBe(answers.length);
-      expect(answers.every((word) => word.length === 5)).toBe(true);
+      expect(answers.every((word) => word.length === 5 && KIDS_WORDS.includes(word))).toBe(true);
     }
   });
   it("is deterministic for the same seed (daily challenge)", () => {

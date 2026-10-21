@@ -1,65 +1,79 @@
 "use client";
 
 /**
- * Background music powered by a real MP3 recording.
+ * Soundtrack. A shuffled playlist of the files in public/music streams
+ * through an HTMLAudioElement into the music bus, so volume, mute, and ducking
+ * still apply.
  *
- * The file is streamed through an HTMLAudioElement whose output is routed into
- * the Web Audio graph via a MediaElementAudioSourceNode, so it rides the same
- * music bus as the old procedural sequencer. Volume, muting and ducking all
- * continue to work exactly as before.
- *
- * All track ids currently play the same recording. The soundtrack is only used
- * on hub screens (character select, adventure, scores); games stay silent.
- *
- * setMusicIntensity() is kept as a no-op so the call sites throughout the game
- * don't need to change.
+ * Menus and the kitchen shift play music. Delivery, frogger, and wordle stay
+ * silent during a round. A new visit (after the music has been stopped)
+ * shuffles again and avoids opening with the track that just played.
  */
 
 import { getAudioContext, getMusicBus } from "./mixer";
+import { KITCHEN_BED, SHOP_TRACKS, shuffleShopTracks, type ShopTrack } from "./shopTracks";
+
+/** Kitchen bed sits under SFX at about a third of menu loudness. */
+const KITCHEN_BED_GAIN = 0.32;
 
 export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger";
 
-// ---------------------------------------------------------------------------
-// Module-level state
-// ---------------------------------------------------------------------------
-
 let audioEl: HTMLAudioElement | null = null;
 let mediaNode: MediaElementAudioSourceNode | null = null;
+/** Per-track loudness match. Independent of the fade envelope. */
+let levelNode: GainNode | null = null;
 let gainNode: GainNode | null = null;
 let fadeTimer: ReturnType<typeof setTimeout> | null = null;
 let currentTrack: MusicTrackId | null = null;
+let queue: ShopTrack[] = [];
+let queueIndex = 0;
+/** Last track that actually started, so the next shuffle does not open with it. */
+let lastTrackId: string | null = null;
 
-const MUSIC_SRC = "/music-bg.mp3";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Lazily create (or reuse) the HTMLAudioElement and Web Audio nodes. */
 function ensureNodes(ac: AudioContext, bus: GainNode): void {
-  if (audioEl && mediaNode && gainNode) return;
+  if (audioEl && mediaNode && levelNode && gainNode) return;
 
-  // We can only create one MediaElementAudioSourceNode per element; reuse.
   if (!audioEl) {
     audioEl = new Audio();
-    audioEl.src = MUSIC_SRC;
-    audioEl.loop = true;
+    audioEl.loop = false;
     audioEl.preload = "auto";
-    // Keep media session out of the lock screen on mobile (optional).
     audioEl.setAttribute("playsinline", "");
+    audioEl.addEventListener("ended", onTrackEnded);
   }
 
   if (!mediaNode) {
     mediaNode = ac.createMediaElementSource(audioEl);
   }
 
+  if (!levelNode) {
+    levelNode = ac.createGain();
+    levelNode.gain.value = 1;
+  }
+
   if (!gainNode) {
     gainNode = ac.createGain();
-    gainNode.gain.value = 0.0001; // start silent; fade-in in start()
-    mediaNode.connect(gainNode);
+    gainNode.gain.value = 0.0001;
+    mediaNode.connect(levelNode);
+    levelNode.connect(gainNode);
   }
 
   gainNode.connect(bus);
+}
+
+function gainFor(src: string): number {
+  return SHOP_TRACKS.find((track) => src.endsWith(track.src))?.gain ?? 1;
+}
+
+/** Apply the track's loudness match. Smooth only when music is already audible. */
+function setTrackLevel(src: string, smooth: boolean): void {
+  const ac = getAudioContext();
+  if (!levelNode || !ac) return;
+  const gain = gainFor(src);
+  const t = ac.currentTime;
+  levelNode.gain.cancelScheduledValues(t);
+  levelNode.gain.setValueAtTime(levelNode.gain.value, t);
+  if (smooth) levelNode.gain.linearRampToValueAtTime(gain, t + 0.05);
+  else levelNode.gain.setValueAtTime(gain, t);
 }
 
 function cancelFade(): void {
@@ -69,11 +83,50 @@ function cancelFade(): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API  (same signatures as the old procedural sequencer)
-// ---------------------------------------------------------------------------
+function ensureQueue(): ShopTrack {
+  if (queue.length === 0 || queueIndex >= queue.length) {
+    queue = shuffleShopTracks(Math.random, lastTrackId);
+    queueIndex = 0;
+  }
+  return queue[queueIndex];
+}
 
-/** Start (or switch to) a track. Fades in from silence. */
+function playSrc(src: string, restart: boolean): void {
+  if (!audioEl) return;
+  setTrackLevel(src, currentTrack !== null && gainNode !== null && gainNode.gain.value > 0.05);
+  const nextUrl = new URL(src, window.location.origin).href;
+  if (audioEl.src !== nextUrl) {
+    audioEl.src = nextUrl;
+    audioEl.currentTime = 0;
+  } else if (restart) {
+    audioEl.currentTime = 0;
+  }
+  void audioEl.play().catch(() => {
+    // Autoplay blocked until the next pointer; MusicDirector retries.
+  });
+}
+
+function onTrackEnded(): void {
+  if (!currentTrack || !audioEl) return;
+  if (currentTrack === "kitchen") {
+    playSrc(KITCHEN_BED.src, true);
+    return;
+  }
+  queueIndex += 1;
+  const track = ensureQueue();
+  lastTrackId = track.id;
+  playSrc(track.src, true);
+}
+
+function fadeIn(ac: AudioContext, target = 1): void {
+  if (!gainNode) return;
+  const t = ac.currentTime;
+  gainNode.gain.cancelScheduledValues(t);
+  gainNode.gain.setValueAtTime(Math.max(0.0001, gainNode.gain.value), t);
+  gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, target), t + 0.8);
+}
+
+/** Start a track, or keep playing if that same track is already going. */
 export function startMusic(id: MusicTrackId): void {
   if (currentTrack === id && audioEl && !audioEl.paused) return;
 
@@ -82,37 +135,44 @@ export function startMusic(id: MusicTrackId): void {
   if (!ac || !bus) return;
 
   ensureNodes(ac, bus);
-
   cancelFade();
   currentTrack = id;
 
-  // Resume the AudioContext – required before any sound plays on mobile.
   if (ac.state === "suspended") void ac.resume();
 
-  // Re-seek to the start when switching tracks so the loop restarts cleanly.
-  if (audioEl!.paused || currentTrack !== id) {
-    audioEl!.currentTime = 0;
+  if (id === "kitchen") {
+    audioEl!.loop = true;
+    const resume = audioEl!.src.endsWith(KITCHEN_BED.src) && audioEl!.currentTime > 0;
+    playSrc(KITCHEN_BED.src, !resume);
+    fadeIn(ac, KITCHEN_BED_GAIN);
+    return;
   }
 
-  void audioEl!.play().catch(() => {
-    // Autoplay blocked; will retry once the user interacts (unlockAudio calls
-    // getAudioContext which resumes the context, and the media element will
-    // then be allowed to play too).
-  });
-
-  // Fade in over 0.8 s.
-  const t = ac.currentTime;
-  gainNode!.gain.cancelScheduledValues(t);
-  gainNode!.gain.setValueAtTime(gainNode!.gain.value, t);
-  gainNode!.gain.exponentialRampToValueAtTime(1, t + 0.8);
+  audioEl!.loop = false;
+  const track = ensureQueue();
+  lastTrackId = track.id;
+  // Resume mid-song after a tab hide; a fresh queue starts at the beginning.
+  const resume = audioEl!.src.endsWith(track.src) && audioEl!.currentTime > 0;
+  playSrc(track.src, !resume);
+  fadeIn(ac);
 }
 
-/** Stop the current track with a short fade-out. */
-export function stopMusic(fadeSeconds = 0.5): void {
-  if (!audioEl || !gainNode || !currentTrack) return;
+/** Stop the playlist. The next start shuffles again unless `keepQueue` is set. */
+export function stopMusic(fadeSeconds = 0.5, keepQueue = false): void {
+  if (!audioEl || !gainNode || !currentTrack) {
+    if (!keepQueue) {
+      queue = [];
+      queueIndex = 0;
+    }
+    return;
+  }
 
   const ac = getAudioContext();
   currentTrack = null;
+  if (!keepQueue) {
+    queue = [];
+    queueIndex = 0;
+  }
 
   if (ac && gainNode) {
     const t = ac.currentTime;
@@ -130,13 +190,8 @@ export function stopMusic(fadeSeconds = 0.5): void {
   );
 }
 
-/**
- * 0..1 intensity – kept as a no-op so existing call sites compile without
- * change. Could be used to adjust playback rate in the future.
- */
+/** Kept so older call sites compile. Recorded tracks do not change with intensity. */
 export function setMusicIntensity(value: number): void {
-  // no-op for recorded audio – intensity was used to speed up the old
-  // procedural sequencer; with a real MP3 there's nothing to drive.
   void value;
 }
 
@@ -144,18 +199,16 @@ export function currentMusic(): MusicTrackId | null {
   return currentTrack;
 }
 
-// ---------------------------------------------------------------------------
-// Pause the audio when the tab is hidden so the browser doesn't complain.
-// ---------------------------------------------------------------------------
 if (typeof document !== "undefined") {
   let pausedTrack: MusicTrackId | null = null;
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       pausedTrack = currentTrack;
-      stopMusic(0.1);
+      stopMusic(0.1, true);
     } else if (pausedTrack) {
-      startMusic(pausedTrack);
+      const resume = pausedTrack;
       pausedTrack = null;
+      startMusic(resume);
     }
   });
 }

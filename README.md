@@ -4,7 +4,7 @@ Mobile-first browser game built with Next.js 16 (App Router), React 19, Material
 
 Players pick a nickname, a character (Max or Greta) and an outfit colour, then choose an adventure:
 
-- **Pizza Kitchen** - 3-5 orders per round. Tap the right toppings (+10, wrong -5), then bake: take the pizza out in the green zone for a perfect bake (+25), yellow +10, burnt 0.
+- **Pizza Kitchen: Lunch Rush** - an Overcooked-style 3D kitchen. Run between stations to roll dough, sauce, grate, chop, bake, slice and serve pizzas before customers lose patience. Solo (swap between two chefs) or couch co-op on one keyboard; coins buy new ingredients and kitchen upgrades. See [Lunch Rush](#lunch-rush-pizza-kitchen) below.
 - **Bike Delivery** - 60-second lane runner. Tap the arrows (or use ←/→ keys) to change lanes, ride through glowing mailboxes (+20), dodge cones and puddles (-10). Every 3 clean deliveries in a row earns a combo bonus.
 - **Word Quest** - guess five-letter words with green/yellow letter hints.
 - **Frogger Adventure** - arcade Frogger in low-poly 3D: hop across five lanes of traffic and a river of logs and diving turtles to fill five lily-pad bays, then the next level speeds up. See [Frogger Adventure](#frogger-adventure) below.
@@ -13,7 +13,7 @@ Scores are submitted to the API and shown on the global scoreboard.
 
 ### Progression and extras
 
-- **Difficulty levels** (1 Rookie → 5 Legend) per mode, unlocked every 2 finished rounds on the device (`features/player/progress.ts`). Kitchen gains orders, toppings and a faster oven; delivery gets a faster bike, denser spawns and more obstacles (`kitchenDifficultyFor`, `deliveryDifficultyFor`).
+- **Difficulty levels** (1 Rookie → 5 Legend) per mode, unlocked every 2 finished rounds on the device (`features/player/progress.ts`). The kitchen gets longer shifts, a bigger menu, more tickets at once, less patient customers, rush orders and crust swaps; delivery gets a faster bike, denser spawns and more obstacles (`kitchenDifficultyFor`, `deliveryDifficultyFor`).
 - **Daily challenge** - `/play/<mode>?daily=1` runs a level-3 round seeded from the UTC date (`lib/rng.ts`), so everyone gets the same orders / street. Scores post with `challengeDate` and appear on the scoreboard's "Today's challenge" board (best per player).
 - **Sound, haptics, confetti** - Web Audio synthesised effects and `navigator.vibrate` (`lib/fx`), toggles on the hub and intro cards, confetti + fanfare on the results screen (bigger for a personal best).
 - **Animated glTF characters** - CC0 Quaternius models in `public/models` (see `LICENSE.md` there) loaded with drei `useGLTF`/`useAnimations`; the primitive rig shows instantly as a fallback and stays if the model fails to load. The player's colour recolours the outfit.
@@ -67,13 +67,14 @@ src/
     settings/             sound + haptics toggles (persisted)
     characters/           Character (glTF with primitive fallback), GltfCharacter, PrimitiveCharacter,
                           turntable preview, character + colour select
-    kitchen/              Pizza Kitchen: scene, game store, pure scoring + difficulty rules (+ tests)
+    kitchen/              Pizza Kitchen: Lunch Rush (see below)
     delivery/             Bike Delivery: scene, game store, pure scoring + difficulty rules (+ tests)
     wordle/               Word Quest
     frogger/              Frogger Adventure (see below)
     scores/               API client, TanStack Query hooks, results screen, scoreboard, My scores
     adventure/            Adventure hub (levels, daily challenge, settings)
   lib/fx/                 Web Audio sound synth, haptics, confetti
+  lib/game/               shared game-engine helpers (event emitter)
   lib/rng.ts              seeded PRNG + daily key
   theme.ts                Material UI theme
 public/models/            CC0 character models (boy.glb, girl.glb) + LICENSE.md
@@ -88,7 +89,7 @@ config.ts, levelConfig.ts   board size, timings, scoring, lives, level definitio
 engine/                     pure TypeScript game: GameEngine (fixed 120 Hz steps, state machine, events),
                             frog, lanes, collision, levels, scoring, input mapping - no React, no three.js
 render/                     imperative three.js view: ThreeRenderer, procedural low-poly meshes and
-                            CanvasTexture textures, animated water, pooled particles
+                            CanvasTexture textures, animated water (pooled particles live in components/three)
 components/                 FroggerCanvas (owns the WebGL canvas + frame loop), HUD, D-pad, main menu,
                             pause and game-over overlays, mini leaderboard
 FroggerGame.tsx             menu -> countdown -> play -> game over, plus the API session lifecycle
@@ -101,6 +102,32 @@ api.ts, hooks.ts            game-session API calls and TanStack Query hooks
 - **Controls.** Arrows / WASD hop one tile (held keys don't repeat, one quick extra press is buffered); Space or Esc pauses; the tab or window losing focus pauses. Touch devices get an on-screen D-pad, and swipes or taps on the board also hop.
 - **Rendering.** React renders only menus and the HUD; the three.js scene is drawn from engine state each animation frame, with no assets downloaded (all meshes and textures are procedural). Colours are tuned to the classic toy-box look; tall phone screens get a steeper camera. "Reduced motion" turns off camera shake, flashes, fireworks and confetti.
 - **Saving.** Pressing Play starts a server session (`POST /api/games/frogger/sessions`) while the 3-2-1 countdown runs; game over completes it, and the result also lands in the device's My runs, stars and trophies. If the API is unreachable the game stays playable and says the score won't be saved; a failed save shows Retry, which is safe because the API treats an identical completion as the same result.
+
+## Lunch Rush (Pizza Kitchen)
+
+`/play/kitchen` is an Overcooked-style pizzeria in `src/features/kitchen/`, built like Frogger: a pure engine, a renderer that only reads it, and a thin React shell.
+
+```
+config.ts                   every tunable number (speeds, work/bake times, scoring, star shares)
+content/                    ingredients, recipes, the tile-map kitchen layout, shop catalog + upgrade multipliers
+engine/                     pure TypeScript: KitchenEngine (fixed 60 Hz steps, command queue, events),
+                            pizza rules + order matching, orders/menu, difficulty + lunch-rush curve,
+                            scoring/combo/stars, movement + collisions (+ tests)
+render/                     React Three Fiber scene: stations, pizzas/ingredients, chefs (the player's
+                            glTF character + their buddy), bake meter, particles, aspect-aware camera
+components/                 ticket rail, shift clock/score/combo, touch stick + buttons, menu, shop, pause
+input/keyboard.ts           key bindings -> per-player stick + buttons (solo and two-player)
+fx.ts                       engine events -> sounds, haptics and floating popups
+progress.ts, shopRules.ts   coins, unlocked ingredients and upgrades (saved on the device)
+KitchenGame.tsx             menu -> countdown -> shift -> closing card -> /results
+```
+
+- **Loop.** Grab dough from the pantry, roll it at a dough table into a base, add sauce, grated cheese and chopped toppings (in any order, on any counter), bake it, slice it and hand it through the pass. Ovens run on their own: take the pizza out in the green for a perfect crust; leave it and it burns.
+- **Feedback.** Tickets tick off what's on the pizza you're holding or facing and glow when it's on track; anything no ticket wants pulses red on the pizza, shows as a red chip on the closest ticket, and pops "No order wants 🍍!". Rejections explain themselves ("Chop the 🍄 first!", "Slice it first!").
+- **Scoring.** A correct pizza pays its ingredients' value, +15 for a perfect bake, a tip that shrinks as the customer waits, x1.5 for rush orders, all multiplied by the streak combo (x1 up to x3). The wrong pizza earns a quarter, no tip, and breaks the combo; a customer walking out costs 15. Star targets come from a par score for the level and today's menu.
+- **Progression.** Levels raise shift length, menu size, tickets on the rail, customer impatience, rush orders and crust swaps; within a shift orders speed up for the lunch rush around 12:40. Coins (a tenth of the score plus 15 per star) buy ingredients, which add new recipes, and upgrades (sneakers, sharp knife, turbo ovens, comfy chairs, tip jar, extra oven). The daily challenge uses the full pantry and no upgrades so it's fair.
+- **Players.** Solo controls two chefs and swaps between them (Q / Tab, or the Swap button). Co-op puts two players on one keyboard (WASD + Space/E/Shift and arrows + Enter / / .). Touch devices get a stick and Grab / Chop / Dash / Swap buttons and play in landscape: starting a shift goes fullscreen and locks landscape where the browser allows it (Android), and holding the device upright shows a "turn your device" screen and pauses the shift (the only option on iOS) (`landscape.ts`, `RotateOverlay`).
+- **Towards online multiplayer.** Everything a shift does goes through `engine.command({ type, chef, ... })`, the state is plain JSON, and the simulation is deterministic for a seed, so a later networked mode can relay the same commands (host- or server-authoritative) and stream snapshots without changing the rules. Shop progress is device-local today; it would move to the API with accounts.
 
 ## How the API is reached
 

@@ -44,6 +44,12 @@ export const PLAYER_COLORS: readonly { id: string; label: string }[] = [
 ] as const;
 
 export const DEFAULT_COLOR: Record<CharacterId, string> = {
+  boy: "#2B2D42",
+  girl: "#2B2D42",
+};
+
+/** Defaults from before the fantasy restyle, so old saves can follow the new look. */
+export const LEGACY_DEFAULT_COLOR: Record<CharacterId, string> = {
   boy: "#3B82F6",
   girl: "#E85D9A",
 };
@@ -54,6 +60,7 @@ export function isPlayerColor(value: string | null | undefined): value is string
 
 /** Hair colours players can pick on the character screen. */
 export const HAIR_COLORS: readonly { id: string; label: string }[] = [
+  { id: "#E6E8EE", label: "Snow" },
   { id: "#1B1712", label: "Black" },
   { id: "#5A3A1B", label: "Brown" },
   { id: "#8C5A2B", label: "Chestnut" },
@@ -64,14 +71,45 @@ export const HAIR_COLORS: readonly { id: string; label: string }[] = [
   { id: "#3B82F6", label: "Blueberry" },
 ] as const;
 
-/** Matches each character's original hard-coded hair colour (see PrimitiveCharacter). */
 export const DEFAULT_HAIR_COLOR: Record<CharacterId, string> = {
+  boy: "#E6E8EE",
+  girl: "#E6E8EE",
+};
+
+export const LEGACY_DEFAULT_HAIR_COLOR: Record<CharacterId, string> = {
   boy: "#5A3A1B",
   girl: "#F2B134",
 };
 
 export function isHairColor(value: string | null | undefined): value is string {
   return !!value && HAIR_COLORS.some((c) => c.id === value);
+}
+
+/** Skin tones players can pick. Lightest to deepest. */
+export const SKIN_COLORS: readonly { id: string; label: string }[] = [
+  { id: "#FBE4D6", label: "Porcelain" },
+  { id: "#F6C9A0", label: "Peach" },
+  { id: "#E8B48A", label: "Honey" },
+  { id: "#CEAD86", label: "Sand" },
+  { id: "#C68642", label: "Golden" },
+  { id: "#A86B3C", label: "Amber" },
+  { id: "#5D4D44", label: "Cocoa" },
+  { id: "#3C2415", label: "Deep" },
+] as const;
+
+/** Close to each model's own skin tone. */
+export const DEFAULT_SKIN_COLOR: Record<CharacterId, string> = {
+  boy: "#CEAD86",
+  girl: "#CEAD86",
+};
+
+export const LEGACY_DEFAULT_SKIN_COLOR: Record<CharacterId, string> = {
+  boy: "#5D4D44",
+  girl: "#CEAD86",
+};
+
+export function isSkinColor(value: string | null | undefined): value is string {
+  return !!value && SKIN_COLORS.some((c) => c.id === value);
 }
 
 /** Raw numbers from a round, used for achievements (perfect bakes, combos, ...). */

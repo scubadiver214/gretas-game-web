@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_ROUNDS, EMPTY_STARS } from "./progress";
 import { migratePlayerState, usePlayerStore } from "./store";
+import { DEFAULT_COLOR, DEFAULT_HAIR_COLOR, DEFAULT_SKIN_COLOR } from "./types";
 
 describe("persisted player migration", () => {
   it("adds zeroed frogger counters to a version 4 save without touching other progress", () => {
@@ -23,6 +24,19 @@ describe("persisted player migration", () => {
     expect(migrated.roundsPlayed).toEqual(EMPTY_ROUNDS);
     expect(migrated.stars).toEqual(EMPTY_STARS);
     expect(migrated.hairColor).toBeDefined();
+    expect(migrated.skinColor).toBeDefined();
+  });
+
+  it("gives an existing save that character's skin tone", () => {
+    const migrated = migratePlayerState({ nickname: "Greta", character: "girl" }, 5);
+    expect(migrated.skinColor).toBe(DEFAULT_SKIN_COLOR.girl);
+  });
+
+  it("moves old default colours to the new look and keeps custom picks", () => {
+    const onDefaults = migratePlayerState({ character: "boy", color: "#3B82F6", hairColor: "#5A3A1B", skinColor: "#5D4D44" }, 6);
+    expect(onDefaults).toMatchObject({ color: DEFAULT_COLOR.boy, hairColor: DEFAULT_HAIR_COLOR.boy, skinColor: DEFAULT_SKIN_COLOR.boy });
+    const custom = migratePlayerState({ character: "girl", color: "#F2542D", hairColor: "#C0392B", skinColor: "#3C2415" }, 6);
+    expect(custom).toMatchObject({ color: "#F2542D", hairColor: "#C0392B", skinColor: "#3C2415" });
   });
 });
 

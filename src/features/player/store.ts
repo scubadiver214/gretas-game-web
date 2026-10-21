@@ -10,6 +10,10 @@ import {
   BIKE_SKIN_BY_ID,
   DEFAULT_COLOR,
   DEFAULT_HAIR_COLOR,
+  DEFAULT_SKIN_COLOR,
+  LEGACY_DEFAULT_COLOR,
+  LEGACY_DEFAULT_HAIR_COLOR,
+  LEGACY_DEFAULT_SKIN_COLOR,
   type BikeSkinId,
   type CharacterId,
   type GameMode,
@@ -18,7 +22,7 @@ import {
 } from "./types";
 
 const HISTORY_LIMIT = 200;
-const STORE_VERSION = 5;
+const STORE_VERSION = 7;
 
 interface PlayerState {
   nickname: string;
@@ -27,6 +31,8 @@ interface PlayerState {
   color: string;
   /** Hair colour (hex). */
   hairColor: string;
+  /** Skin tone (hex). */
+  skinColor: string;
   bikeSkin: BikeSkinId;
   lastResult: GameResult | null;
   /** Achievements unlocked by the last finished round (shown on the results screen). */
@@ -47,6 +53,7 @@ interface PlayerState {
   setCharacter: (character: CharacterId) => void;
   setColor: (color: string) => void;
   setHairColor: (hairColor: string) => void;
+  setSkinColor: (skinColor: string) => void;
   setBikeSkin: (skin: BikeSkinId) => void;
   /** Store the round result and record it in the history / progress counters. */
   finishRound: (result: GameResult) => void;
@@ -63,6 +70,7 @@ export const usePlayerStore = create<PlayerState>()(
       character: null,
       color: DEFAULT_COLOR.girl,
       hairColor: DEFAULT_HAIR_COLOR.girl,
+      skinColor: DEFAULT_SKIN_COLOR.girl,
       bikeSkin: "classic",
       lastResult: null,
       lastUnlocked: [],
@@ -82,9 +90,14 @@ export const usePlayerStore = create<PlayerState>()(
             s.character === null || s.hairColor === DEFAULT_HAIR_COLOR[s.character]
               ? DEFAULT_HAIR_COLOR[character]
               : s.hairColor,
+          skinColor:
+            s.character === null || s.skinColor === DEFAULT_SKIN_COLOR[s.character]
+              ? DEFAULT_SKIN_COLOR[character]
+              : s.skinColor,
         })),
       setColor: (color) => set({ color }),
       setHairColor: (hairColor) => set({ hairColor }),
+      setSkinColor: (skinColor) => set({ skinColor }),
       setBikeSkin: (bikeSkin) => set({ bikeSkin }),
       finishRound: (result) =>
         set((s) => {
@@ -147,6 +160,7 @@ export const usePlayerStore = create<PlayerState>()(
         character: s.character,
         color: s.color,
         hairColor: s.hairColor,
+        skinColor: s.skinColor,
         bikeSkin: s.bikeSkin,
         lastResult: s.lastResult,
         lastUnlocked: s.lastUnlocked,
@@ -212,6 +226,21 @@ export function migratePlayerState(persisted: unknown, version: number): Partial
       ...p,
       roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
       stars: { ...EMPTY_STARS, ...p.stars },
+    };
+  }
+  if (version < 6) {
+    const char = p.character ?? "girl";
+    p = { ...p, skinColor: p.skinColor ?? DEFAULT_SKIN_COLOR[char] };
+  }
+  if (version < 7) {
+    // New character models: anyone still on the old defaults gets the new ones.
+    const char = p.character ?? "girl";
+    const follow = (value: string | undefined, legacy: string, next: string) => (!value || value === legacy ? next : value);
+    p = {
+      ...p,
+      color: follow(p.color, LEGACY_DEFAULT_COLOR[char], DEFAULT_COLOR[char]),
+      hairColor: follow(p.hairColor, LEGACY_DEFAULT_HAIR_COLOR[char], DEFAULT_HAIR_COLOR[char]),
+      skinColor: follow(p.skinColor, LEGACY_DEFAULT_SKIN_COLOR[char], DEFAULT_SKIN_COLOR[char]),
     };
   }
   return p;

@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
+import { useRoundMusic } from "@/components/MusicDirector";
 import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FlashOverlay, IntroCard, QuitButton, ScorePill, ScorePopups, SettingsToggles } from "@/components/HUD";
 import { CLIP, N } from "@/design/neon";
@@ -24,6 +25,7 @@ function Inner() {
   const setup = useRoundSetup("wordle");
 
   const phase = useWordleGame((s) => s.phase);
+  useRoundMusic(phase === "countdown" || phase === "playing" || phase === "result");
   const config = useWordleGame((s) => s.config);
   const difficulty = useWordleGame((s) => s.difficulty);
   const puzzles = useWordleGame((s) => s.puzzles);
@@ -215,6 +217,7 @@ function Inner() {
           ]}
           cta="Start guessing"
           onStart={onStart}
+          onClose={() => router.push("/adventure")}
         />
       )}
       {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

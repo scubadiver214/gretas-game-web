@@ -37,6 +37,8 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: "no-wrong", title: "Sharp eyes", description: "Finish a kitchen round with no wrong toppings.", emoji: "👀", tier: "silver", check: (c) => c.result.mode === "kitchen" && m(c, "wrong") === 0 && m(c, "abandoned") === 0 && m(c, "orders") >= 3 },
   { id: "speedy-3", title: "Quick hands", description: "Earn three speedy bonuses in one round.", emoji: "⚡", tier: "silver", check: (c) => c.result.mode === "kitchen" && m(c, "speedy") >= 3 },
   { id: "rush-served", title: "Rush hour hero", description: "Serve a rush order with a perfect bake.", emoji: "🔥", tier: "silver", check: (c) => c.result.mode === "kitchen" && m(c, "rushPerfect") >= 1 },
+  { id: "kitchen-combo-5", title: "Hot streak", description: "Serve 5 correct pizzas in a row.", emoji: "🌶️", tier: "silver", check: (c) => c.result.mode === "kitchen" && m(c, "bestCombo") >= 5 },
+  { id: "kitchen-10", title: "Lunch rush legend", description: "Serve 10 correct pizzas in one shift.", emoji: "🍽️", tier: "gold", check: (c) => c.result.mode === "kitchen" && m(c, "correct") >= 10 },
 
   // --- delivery ------------------------------------------------------------
   { id: "delivery-10", title: "Paper route", description: "Deliver 10 pizzas in one ride.", emoji: "📬", tier: "bronze", check: (c) => c.result.mode === "delivery" && m(c, "deliveries") >= 10 },

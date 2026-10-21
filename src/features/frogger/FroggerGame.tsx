@@ -9,6 +9,7 @@ import Stack from "@mui/material/Stack";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import CloudOffRoundedIcon from "@mui/icons-material/CloudOffRounded";
+import { useRoundMusic } from "@/components/MusicDirector";
 import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FlashOverlay, QuitButton, ScorePopups, SettingsToggles } from "@/components/HUD";
 import { N } from "@/design/neon";
@@ -45,6 +46,7 @@ function Inner() {
 
   const [engine] = useState(() => new GameEngine({ seed: setup.seed }));
   const [ui, setUi] = useState<UiPhase>("menu");
+  useRoundMusic(ui === "loading" || ui === "playing");
   const [summary, setSummary] = useState<GameSummary | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "saving" });
   const [offline, setOffline] = useState(false);
@@ -223,7 +225,7 @@ function Inner() {
         <FlashOverlay />
         <ScorePopups />
         {ui === "menu" && (
-          <MainMenu nickname={nickname} isDaily={setup.isDaily} best={best} stats={stats.data} onPlay={play} onRanks={ranks} />
+          <MainMenu nickname={nickname} isDaily={setup.isDaily} best={best} stats={stats.data} onPlay={play} onRanks={ranks} onClose={quit} />
         )}
         {ui === "loading" && <CountdownOverlay onDone={onCountdownDone} />}
         {paused && <PauseOverlay onResume={() => engine.resume()} onRestart={play} onQuit={quit} />}

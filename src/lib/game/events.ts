@@ -12,7 +12,7 @@ export class Emitter<E> {
       try {
         l(event);
       } catch (err) {
-        console.error("[frogger] event listener failed", err);
+        console.error("[game] event listener failed", err);
       }
     }
   }
