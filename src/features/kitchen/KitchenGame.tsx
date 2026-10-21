@@ -313,8 +313,12 @@ function Inner() {
   const inShift = ui !== "menu";
   const paused = playing && phase === "paused";
   const showPad = touch && playing;
-  // Touch play is landscape, so the stick and buttons sit beside the kitchen rather than under it.
-  const insets = useMemo(() => ({ top: compact ? 0.24 : short ? 0.22 : 0.19, bottom: showPad ? 0.08 : 0.03 }), [compact, short, showPad]);
+  // Landscape phones fill the screen with the kitchen. Tickets and the touch pad float on top of it.
+  const phoneLandscape = touch && !portrait;
+  const insets = useMemo(
+    () => (phoneLandscape ? { top: 0.02, bottom: 0, fill: true } : { top: compact ? 0.24 : short ? 0.22 : 0.19, bottom: showPad ? 0.08 : 0.03 }),
+    [phoneLandscape, compact, short, showPad],
+  );
   const levelLabel = setup.isDaily ? "📅 Daily challenge" : `Level ${setup.level} · ${LEVEL_NAMES[setup.level]}`;
 
   return (

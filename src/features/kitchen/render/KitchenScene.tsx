@@ -17,6 +17,11 @@ export interface SceneInsets {
   /** Share of the viewport covered by HUD at the top / bottom (0..0.5). */
   top: number;
   bottom: number;
+  /**
+   * Phone landscape: size the counters to the screen and let the tickets,
+   * stick and buttons cover the edges. The decorative back wall may clip.
+   */
+  fill?: boolean;
 }
 
 const FOV = 38;
@@ -38,8 +43,10 @@ function EngineDriver({ engine }: { engine: KitchenEngine }) {
 }
 
 /**
- * Tilted toy-box camera that fits the whole kitchen between the HUD bars.
- * Tall phones look down more steeply so the counters stay big.
+ * Tilted toy-box camera. Desktop keeps the whole kitchen between the HUD bars.
+ * A landscape phone fills the screen with the counters; the tickets, stick and
+ * buttons float on the edges, and the back wall may run off the top.
+ * Tall viewports look down more steeply so the counters stay big.
  */
 function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneInsets }) {
   const get = useThree((s) => s.get);
@@ -53,6 +60,7 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
     const aspect = size.width / Math.max(1, size.height);
     const t = MathUtils.clamp((1.3 - aspect) / (1.3 - 0.6), 0, 1);
     const elevation = MathUtils.lerp(ELEVATION_WIDE, ELEVATION_TALL, t);
+    const fill = insets.fill === true;
     camera.fov = FOV;
     camera.aspect = aspect;
     const shift = ((insets.bottom - insets.top) * size.height) / 2;
@@ -62,13 +70,21 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
     const center = new Vector3(0, COUNTER_H * 0.5, 0.15);
     const dir = new Vector3(0, Math.sin(elevation), Math.cos(elevation));
     const corners: Vector3[] = [];
-    for (const x of [-width / 2 - 0.1, width / 2 + 0.1]) {
-      for (const z of [-depth / 2 - 0.2, depth / 2 + 0.1]) {
-        corners.push(new Vector3(x, 0, z), new Vector3(x, COUNTER_H + (z < 0 ? 1.1 : 0.4), z));
+    const xPad = fill ? 0.05 : 0.1;
+    const zBack = fill ? 0 : 0.2;
+    const zFront = fill ? 0 : 0.1;
+    for (const x of [-width / 2 - xPad, width / 2 + xPad]) {
+      for (const z of [-depth / 2 - zBack, depth / 2 + zFront]) {
+        // Phone framing fits the counters, not the tall back wall, so the floor can fill a short screen.
+        const extra = fill ? (z < 0 ? 0.15 : 0.1) : z < 0 ? 1.1 : 0.4;
+        corners.push(new Vector3(x, 0, z), new Vector3(x, COUNTER_H + extra, z));
       }
     }
-    const lo = -1 + 2 * insets.bottom + 0.03;
-    const hi = 1 - 2 * insets.top - 0.03;
+    const pad = fill ? 0.01 : 0.03;
+    const margin = fill ? 0.99 : 0.97;
+    // A little of the front lip may sit under the stick and grab button.
+    const lo = -1 + 2 * insets.bottom + pad - (fill ? 0.04 : 0);
+    const hi = 1 - 2 * insets.top - pad;
     const p = new Vector3();
     const fits = (d: number) => {
       camera.position.copy(center).addScaledVector(dir, d);
@@ -76,7 +92,7 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
       camera.updateMatrixWorld();
       return corners.every((c) => {
         p.copy(c).project(camera);
-        return Math.abs(p.x) <= 0.97 && p.y >= lo && p.y <= hi && p.z < 1;
+        return Math.abs(p.x) <= margin && p.y >= lo && p.y <= hi && p.z < 1;
       });
     };
     let a = 3;
@@ -89,7 +105,7 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
     fits(b);
     home.current.copy(camera.position);
     return () => camera.clearViewOffset();
-  }, [get, size.width, size.height, insets.top, insets.bottom, width, depth]);
+  }, [get, size.width, size.height, insets.top, insets.bottom, insets.fill, width, depth]);
 
   useEffect(() => {
     const v = new Vector3();
@@ -242,8 +258,10 @@ function World({ engine, looks, insets }: { engine: KitchenEngine; looks: ChefLo
 }
 
 export default function KitchenScene({ engine, looks, insets }: { engine: KitchenEngine; looks: ChefLook[]; insets: SceneInsets }) {
+  // Phones are often 3x. Cap at 2 so the filled view stays sharp without a full-screen 3x shadow pass.
+  const dpr: [number, number] = insets.fill ? [1, 2] : [1, 1.75];
   return (
-    <Canvas shadows="percentage" dpr={[1, 1.75]} camera={{ fov: FOV, near: 0.5, far: 120 }} gl={{ antialias: true }}>
+    <Canvas shadows="percentage" dpr={dpr} camera={{ fov: FOV, near: 0.5, far: 120 }} gl={{ antialias: true }}>
       <color attach="background" args={["#141B28"]} />
       <World engine={engine} looks={looks} insets={insets} />
     </Canvas>
