@@ -131,7 +131,6 @@ function Inner() {
   const touchStick = useRef({ x: 0, z: 0 });
   const roundIdRef = useRef("");
   const helpOpenRef = useRef(false);
-  const closeHelpRef = useRef<() => void>(() => {});
   /** True when help was opened from the pause menu, so closing it stays paused. */
   const helpPausedRef = useRef(false);
 
@@ -235,7 +234,9 @@ function Inner() {
     setHelpOpen(false);
     if (resume) engine.resume();
   }, [engine, ui]);
-  closeHelpRef.current = closeHelp;
+  const closeHelpFromKeys = useEffectEvent(() => {
+    closeHelp();
+  });
 
   // Keyboard while the kitchen is open, plus auto-pause when the tab loses focus.
   useEffect(() => {
@@ -244,7 +245,7 @@ function Inner() {
       move: (_slot, x, z) => engine.command({ type: "move", chef: 0, x, z }),
       action: act,
       pause: () => {
-        if (helpOpenRef.current) closeHelpRef.current();
+        if (helpOpenRef.current) closeHelpFromKeys();
         else engine.togglePause();
       },
     });
