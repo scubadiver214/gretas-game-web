@@ -132,7 +132,6 @@ export default function StartScreen() {
                 src="/characters/greta-neon.jpg"
                 alt="Greta leaping through neon lights"
                 fill
-                priority
                 sizes="(max-width: 480px) 92vw, 448px"
                 style={{ objectFit: "cover", objectPosition: "center" }}
               />

@@ -12,8 +12,8 @@ function hideSplash(): void {
 
 /**
  * Lifts the layout boot landing once React is running and the first app
- * frame has painted. A tiny inline script in the root layout is the backup
- * if client JS is slow.
+ * frame has painted. The inline script in the root layout is only a failsafe
+ * if client JS never arrives.
  */
 export default function BootstrapGate({ children }: { children: ReactNode }) {
   useEffect(() => {

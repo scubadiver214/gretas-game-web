@@ -1,17 +1,18 @@
 /* Greta's Game service worker.
  *
  * - Static assets (models, icons, Next build chunks) are cached on first use
- *   and served cache-first, so the 3D characters load instantly and offline.
- * - Pages use network-first with a cached fallback so play still works on a
- *   flaky connection; scores queue up on the device (localStorage) until the
- *   results screen can reach the API.
+ *   and served cache-first, so a revisit can play offline. Models are not
+ *   precached: they are ~2.7MB and were starving the first page load.
+ * - Pages try the network, then a cached copy if the network is slow, so a
+ *   return visit can paint the boot splash instead of a blank tab.
  * - /api/* is never cached.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `gretas-static-${VERSION}`;
 const PAGE_CACHE = `gretas-pages-${VERSION}`;
 
-const PRECACHE = ["/", "/adventure", "/icon.svg", "/models/boy.glb", "/models/girl.glb"];
+const PRECACHE = ["/", "/adventure", "/icon.svg"];
+const NAV_TIMEOUT_MS = 1200;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -60,16 +61,44 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (req.mode === "navigate" || req.headers.get("accept")?.includes("text/html")) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(PAGE_CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match("/"))),
-    );
+    event.respondWith(networkFirstPage(req));
   }
 });
+
+function networkFirstPage(req) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      caches.match(req).then((hit) => hit || caches.match("/")).then((hit) => {
+        if (settled || !hit) return;
+        settled = true;
+        resolve(hit);
+      });
+    }, NAV_TIMEOUT_MS);
+
+    const finish = (response) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(response);
+    };
+
+    fetch(req)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(PAGE_CACHE).then((cache) => cache.put(req, copy));
+        }
+        finish(res);
+      })
+      .catch(() => {
+        if (settled) return;
+        clearTimeout(timer);
+        caches.match(req).then((hit) => hit || caches.match("/")).then((hit) => {
+          if (hit) finish(hit);
+          else reject(new Error("navigation failed"));
+        });
+      });
+  });
+}

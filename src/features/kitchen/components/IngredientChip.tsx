@@ -34,7 +34,7 @@ export default function IngredientChip({ id, state = "todo", size = 30, crossed 
       {crossed && (
         <Box aria-hidden sx={{ position: "absolute", width: "110%", height: 3, bgcolor: N.kitchen, transform: "rotate(-40deg)", borderRadius: 2 }} />
       )}
-      {state !== "todo" && (
+      {state !== "todo" && size >= 24 && (
         <Box
           aria-hidden
           sx={{

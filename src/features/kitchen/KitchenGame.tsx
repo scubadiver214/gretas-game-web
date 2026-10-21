@@ -46,6 +46,8 @@ const KitchenScene = dynamic(() => import("./render/KitchenScene"), { ssr: false
 type UiPhase = "menu" | "countdown" | "playing" | "closed";
 
 const P1 = N.brand;
+/** Gap between the landscape order rail and the pantry crates. */
+const PHONE_RAIL_GAP = 8;
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -313,12 +315,35 @@ function Inner() {
   const inShift = ui !== "menu";
   const paused = playing && phase === "paused";
   const showPad = touch && playing;
-  // Landscape phones fill the screen with the kitchen. Tickets and the touch pad float on top of it.
+  // Landscape phones play full screen. The order rail gets a real band so it
+  // cannot sit on the ingredient crates; the stick may still cover the front lip.
   const phoneLandscape = touch && !portrait;
-  const insets = useMemo(
-    () => (phoneLandscape ? { top: 0.02, bottom: 0, fill: true } : { top: compact ? 0.24 : short ? 0.22 : 0.19, bottom: showPad ? 0.08 : 0.03 }),
-    [phoneLandscape, compact, short, showPad],
-  );
+  const railRef = useRef<HTMLDivElement>(null);
+  const [viewportH, setViewportH] = useState(0);
+  const [railH, setRailH] = useState(0);
+  useEffect(() => {
+    const read = () => setViewportH(window.innerHeight);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, []);
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el || !phoneLandscape) return;
+    const read = () => setRailH(Math.ceil(el.getBoundingClientRect().height));
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [phoneLandscape, playing]);
+  const insets = useMemo(() => {
+    if (phoneLandscape) {
+      const band = (railH || 64) + PHONE_RAIL_GAP;
+      const top = viewportH > 0 ? Math.min(0.36, band / viewportH) : 0.2;
+      return { top, bottom: 0, fill: true };
+    }
+    return { top: compact ? 0.24 : short ? 0.22 : 0.19, bottom: showPad ? 0.08 : 0.03 };
+  }, [phoneLandscape, viewportH, railH, compact, short, showPad]);
   const levelLabel = setup.isDaily ? "📅 Daily challenge" : `Level ${setup.level} · ${LEVEL_NAMES[setup.level]}`;
 
   return (
@@ -328,9 +353,24 @@ function Inner() {
       </Box>
 
       {/* Top bar: controls, ticket rail and shift status */}
-      <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, p: 1, pt: "max(8px, env(safe-area-inset-top))", zIndex: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
-          <Stack spacing={0.5}>
+      <Box
+        ref={railRef}
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          p: phoneLandscape ? 0.75 : 1,
+          pt: phoneLandscape ? "max(6px, env(safe-area-inset-top))" : "max(8px, env(safe-area-inset-top))",
+          pl: "max(8px, env(safe-area-inset-left))",
+          pr: "max(8px, env(safe-area-inset-right))",
+          zIndex: 1,
+          pointerEvents: "none",
+          "& > *": { pointerEvents: "auto" },
+        }}
+      >
+        <Stack direction="row" spacing={phoneLandscape ? 0.75 : 1} sx={{ alignItems: "flex-start" }}>
+          <Stack direction={phoneLandscape ? "row" : "column"} spacing={0.5} sx={{ flexShrink: 0 }}>
             <QuitButton onQuit={quit} />
             {playing && (
               <>
@@ -343,15 +383,15 @@ function Inner() {
               </>
             )}
           </Stack>
-          {!compact && inShift && (
+          {inShift && (phoneLandscape || !compact) && (
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <OrderTickets orders={orders} focus={focus} compact={short} />
+              <OrderTickets orders={orders} focus={focus} compact={short || phoneLandscape} strip={phoneLandscape} />
             </Box>
           )}
-          {(compact || !inShift) && <Box sx={{ flex: 1 }} />}
-          {inShift && <ShiftStatus />}
+          {!phoneLandscape && (compact || !inShift) && <Box sx={{ flex: 1 }} />}
+          {inShift && <ShiftStatus dense={phoneLandscape} />}
         </Stack>
-        {compact && inShift && (
+        {!phoneLandscape && compact && inShift && (
           <Box sx={{ mt: 0.5 }}>
             <OrderTickets orders={orders} focus={focus} compact />
           </Box>

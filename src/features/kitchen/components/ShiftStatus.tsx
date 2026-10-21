@@ -33,7 +33,7 @@ const pill = {
   boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
 } as const;
 
-export function ClockPill() {
+export function ClockPill({ dense = false }: { dense?: boolean }) {
   const timeLeft = useKitchenHud((s) => s.timeLeft);
   const shiftSeconds = useKitchenHud((s) => s.shiftSeconds);
   const rush = useKitchenHud((s) => s.rush);
@@ -43,16 +43,18 @@ export function ClockPill() {
       aria-label={`${timeLeft} seconds left in the shift`}
       sx={{
         ...pill,
+        height: dense ? 36 : pill.height,
+        px: dense ? 1 : pill.px,
         bgcolor: urgent ? N.kitchen : rush ? `${N.sun}22` : N.panel,
         borderColor: rush ? N.sun : N.panelEdge,
         color: urgent ? N.white : N.text,
       }}
     >
-      <ScheduleRoundedIcon sx={{ fontSize: 20, color: urgent ? N.white : rush ? N.sun : N.delivery }} />
-      <Typography className="tnum" sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "1.05rem" }}>
+      <ScheduleRoundedIcon sx={{ fontSize: dense ? 18 : 20, color: urgent ? N.white : rush ? N.sun : N.delivery }} />
+      <Typography className="tnum" sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: dense ? "0.9rem" : "1.05rem" }}>
         {shiftClock(timeLeft, shiftSeconds)}
       </Typography>
-      <Typography className="tnum" sx={{ fontSize: "0.78rem", color: urgent ? N.white : N.textSoft }}>
+      <Typography className="tnum" sx={{ fontSize: dense ? "0.68rem" : "0.78rem", color: urgent ? N.white : N.textSoft }}>
         {timeLeft}s
       </Typography>
     </Box>
@@ -84,14 +86,14 @@ export function ComboPill() {
   );
 }
 
-export function StarProgress() {
+export function StarProgress({ dense = false }: { dense?: boolean }) {
   const score = useKitchenHud((s) => s.score);
   const targets = useKitchenHud((s) => s.starTargets);
   const next = targets.find((t) => score < t);
   return (
     <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }} aria-label={`${targets.filter((t) => score >= t).length} of 3 stars`}>
       {targets.map((t, i) => (
-        <StarRoundedIcon key={i} sx={{ fontSize: 20, color: score >= t ? N.sun : N.panelEdge, filter: score >= t ? `drop-shadow(0 0 6px ${N.sun})` : undefined }} />
+        <StarRoundedIcon key={i} sx={{ fontSize: dense ? 16 : 20, color: score >= t ? N.sun : N.panelEdge, filter: score >= t ? `drop-shadow(0 0 6px ${N.sun})` : undefined }} />
       ))}
       {next !== undefined && (
         <Typography className="tnum" sx={{ fontSize: "0.72rem", color: N.textSoft, ml: 0.5 }}>
@@ -102,8 +104,18 @@ export function StarProgress() {
   );
 }
 
-export default function ShiftStatus() {
+export default function ShiftStatus({ dense = false }: { dense?: boolean }) {
   const score = useKitchenHud((s) => s.score);
+  if (dense) {
+    return (
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+        <ComboPill />
+        <ClockPill dense />
+        <ScorePill score={score} size="sm" />
+        <StarProgress dense />
+      </Stack>
+    );
+  }
   return (
     <Stack spacing={0.5} sx={{ alignItems: "flex-end" }}>
       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>

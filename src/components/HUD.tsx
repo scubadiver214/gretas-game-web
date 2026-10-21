@@ -23,8 +23,8 @@ import CountPill from "@/components/ui/CountPill";
 import Panel from "@/components/ui/Panel";
 
 /** Score counter, top right. */
-export function ScorePill({ score }: { score: number }) {
-  return <CountPill icon={<LocalPizzaRoundedIcon />} value={score} tone="sun" label={`Score ${score}`} />;
+export function ScorePill({ score, size = "md" }: { score: number; size?: "sm" | "md" }) {
+  return <CountPill icon={<LocalPizzaRoundedIcon />} value={score} tone="sun" size={size} label={`Score ${score}`} />;
 }
 
 export function TimerPill({ seconds }: { seconds: number }) {

@@ -18,8 +18,9 @@ export interface SceneInsets {
   top: number;
   bottom: number;
   /**
-   * Phone landscape: size the counters to the screen and let the tickets,
-   * stick and buttons cover the edges. The decorative back wall may clip.
+   * Phone landscape: size the counters to the short screen. The top inset is
+   * the order rail, and the fit includes the pantry crates under it. The
+   * decorative back wall may still clip, and the stick may cover the front lip.
    */
   fill?: boolean;
 }
@@ -44,8 +45,9 @@ function EngineDriver({ engine }: { engine: KitchenEngine }) {
 
 /**
  * Tilted toy-box camera. Desktop keeps the whole kitchen between the HUD bars.
- * A landscape phone fills the screen with the counters; the tickets, stick and
- * buttons float on the edges, and the back wall may run off the top.
+ * A landscape phone keeps the order rail clear and fits the pantry crates
+ * below it, so the ingredient buckets stay visible. The decorative back wall
+ * may still clip, and the stick may cover the front lip.
  * Tall viewports look down more steeply so the counters stay big.
  */
 function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneInsets }) {
@@ -59,8 +61,10 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
     const camera = get().camera as PerspectiveCamera;
     const aspect = size.width / Math.max(1, size.height);
     const t = MathUtils.clamp((1.3 - aspect) / (1.3 - 0.6), 0, 1);
-    const elevation = MathUtils.lerp(ELEVATION_WIDE, ELEVATION_TALL, t);
     const fill = insets.fill === true;
+    // A short landscape screen looks a little more downward so the back crates
+    // stay large once the order rail has taken the top of the screen.
+    const elevation = MathUtils.lerp(ELEVATION_WIDE, ELEVATION_TALL, fill ? Math.max(t, 0.45) : t);
     camera.fov = FOV;
     camera.aspect = aspect;
     const shift = ((insets.bottom - insets.top) * size.height) / 2;
@@ -75,8 +79,9 @@ function CameraRig({ engine, insets }: { engine: KitchenEngine; insets: SceneIns
     const zFront = fill ? 0 : 0.1;
     for (const x of [-width / 2 - xPad, width / 2 + xPad]) {
       for (const z of [-depth / 2 - zBack, depth / 2 + zFront]) {
-        // Phone framing fits the counters, not the tall back wall, so the floor can fill a short screen.
-        const extra = fill ? (z < 0 ? 0.15 : 0.1) : z < 0 ? 1.1 : 0.4;
+        // Phone framing fits the pantry crates and their emoji badges (~0.9 above
+        // the counter), not the tall decorative wall behind them.
+        const extra = fill ? (z < 0 ? 0.92 : 0.12) : z < 0 ? 1.1 : 0.4;
         corners.push(new Vector3(x, 0, z), new Vector3(x, COUNTER_H + extra, z));
       }
     }

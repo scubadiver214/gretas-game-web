@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <BootSplash id="boot-splash" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var d=false;function hide(){if(d)return;d=true;var e=document.getElementById("boot-splash");if(!e)return;e.style.display="none";e.setAttribute("hidden","");e.setAttribute("aria-busy","false")}window.addEventListener("gretas-app-ready",hide);setTimeout(hide,2500)})();`,
+            __html: `(function(){var d=false;function hide(){if(d)return;d=true;var e=document.getElementById("boot-splash");if(!e)return;e.style.display="none";e.setAttribute("hidden","");e.setAttribute("aria-busy","false")}window.addEventListener("gretas-app-ready",hide);requestAnimationFrame(function(){setTimeout(hide,15000)})})();`,
           }}
         />
         <Providers>{children}</Providers>
