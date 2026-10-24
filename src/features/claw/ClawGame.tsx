@@ -36,6 +36,7 @@ import { bindClawFx } from "./fx";
 import { clawKeys, useClawOutboxFlusher, useClawProfile } from "./hooks";
 import { useClawMirror } from "./mirror";
 import { enqueueClawWrite, newOutboxId } from "./outbox";
+import { clampPickedLevel, nextLevelAfterClear } from "./profileStats";
 import { useClawHud } from "./useClawHud";
 
 type UiPhase = "menu" | "playing" | "celebrating" | "levelClear";
@@ -80,18 +81,21 @@ function Inner() {
   const mysteryWorld = isWorldId(params.get("mystery")) ? (params.get("mystery") as WorldId) : null;
   const requested = Number(params.get("level"));
   const [level, setLevelState] = useState(() => (Number.isFinite(requested) && requested >= 1 ? Math.min(MAX_LEVEL, Math.floor(requested)) : 1));
+  const [localUnlock, setLocalUnlock] = useState(1);
   const pickedRef = useRef(Number.isFinite(requested) && requested >= 1);
+  const unlocked = Math.max(profile.currentLevel, localUnlock);
   // Until the player picks a level, follow the profile: open on the newest unlocked level.
   // A requested level the profile has not unlocked falls back to the newest one once the profile is known.
+  // localUnlock covers the beat between a clear and the complete-write landing on the profile.
   useEffect(() => {
     if (mysteryWorld) return;
-    if (!pickedRef.current || (!profileLoading && level > profile.currentLevel)) {
-      setLevelState(Math.min(MAX_LEVEL, Math.max(1, profile.currentLevel)));
+    if (!pickedRef.current || (!profileLoading && level > unlocked)) {
+      setLevelState(clampPickedLevel(profile.currentLevel, unlocked));
     }
-  }, [profile.currentLevel, profileLoading, level, mysteryWorld]);
+  }, [profile.currentLevel, profileLoading, level, mysteryWorld, unlocked]);
   const setLevel = (l: number) => {
     pickedRef.current = true;
-    setLevelState(Math.min(profile.currentLevel, l));
+    setLevelState(clampPickedLevel(l, unlocked));
   };
 
   const setup = useMemo(() => (mysteryWorld ? mysterySetup(mysteryWorld) : levelDef(level)), [level, mysteryWorld]);
@@ -179,6 +183,7 @@ function Inner() {
   });
   const onLevelClear = useEffectEvent(() => {
     const summary = engine.summary();
+    setLocalUnlock((u) => Math.max(u, summary.level + 1));
     setClear({ summary, newAvatars: [], mysteryUnlocked: null });
     setUi("levelClear");
     finishRound({
@@ -280,7 +285,10 @@ function Inner() {
     play();
   };
   const nextLevel = () => {
-    if (level < MAX_LEVEL) setLevel(level + 1);
+    const next = nextLevelAfterClear(level, unlocked);
+    setLocalUnlock((u) => Math.max(u, next));
+    pickedRef.current = true;
+    setLevelState(next);
     setUi("menu");
   };
   const quit = () => {
@@ -291,7 +299,7 @@ function Inner() {
 
   const playing = ui === "playing";
   const paused = playing && hud.phase === "paused";
-  const insets = useMemo(() => ({ top: compact ? 0.15 : 0.1, bottom: compact ? 0.24 : 0.14 }), [compact]);
+  const insets = useMemo(() => ({ top: compact ? 0.12 : 0.07, bottom: compact ? 0.2 : 0.14 }), [compact]);
   const prize = celebration ? PRIZE_BY_ID[celebration.prizeId] : null;
   const showSave = ui !== "menu" && (save !== "saved" || pending > 0 || profileOffline);
 
@@ -329,14 +337,28 @@ function Inner() {
         <ScorePopups />
       </Box>
 
-      <Box sx={{ position: "relative", zIndex: 1, px: 1.5, pt: 1, pb: "max(14px, env(safe-area-inset-bottom))" }}>
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 2,
+          px: 1.5,
+          pt: 1,
+          pb: "max(14px, env(safe-area-inset-bottom))",
+          pointerEvents: "none",
+          "& > *": { pointerEvents: "auto" },
+        }}
+      >
         <ClawControls
           depthControl={hud.depthControl}
           canMove={playing && hud.canMove}
           canGrab={playing && hud.canGrab}
           showKeys={!touch}
           mystery={!!mysteryWorld}
-          onMove={(dir, pressed) => engine.move(dir, pressed)}
+          compact={compact}
+          onStick={(x, z) => engine.setMove(x, z)}
           onGrab={() => engine.grab()}
         />
       </Box>
@@ -349,7 +371,7 @@ function Inner() {
           goal={setup.goal}
           depthControl={setup.depthControl}
           touch={touch}
-          maxLevel={profile.currentLevel}
+          maxLevel={unlocked}
           starsByLevel={starsByLevel}
           onPickLevel={setLevel}
           onPlay={play}

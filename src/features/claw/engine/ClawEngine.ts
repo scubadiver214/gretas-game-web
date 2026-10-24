@@ -159,6 +159,19 @@ export class ClawEngine {
     this.events.emit({ type: "moveStart" });
   }
 
+  /** Snap the head onto a floor point (drag-to-aim). Toys do not block this. */
+  place(x: number, z: number): void {
+    if (this.mystery || this.phase !== "positioning") return;
+    const nx = clampX(x);
+    const nz = this.depthControl ? clampZ(z) : this.claw.z;
+    if (nx === this.claw.x && nz === this.claw.z) return;
+    this.autoTarget = null;
+    this.moveX = 0;
+    this.moveZ = 0;
+    this.claw.x = nx;
+    this.claw.z = nz;
+  }
+
   /** Lower the claw. Only does something while positioning. */
   grab(): void {
     if (this.phase !== "positioning") return;

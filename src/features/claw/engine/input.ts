@@ -40,6 +40,23 @@ export function isGameKey(key: string): boolean {
 }
 
 /**
+ * Thumb offset in pixels → claw stick axes. Screen right is +x (right glass),
+ * screen down is +z (toward the player / the front glass).
+ */
+export function stickFromDrag(dx: number, dy: number, radius: number): { x: number; z: number } {
+  if (radius <= 0) return { x: 0, z: 0 };
+  let x = dx / radius;
+  let z = dy / radius;
+  const mag = Math.hypot(x, z);
+  if (mag < 0.2) return { x: 0, z: 0 };
+  if (mag > 1) {
+    x /= mag;
+    z /= mag;
+  }
+  return { x, z };
+}
+
+/**
  * Binds keyboard to the engine. Directions are held (keydown/keyup) so the
  * claw glides while the arrow is down; losing window focus releases every key.
  */

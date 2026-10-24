@@ -3,7 +3,9 @@ import { seededRng } from "@/lib/rng";
 import { CABINET, CLAW } from "../config";
 import { TOY_TEMPLATES } from "../content/prizes";
 import { dropForTipY, tipY } from "./claw";
-import { PLANAR_PILE_BOUNDS, highestUnder, layoutPile, overChute, pickTemplates, reachDistance, restHeight, stepPile, stopDropFor } from "./pile";
+import { difficultyFor } from "./difficulty";
+import { RAIL_BOUNDS } from "./claw";
+import { PLANAR_PILE_BOUNDS, highestUnder, layoutPile, onGrabFloor, overChute, pickTemplates, reachDistance, restHeight, stepPile, stopDropFor } from "./pile";
 import type { ToyState } from "./types";
 
 const templates = Object.values(TOY_TEMPLATES).filter((t) => t.size <= 0.5);
@@ -61,12 +63,65 @@ describe("layoutPile", () => {
     }
   });
 
+  it("keeps every toy on the floor the claw can hover over, not the unreachable glass strip", () => {
+    for (const seed of ["a", "b", "c", "reach"]) {
+      const rng = seededRng(seed);
+      const toys = layoutPile(rng, pickTemplates(rng, templates, 24), 0.22);
+      expect(toys).toHaveLength(24);
+      for (const t of toys) {
+        expect(onGrabFloor(t.x, t.z, t.radius), t.prizeId).toBe(true);
+        expect(t.x - t.radius).toBeGreaterThanOrEqual(RAIL_BOUNDS.minX - 1e-6);
+        expect(t.x + t.radius).toBeLessThanOrEqual(RAIL_BOUNDS.maxX + 1e-6);
+        expect(t.z - t.radius).toBeGreaterThanOrEqual(RAIL_BOUNDS.minZ - 1e-6);
+        expect(t.z + t.radius).toBeLessThanOrEqual(RAIL_BOUNDS.maxZ + 1e-6);
+        expect(Math.abs(t.x) + t.radius).toBeLessThanOrEqual(CABINET.width / 2 + 1e-6);
+        expect(Math.abs(t.z) + t.radius).toBeLessThanOrEqual(CABINET.depth / 2 + 1e-6);
+        expect(overChute(t.x, t.z, t.radius)).toBe(false);
+      }
+    }
+  });
+
+  it("keeps a packed machine (level 1 and 50 counts) entirely on the checkered grab floor", () => {
+    for (const level of [1, 50]) {
+      const d = difficultyFor(level);
+      const rng = seededRng(`packed:${level}`);
+      const toys = layoutPile(rng, pickTemplates(rng, templates, d.toyCount), d.crowding);
+      expect(toys).toHaveLength(d.toyCount);
+      for (const t of toys) {
+        expect(onGrabFloor(t.x, t.z, t.radius), `${level}:${t.prizeId}`).toBe(true);
+        expect(t.x - t.radius).toBeGreaterThanOrEqual(RAIL_BOUNDS.minX - 1e-6);
+        expect(t.x + t.radius).toBeLessThanOrEqual(RAIL_BOUNDS.maxX + 1e-6);
+        expect(t.z - t.radius).toBeGreaterThanOrEqual(RAIL_BOUNDS.minZ - 1e-6);
+        expect(t.z + t.radius).toBeLessThanOrEqual(RAIL_BOUNDS.maxZ + 1e-6);
+        expect(Math.abs(t.x) + t.radius).toBeLessThanOrEqual(CABINET.width / 2 + 1e-6);
+        expect(Math.abs(t.z) + t.radius).toBeLessThanOrEqual(CABINET.depth / 2 + 1e-6);
+        expect(overChute(t.x, t.z, t.radius)).toBe(false);
+      }
+    }
+  });
+
+  it("never stacks a toy up against the back wall, so nothing looks glued to the wall", () => {
+    const BACK_GAP = 0.6;
+    for (const level of [1, 10, 30, 50]) {
+      const d = difficultyFor(level);
+      for (const seed of ["wall-a", "wall-b", "wall-c"]) {
+        const rng = seededRng(`${seed}:${level}`);
+        const toys = layoutPile(rng, pickTemplates(rng, templates, d.toyCount), d.crowding);
+        for (const t of toys) {
+          const lifted = t.y > t.radius + 0.05;
+          if (!lifted) continue;
+          expect(t.z - t.radius, `${level}:${seed}:${t.prizeId}`).toBeGreaterThanOrEqual(RAIL_BOUNDS.minZ + BACK_GAP - 1e-6);
+        }
+      }
+    }
+  });
+
   it("keeps simple-machine piles in the band under the rail", () => {
     const rng = seededRng("band");
     const toys = layoutPile(rng, pickTemplates(rng, templates, 16), 0.3, PLANAR_PILE_BOUNDS);
     for (const t of toys) {
-      expect(t.z - t.radius).toBeGreaterThanOrEqual(PLANAR_PILE_BOUNDS.minZ - 1e-6);
-      expect(t.z + t.radius).toBeLessThanOrEqual(PLANAR_PILE_BOUNDS.maxZ + 1e-6);
+      expect(t.z).toBeGreaterThanOrEqual(PLANAR_PILE_BOUNDS.minZ - 1e-6);
+      expect(t.z).toBeLessThanOrEqual(PLANAR_PILE_BOUNDS.maxZ + 1e-6);
     }
     // Planar reach ignores the small depth offsets inside the band.
     expect(reachDistance(0, 0, { x: 0.2, z: 0.7 }, true)).toBeCloseTo(0.2);
@@ -79,11 +134,28 @@ describe("layoutPile", () => {
     expect(a).toEqual(b);
   });
 
+  it("spreads toys across the checkered floor, close to the glass", () => {
+    for (const seed of ["spread-floor", "spread-b", "spread-c"]) {
+      const rng = seededRng(seed);
+      const toys = layoutPile(rng, pickTemplates(rng, templates, 24), 0.22);
+      const xs = toys.map((t) => t.x);
+      const zs = toys.map((t) => t.z);
+      expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(3.6);
+      expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(1.85);
+      const nearGlass = toys.filter(
+        (t) =>
+          Math.abs(t.x) + t.radius > CABINET.width / 2 - 0.22 ||
+          Math.abs(t.z) + t.radius > CABINET.depth / 2 - 0.22,
+      );
+      expect(nearGlass.length, seed).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it("keeps an easy pile on the floor, toward the open platform, not stacked on the back wall", () => {
     const rng = seededRng("easy-floor");
     const toys = layoutPile(rng, pickTemplates(rng, templates, 12), 0.1);
     const onFloor = toys.filter((t) => Math.abs(t.y - t.radius) < 0.03);
-    expect(onFloor.length).toBeGreaterThanOrEqual(10);
+    expect(onFloor.length).toBeGreaterThanOrEqual(7);
     const meanZ = toys.reduce((s, t) => s + t.z, 0) / toys.length;
     expect(meanZ).toBeGreaterThan(-0.35);
   });

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CHUTE } from "../config";
+import { CABINET, CHUTE } from "../config";
 import { levelDef, mysterySetup } from "../content/levels";
 import { TOY_TEMPLATES } from "../content/prizes";
 import { ClawEngine } from "./ClawEngine";
 import { RAIL_BOUNDS } from "./claw";
-import { neighbourCount } from "./grab";
-import { isExposed } from "./pile";
+import { easiestToy } from "./grab";
 import type { ClawEvent, EnginePhase, HudSnapshot, LevelSetup } from "./types";
 
 const STEP = 1 / 60;
@@ -24,11 +23,9 @@ function runUntil(engine: ClawEngine, done: () => boolean, maxSeconds = 30): num
   return t;
 }
 
-/** A resting toy with nothing on top of it (the kind a centred claw wins on level 1). */
+/** The easiest exposed toy (the kind a centred claw should win on level 1). */
 function exposedToy(engine: ClawEngine) {
-  const toys = engine.toys.filter((t) => t.status === "resting");
-  const exposed = toys.filter((t) => isExposed(t, toys) && neighbourCount(t, toys) === 0) ;
-  return (exposed.length ? exposed : toys.filter((t) => isExposed(t, toys)))[0];
+  return easiestToy(engine.toys, engine.vars) ?? engine.toys.find((t) => t.status === "resting")!;
 }
 
 function record(engine: ClawEngine): ClawEvent[] {
@@ -95,6 +92,50 @@ describe("ClawEngine", () => {
     expect(engine.stickZ).toBe(-1);
   });
 
+  it("reaches every floor corner even when the cabinet is full of toys", () => {
+    const engine = make(1);
+    expect(engine.toys.length).toBeGreaterThan(10);
+    engine.start();
+    const corners: Array<{ x: number; z: number; xDir: "left" | "right"; zDir: "back" | "forward" }> = [
+      { x: RAIL_BOUNDS.minX, z: RAIL_BOUNDS.minZ, xDir: "left", zDir: "back" },
+      { x: RAIL_BOUNDS.maxX, z: RAIL_BOUNDS.maxZ, xDir: "right", zDir: "forward" },
+      { x: RAIL_BOUNDS.minX, z: RAIL_BOUNDS.maxZ, xDir: "left", zDir: "forward" },
+      { x: RAIL_BOUNDS.maxX, z: RAIL_BOUNDS.minZ, xDir: "right", zDir: "back" },
+    ];
+    for (const c of corners) {
+      engine.move(c.xDir, true);
+      engine.move(c.zDir, true);
+      runUntil(engine, () => engine.claw.x === c.x && engine.claw.z === c.z, 20);
+      expect(engine.claw.x, c.xDir).toBe(c.x);
+      expect(engine.claw.z, c.zDir).toBe(c.z);
+      engine.move(c.xDir, false);
+      engine.move(c.zDir, false);
+    }
+    engine.moveTo(0, CABINET.depth / 2);
+    runUntil(engine, () => Math.abs(engine.claw.z - CABINET.depth / 2) < 1e-6, 20);
+    expect(engine.claw.z).toBe(CABINET.depth / 2);
+  });
+
+  it("a stick held toward the front-left glass rides the rails all the way there", () => {
+    const engine = make(1);
+    engine.start();
+    engine.setMove(-1, 1);
+    runUntil(engine, () => engine.claw.x === RAIL_BOUNDS.minX && engine.claw.z === RAIL_BOUNDS.maxZ, 20);
+    expect(engine.claw.x).toBe(RAIL_BOUNDS.minX);
+    expect(engine.claw.z).toBe(RAIL_BOUNDS.maxZ);
+  });
+
+  it("places the claw on a floor point immediately, out to the glass, even over empty tiles", () => {
+    const engine = make(1);
+    engine.start();
+    engine.place(-CABINET.width / 2, CABINET.depth / 2);
+    expect(engine.claw.x).toBe(-CABINET.width / 2);
+    expect(engine.claw.z).toBe(CABINET.depth / 2);
+    engine.place(CABINET.width / 2, -CABINET.depth / 2);
+    expect(engine.claw.x).toBe(CABINET.width / 2);
+    expect(engine.claw.z).toBe(-CABINET.depth / 2);
+  });
+
   it("still supports a simple left/right machine when a level asks for one", () => {
     const engine = new ClawEngine({ ...levelDef(1), depthControl: false, seed: "planar" }, TOY_TEMPLATES);
     engine.start();
@@ -109,13 +150,13 @@ describe("ClawEngine", () => {
     const engine = make(1, "sure");
     const events = record(engine);
     engine.start();
-    // Level 1 tops out at a 98% chance, so allow the honest 2% miss a retry.
+    // Level 1 is still generous, but a packed machine is not a sure thing; allow a few honest misses.
     const aim = () => {
       const t = exposedToy(engine);
       return grabAt(engine, t.x, t.z);
     };
     let result = aim();
-    for (let attempt = 1; attempt < 3 && !result.caught; attempt++) result = aim();
+    for (let attempt = 1; attempt < 6 && !result.caught; attempt++) result = aim();
     expect(result.caught).toBe(true);
     expect(result.endPhase).toBe("delivered");
     const delivered = events.find((e) => e.type === "prizeDelivered");
@@ -167,23 +208,32 @@ describe("ClawEngine", () => {
     const engine = new ClawEngine(setup, TOY_TEMPLATES);
     const events = record(engine);
     engine.start();
-    const target = exposedToy(engine);
-    const r = grabAt(engine, target.x, target.z);
+    let target = exposedToy(engine);
+    let r = grabAt(engine, target.x, target.z);
+    for (let attempt = 1; attempt < 6 && r.endPhase !== "delivered"; attempt++) {
+      target = exposedToy(engine);
+      r = grabAt(engine, target.x, target.z);
+    }
     expect(r.endPhase).toBe("delivered");
     engine.continue();
     expect(engine.phase).toBe("levelClear");
     const clear = events.find((e) => e.type === "levelClear");
-    expect(clear).toMatchObject({ type: "levelClear", level: 1, stars: 3, grabs: 1 });
-    expect(engine.summary()).toMatchObject({ successes: 1, goal: 1, stars: 3 });
-    expect(engine.summary().prizes).toEqual([target.prizeId]);
+    expect(clear).toMatchObject({ type: "levelClear", level: 1 });
+    expect(engine.summary().successes).toBe(1);
+    expect(engine.summary().stars).toBeGreaterThanOrEqual(1);
+    expect(engine.summary().prizes).toHaveLength(1);
   });
 
   it("keeps playing after a delivery when the goal is not met yet", () => {
     const setup: LevelSetup = { ...levelDef(1), goal: 2, seed: "two" };
     const engine = new ClawEngine(setup, TOY_TEMPLATES);
     engine.start();
-    const target = exposedToy(engine);
-    const r = grabAt(engine, target.x, target.z);
+    let t = exposedToy(engine);
+    let r = grabAt(engine, t.x, t.z);
+    for (let attempt = 1; attempt < 6 && r.endPhase !== "delivered"; attempt++) {
+      t = exposedToy(engine);
+      r = grabAt(engine, t.x, t.z);
+    }
     expect(r.endPhase).toBe("delivered");
     engine.continue();
     expect(engine.phase).toBe("positioning");

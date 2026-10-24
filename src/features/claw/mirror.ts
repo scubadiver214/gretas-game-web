@@ -29,7 +29,12 @@ export const useClawMirror = create<MirrorState>()(
     (set) => ({
       nickname: "",
       profile: null,
-      applyProfile: (nickname, profile) => set({ nickname, profile }),
+      applyProfile: (nickname, profile) =>
+        set((s) => {
+          // An in-flight GET can land after a complete and must not wipe the newer progress.
+          if (s.nickname === nickname && s.profile && s.profile.currentLevel > profile.currentLevel) return s;
+          return { nickname, profile };
+        }),
       applyGrab: (nickname, _level, r) =>
         set((s) => {
           const p = base(s, nickname);
@@ -63,7 +68,7 @@ export const useClawMirror = create<MirrorState>()(
               ? p.levels.map((l) => (l.level === level ? { ...l, stars: Math.max(l.stars, r.stars), bestGrabs: Math.min(l.bestGrabs, grabs), clears: l.clears + 1, lastClearedAt: now } : l))
               : [...p.levels, { level, stars: r.stars, bestGrabs: grabs, clears: 1, lastClearedAt: now }].sort((a, b) => a.level - b.level);
           const avatars = [...p.avatars, ...r.newAvatars.filter((id) => !p.avatars.some((a) => a.avatarId === id)).map((avatarId) => ({ avatarId, unlockedAt: now }))];
-          return { nickname, profile: { ...p, currentLevel: r.currentLevel, levels, avatars, selectedAvatar: p.selectedAvatar ?? r.newAvatars[0] ?? null } };
+          return { nickname, profile: { ...p, currentLevel: Math.max(p.currentLevel, r.currentLevel), levels, avatars, selectedAvatar: p.selectedAvatar ?? r.newAvatars[0] ?? null } };
         }),
       applyAvatar: (nickname, avatarId) => set((s) => ({ nickname, profile: { ...base(s, nickname), selectedAvatar: avatarId } })),
       applyFavorite: (nickname, prizeId, favorite) =>

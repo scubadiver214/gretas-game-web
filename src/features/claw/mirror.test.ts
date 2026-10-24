@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { emptyProfile } from "./api";
 import { useClawMirror } from "./mirror";
-import { collectionStats, milestoneContext, worldProgress } from "./profileStats";
+import { collectionStats, milestoneContext, nextLevelAfterClear, selectClawProfile, worldProgress } from "./profileStats";
 
 const nick = "Greta";
 
@@ -55,6 +55,15 @@ describe("claw mirror", () => {
     m.applyProfile(nick, server);
     expect(useClawMirror.getState().profile).toEqual(server);
   });
+
+  it("does not let a stale server snapshot roll currentLevel backwards", () => {
+    const m = useClawMirror.getState();
+    m.applyComplete(nick, 1, 1, { stars: 3, cleared: true, currentLevel: 2, newAvatars: [], mysteryUnlocked: null });
+    m.applyProfile(nick, { ...emptyProfile(nick), currentLevel: 1, points: 10 });
+    const p = useClawMirror.getState().profile!;
+    expect(p.currentLevel).toBe(2);
+    expect(p.levels).toEqual([expect.objectContaining({ level: 1, stars: 3 })]);
+  });
 });
 
 describe("profile stats", () => {
@@ -76,5 +85,19 @@ describe("profile stats", () => {
     expect(worlds[0]).toMatchObject({ unlocked: true, cleared: 10, stars: 30, mysteryOpen: true, mysteryWon: true, playLevel: 10 });
     expect(worlds[1]).toMatchObject({ unlocked: true, cleared: 1, mysteryOpen: false, mysteryWon: false, playLevel: 12 });
     expect(worlds[2]).toMatchObject({ unlocked: false, cleared: 0, playLevel: 21 });
+  });
+
+  it("advances past a just-cleared level even when the profile cache is still on that level", () => {
+    expect(nextLevelAfterClear(1, 1)).toBe(2);
+    expect(nextLevelAfterClear(1, 2)).toBe(2);
+    expect(nextLevelAfterClear(50, 50)).toBe(50);
+  });
+
+  it("prefers the mirrored profile when it is ahead of a stale server copy", () => {
+    const stale = { ...emptyProfile(nick), currentLevel: 1 };
+    const local = { ...emptyProfile(nick), currentLevel: 2 };
+    expect(selectClawProfile(stale, local, nick).currentLevel).toBe(2);
+    expect(selectClawProfile(local, stale, nick).currentLevel).toBe(2);
+    expect(selectClawProfile(undefined, null, nick).currentLevel).toBe(1);
   });
 });

@@ -6,6 +6,7 @@ import type { CharacterId } from "@/features/player/types";
 import { emptyProfile, getProfile, selectAvatar, setFavorite, type ClawProfile } from "./api";
 import { useClawMirror } from "./mirror";
 import { flushClawOutbox, useClawOutbox } from "./outbox";
+import { selectClawProfile } from "./profileStats";
 
 export const clawKeys = {
   all: ["claw"] as const,
@@ -29,7 +30,7 @@ export function useClawProfile(nickname: string): { profile: ClawProfile; loadin
   useEffect(() => {
     if (query.data) applyProfile(nickname, query.data);
   }, [query.data, nickname, applyProfile]);
-  const profile = query.data ?? mirrored ?? emptyProfile(nickname);
+  const profile = selectClawProfile(query.data, mirrored, nickname);
   return { profile, loading: query.isPending && !mirrored, offline: query.isError && !query.data, refetch: () => void query.refetch() };
 }
 

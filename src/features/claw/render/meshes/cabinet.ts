@@ -197,11 +197,12 @@ export function buildCabinet(kit: MeshKit, palette: WorldPalette, titleFont = "c
   root.add(sticker);
 
   // Gantry: two rails along x at the top, a bar along z that follows the claw, and a carriage on it.
+  // Rails run to the inner glass so the carriage can travel every floor tile.
   const railMat = { rough: 0.35, metal: 0.6, flat: false } as const;
-  for (const sz of [-1, 1]) root.add(box(kit, W, 0.08, 0.08, "#C9D2E3", 0, H + 0.02, sz * (D / 2 - 0.18), railMat, false));
+  for (const sz of [-1, 1]) root.add(box(kit, W, 0.08, 0.08, "#C9D2E3", 0, H + 0.02, sz * (D / 2), railMat, false));
   const gantry = new Group();
   gantry.position.set(0, H + 0.02, 0);
-  gantry.add(box(kit, 0.1, 0.1, D - 0.2, "#E6EBF5", 0, 0.05, 0, railMat, false));
+  gantry.add(box(kit, 0.1, 0.1, D, "#E6EBF5", 0, 0.05, 0, railMat, false));
   const carriage = box(kit, 0.42, 0.26, 0.42, trim, 0, 0.02, 0, { rough: 0.4 }, false);
   gantry.add(carriage);
   root.add(gantry);

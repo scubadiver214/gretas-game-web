@@ -6,14 +6,17 @@ import Typography from "@mui/material/Typography";
 import { N } from "@/design/neon";
 import { useSettingsStore } from "@/features/settings/store";
 import type { WorldPalette } from "../content/worlds";
+import { chooseAim } from "../engine/claw";
 import { ClawEngine, runLoop } from "../engine/ClawEngine";
+import { stickFromDrag } from "../engine/input";
 import { setClawProjector } from "../fx";
 import { ClawRenderer, type ViewInsets } from "../render/ClawRenderer";
 
 /**
  * Hosts the three.js view of the engine and drives the frame loop. The canvas
  * is created imperatively per mount so a strict-mode remount never reuses a
- * WebGL context that was just force-lost. Tapping a toy glides the claw to it.
+ * WebGL context that was just force-lost. Dragging on the floor slides the
+ * claw to that tile (out to the glass); a short tap still glides onto a toy.
  */
 export default function ClawCanvas({ engine, palette, insets }: { engine: ClawEngine; palette: WorldPalette; insets: ViewInsets }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -47,23 +50,62 @@ export default function ClawCanvas({ engine, palette, insets }: { engine: ClawEn
     const ro = new ResizeObserver(resize);
     ro.observe(host);
 
-    // Tap a toy to aim at it (only while the player can move the claw).
-    let down: { x: number; y: number; id: number } | null = null;
+    // Drag the 3D joystick like a stick, or drag across the floor: the claw
+    // follows all the way to the glass. A short tap still glides onto a toy.
+    let down: { x: number; y: number; id: number; dragged: boolean; stick: boolean } | null = null;
+    const pointerOnCanvas = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      return { px: e.clientX - rect.left, py: e.clientY - rect.top };
+    };
+    const followFloor = (e: PointerEvent) => {
+      if (engine.phase !== "positioning") return;
+      const { px, py } = pointerOnCanvas(e);
+      const tile = renderer.pickFloor(px, py);
+      if (tile) engine.place(tile.x, tile.z);
+    };
+    const followStick = (e: PointerEvent) => {
+      if (!down) return;
+      const stick = stickFromDrag(e.clientX - down.x, e.clientY - down.y, 48);
+      engine.setMove(stick.x, stick.z);
+    };
     const onDown = (e: PointerEvent) => {
-      down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      const { px, py } = pointerOnCanvas(e);
+      down = { x: e.clientX, y: e.clientY, id: e.pointerId, dragged: false, stick: renderer.pickStick(px, py) };
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {
+        /* capture is best-effort; move/up still fire on the canvas */
+      }
+      if (down.stick) followStick(e);
+      else followFloor(e);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!down || down.id !== e.pointerId) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) down.dragged = true;
+      if (down.stick) followStick(e);
+      else if (down.dragged) followFloor(e);
     };
     const onUp = (e: PointerEvent) => {
       if (!down || down.id !== e.pointerId) return;
-      const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+      const dragged = down.dragged;
+      const stick = down.stick;
       down = null;
-      if (moved > 12 || engine.phase !== "positioning") return;
-      const rect = canvas.getBoundingClientRect();
-      const uid = renderer.pick(e.clientX - rect.left, e.clientY - rect.top);
+      if (stick) {
+        engine.setMove(0, 0);
+        return;
+      }
+      if (dragged || engine.phase !== "positioning") return;
+      const { px, py } = pointerOnCanvas(e);
+      const uid = renderer.pick(px, py);
       const toy = uid === null ? null : engine.toy(uid);
-      if (toy && toy.status === "resting") engine.moveTo(toy.x, toy.z);
+      const tile = renderer.pickFloor(px, py);
+      const aim = chooseAim(tile, toy);
+      if (aim) engine.moveTo(aim.x, aim.z);
     };
     canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointercancel", onUp);
 
     const stop = runLoop((dt) => {
       engine.advance(dt);
@@ -73,7 +115,9 @@ export default function ClawCanvas({ engine, palette, insets }: { engine: ClawEn
     return () => {
       stop();
       canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointercancel", onUp);
       ro.disconnect();
       setClawProjector(null);
       rendererRef.current = null;

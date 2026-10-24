@@ -37,13 +37,13 @@ export interface CurvePoint extends DifficultyVars {
 
 /** Keyframes of the curve. Each value is interpolated linearly between neighbours. */
 export const CURVE: readonly CurvePoint[] = [
-  { level: 1, clawSpeed: 1.85, gripStrength: 1.32, alignTolerance: 0.38, slipChance: 0, crowding: 0.22, toyCount: 22 },
-  { level: 5, clawSpeed: 2.0, gripStrength: 1.24, alignTolerance: 0.33, slipChance: 0, crowding: 0.28, toyCount: 24 },
-  { level: 10, clawSpeed: 2.15, gripStrength: 1.15, alignTolerance: 0.3, slipChance: 0, crowding: 0.36, toyCount: 26 },
-  { level: 20, clawSpeed: 2.35, gripStrength: 0.95, alignTolerance: 0.22, slipChance: 0.08, crowding: 0.48, toyCount: 30 },
-  { level: 30, clawSpeed: 2.55, gripStrength: 0.84, alignTolerance: 0.17, slipChance: 0.16, crowding: 0.58, toyCount: 34 },
-  { level: 40, clawSpeed: 2.75, gripStrength: 0.74, alignTolerance: 0.14, slipChance: 0.22, crowding: 0.68, toyCount: 36 },
-  { level: 50, clawSpeed: 2.95, gripStrength: 0.62, alignTolerance: 0.11, slipChance: 0.32, crowding: 0.78, toyCount: 40 },
+  { level: 1, clawSpeed: 1.92, gripStrength: 1.26, alignTolerance: 0.35, slipChance: 0, crowding: 0.3, toyCount: 44 },
+  { level: 5, clawSpeed: 2.08, gripStrength: 1.2, alignTolerance: 0.32, slipChance: 0, crowding: 0.36, toyCount: 48 },
+  { level: 10, clawSpeed: 2.22, gripStrength: 1.15, alignTolerance: 0.3, slipChance: 0, crowding: 0.44, toyCount: 52 },
+  { level: 20, clawSpeed: 2.42, gripStrength: 0.9, alignTolerance: 0.2, slipChance: 0.1, crowding: 0.56, toyCount: 60 },
+  { level: 30, clawSpeed: 2.62, gripStrength: 0.8, alignTolerance: 0.15, slipChance: 0.18, crowding: 0.66, toyCount: 68 },
+  { level: 40, clawSpeed: 2.82, gripStrength: 0.7, alignTolerance: 0.12, slipChance: 0.26, crowding: 0.76, toyCount: 72 },
+  { level: 50, clawSpeed: 3.02, gripStrength: 0.58, alignTolerance: 0.1, slipChance: 0.36, crowding: 0.86, toyCount: 80 },
 ];
 
 function lerp(a: number, b: number, t: number): number {

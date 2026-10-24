@@ -1,6 +1,6 @@
 import type { Rng } from "@/lib/rng";
 import { CABINET, CHUTE, CLAW, PHYSICS } from "../config";
-import { dropForTipY } from "./claw";
+import { RAIL_BOUNDS, dropForTipY } from "./claw";
 import type { ToyState, ToyTemplate } from "./types";
 
 /** Toys sink into each other a little, like plushies in a real machine. */
@@ -9,6 +9,8 @@ const NESTLE = 0.82;
 const SUPPORT_OVERLAP = 0.92;
 /** The pile stays out of the chute by this much extra. */
 const CHUTE_CLEARANCE = 0.25;
+/** Sit on the grab floor, just inside the glass — same inset as the claw rails. */
+const WALL_CLEARANCE = CABINET.margin;
 
 export interface PileBounds {
   minX: number;
@@ -17,13 +19,18 @@ export interface PileBounds {
   maxZ: number;
 }
 
-/** Floor area toys may occupy: inside the glass, away from the chute. */
+/** Floor area toys may occupy: the checkered grab floor, out to the glass. */
 export const PILE_BOUNDS: PileBounds = {
-  minX: -CABINET.width / 2 + 0.1,
-  maxX: CABINET.width / 2 - 0.1,
-  minZ: -CABINET.depth / 2 + 0.1,
-  maxZ: CABINET.depth / 2 - 0.1,
+  minX: -CABINET.width / 2 + WALL_CLEARANCE,
+  maxX: CABINET.width / 2 - WALL_CLEARANCE,
+  minZ: -CABINET.depth / 2 + WALL_CLEARANCE,
+  maxZ: CABINET.depth / 2 - WALL_CLEARANCE,
 };
+
+/** True when the claw head can sit over this point. */
+export function clawCanReach(x: number, z: number): boolean {
+  return x >= RAIL_BOUNDS.minX && x <= RAIL_BOUNDS.maxX && z >= RAIL_BOUNDS.minZ && z <= RAIL_BOUNDS.maxZ;
+}
 
 /**
  * Simple (left/right only) machines keep the pile in a band under the rail
@@ -47,6 +54,77 @@ export function reachDistance(x: number, z: number, toy: { x: number; z: number 
 export function overChute(x: number, z: number, radius = 0): boolean {
   const half = CHUTE.size / 2 + CHUTE_CLEARANCE;
   return Math.abs(x - CHUTE.x) < half + radius && Math.abs(z - CHUTE.z) < half + radius;
+}
+
+/** The claw can hover over the toy's centre, the body stays inside the glass, and it is not in the chute. */
+export function onGrabFloor(x: number, z: number, radius: number, bounds: PileBounds = PILE_BOUNDS): boolean {
+  return clawCanReach(x, z) && insideWalls(x, z, radius) && insideBounds(x, z, radius, bounds) && !overChute(x, z, radius);
+}
+
+function insideBounds(x: number, z: number, radius: number, bounds: PileBounds): boolean {
+  return (
+    x - radius >= bounds.minX - 1e-9 &&
+    x + radius <= bounds.maxX + 1e-9 &&
+    z - radius >= bounds.minZ - 1e-9 &&
+    z + radius <= bounds.maxZ + 1e-9
+  );
+}
+
+function insideWalls(x: number, z: number, radius: number): boolean {
+  return (
+    Math.abs(x) + radius <= CABINET.width / 2 - WALL_CLEARANCE + 1e-9 &&
+    Math.abs(z) + radius <= CABINET.depth / 2 - WALL_CLEARANCE + 1e-9
+  );
+}
+
+function clampToFloor(x: number, z: number, radius: number, bounds: PileBounds): { x: number; z: number } {
+  const wallX = CABINET.width / 2 - WALL_CLEARANCE - radius;
+  const wallZ = CABINET.depth / 2 - WALL_CLEARANCE - radius;
+  let minX = Math.max(bounds.minX, RAIL_BOUNDS.minX, -wallX);
+  let maxX = Math.min(bounds.maxX, RAIL_BOUNDS.maxX, wallX);
+  let minZ = Math.max(bounds.minZ, RAIL_BOUNDS.minZ, -wallZ);
+  let maxZ = Math.min(bounds.maxZ, RAIL_BOUNDS.maxZ, wallZ);
+  if (minX > maxX) {
+    const mid = (minX + maxX) / 2;
+    minX = maxX = mid;
+  }
+  if (minZ > maxZ) {
+    const mid = (minZ + maxZ) / 2;
+    minZ = maxZ = mid;
+  }
+  return { x: Math.min(maxX, Math.max(minX, x)), z: Math.min(maxZ, Math.max(minZ, z)) };
+}
+
+/** Stacked toys must stay this far from the back wall, or they read as stuck to it. */
+const BACK_WALL_GAP = 0.6;
+
+/** True for a toy that would sit on other toys right up against the back wall. */
+function stackedAgainstBackWall(_x: number, z: number, y: number, radius: number, bounds: PileBounds): boolean {
+  const lifted = y > radius + 0.05;
+  return lifted && z - radius < bounds.minZ + BACK_WALL_GAP;
+}
+
+/** Walk the grab floor for a legal park when random sampling cannot find one. */
+function fallbackOnFloor(radius: number, bounds: PileBounds, toys: readonly ToyState[]): { x: number; z: number; y: number } {
+  let best: { x: number; z: number; y: number } | null = null;
+  const cols = 8;
+  const rows = 6;
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const gx = bounds.minX + ((i + 0.5) / cols) * (bounds.maxX - bounds.minX);
+      const gz = bounds.minZ + ((j + 0.5) / rows) * (bounds.maxZ - bounds.minZ);
+      const { x, z } = clampToFloor(gx, gz, radius, bounds);
+      if (!onGrabFloor(x, z, radius, bounds)) continue;
+      const y = restHeight({ uid: -1, x, z, radius }, toys);
+      if (y + radius > CLAW.maxPileTop) continue;
+      if (stackedAgainstBackWall(x, z, y, radius, bounds)) continue;
+      if (!best || y < best.y) best = { x, z, y };
+    }
+  }
+  if (best) return best;
+  const { x, z } = clampToFloor((bounds.minX + bounds.maxX) / 2 + 0.4, (bounds.minZ + bounds.maxZ) / 2, radius, bounds);
+  const y = Math.min(restHeight({ uid: -1, x, z, radius }, toys), CLAW.maxPileTop - radius);
+  return onGrabFloor(x, z, radius, bounds) ? { x, z, y } : { x: 0.45, z: 0, y: Math.min(radius, CLAW.maxPileTop - radius) };
 }
 
 /** True while the toy sits in the pile and can hold other toys up. */
@@ -176,37 +254,53 @@ export function pickTemplates(rng: Rng, pool: readonly ToyTemplate[], count: num
  */
 export function layoutPile(rng: Rng, templates: readonly ToyTemplate[], crowding: number, bounds: PileBounds = PILE_BOUNDS): ToyState[] {
   const toys: ToyState[] = [];
-  // Use most of the open floor (chute is front-left). Higher crowding tightens
-  // the scatter so later levels still look like a real packed machine.
+  // Fill the whole checkered floor. Crowding only stacks extras, it does not
+  // pull the pile into a clump in the middle.
   const crowd = Math.min(1, Math.max(0, crowding));
-  const shrink = 0.88 - 0.22 * crowd;
-  const cx = (bounds.minX + bounds.maxX) / 2 + 0.18;
-  const cz = (bounds.minZ + bounds.maxZ) / 2 + 0.06;
-  const halfW = ((bounds.maxX - bounds.minX) / 2) * shrink;
-  const halfD = ((bounds.maxZ - bounds.minZ) / 2) * shrink;
-  const spread = 0.7 * (1 - crowd);
-  const tries = crowd < 0.5 ? 10 : 4;
+  const width = bounds.maxX - bounds.minX;
+  const depth = bounds.maxZ - bounds.minZ;
+  const cols = 7;
+  const rows = 6;
+  const spread = 1.7 - 0.35 * crowd;
+  const corners: Array<readonly [number, number]> = [
+    [bounds.minX, bounds.minZ],
+    [bounds.maxX, bounds.minZ],
+    [bounds.minX, bounds.maxZ],
+    [bounds.maxX, bounds.maxZ],
+  ];
+  const tries = 4 + cols * rows;
   templates.forEach((t, i) => {
     const radius = t.size;
     let best: { x: number; z: number; y: number; score: number } | null = null;
-    for (let attempt = 0; attempt < 16; attempt++) {
-      const x = Math.min(bounds.maxX - radius, Math.max(bounds.minX + radius, cx + (rng() * 2 - 1) * halfW));
-      const z = Math.min(bounds.maxZ - radius, Math.max(bounds.minZ + radius, cz + (rng() * 2 - 1) * halfD));
-      if (overChute(x, z, radius)) continue;
+    for (let attempt = 0; attempt < tries; attempt++) {
+      let gx: number;
+      let gz: number;
+      if (attempt < 4) {
+        gx = corners[attempt][0];
+        gz = corners[attempt][1];
+      } else {
+        const cell = attempt - 4;
+        const col = cell % cols;
+        const row = Math.floor(cell / cols);
+        gx = bounds.minX + ((col + rng()) / cols) * width;
+        gz = bounds.minZ + ((row + rng()) / rows) * depth;
+      }
+      const { x, z } = clampToFloor(gx, gz, radius, bounds);
+      if (!onGrabFloor(x, z, radius, bounds)) continue;
       const y = restHeight({ uid: -1, x, z, radius }, toys);
       if (y + radius > CLAW.maxPileTop) continue;
+      if (stackedAgainstBackWall(x, z, y, radius, bounds)) continue;
       let gap = 8;
       for (const o of toys) {
         const d = Math.hypot(o.x - x, o.z - z) - o.radius - radius;
         if (d < gap) gap = d;
       }
-      // Prefer the floor, then a little breathing room between toys.
-      const score = y - gap * spread;
+      // Prefer the floor, then space between toys, then a little toward the player
+      // so the pile fills the platform instead of hugging the back glass.
+      const score = y * 1.15 - gap * spread - z * 0.22;
       if (!best || score < best.score) best = { x, z, y, score };
-      if (attempt + 1 >= tries && best) break;
     }
-    // Last resort: park on the floor in the open (front-right) of the cabinet.
-    const spot = best ?? { x: Math.min(bounds.maxX - radius, cx + halfW * 0.25), z: Math.min(bounds.maxZ - radius, Math.max(bounds.minZ + radius, 0.15)), y: radius };
+    const spot = best ?? fallbackOnFloor(radius, bounds, toys);
     toys.push({
       uid: i + 1,
       prizeId: t.id,

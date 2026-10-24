@@ -26,23 +26,20 @@ import { CABINET, CHUTE, GAME_TITLE } from "../config";
 import { PRIZE_BY_ID } from "../content/prizes";
 import { WORLDS, type WorldPalette } from "../content/worlds";
 import type { ClawEngine } from "../engine/ClawEngine";
-import { tipY } from "../engine/claw";
+import { aimOnFloor, tipY } from "../engine/claw";
 import { highestUnder } from "../engine/pile";
 import type { ClawEvent, ToyState } from "../engine/types";
+import { CAMERA_FOV, fitCamera, ndcBand, type ViewInsets } from "./cameraFit";
 import { MARQUEE_H, PLINTH_H, buildCabinet, type CabinetRig } from "./meshes/cabinet";
 import { buildClaw, poseClaw, type ClawRig } from "./meshes/claw";
 import { WALL_Z, WallSign } from "./meshes/wallSign";
 import { buildToy, floorSitOffset } from "./toys";
 
+export type { ViewInsets } from "./cameraFit";
+
 export interface RendererOptions {
   /** Read every frame so the setting can change mid-game. */
   reducedMotion: () => boolean;
-}
-
-/** Share of the viewport covered by DOM HUD at the top and bottom (0..0.5). */
-export interface ViewInsets {
-  top: number;
-  bottom: number;
 }
 
 interface ToyVisual {
@@ -53,11 +50,6 @@ interface ToyVisual {
   visualBottom: number;
 }
 
-const FOV = 34;
-const TARGET = new Vector3(0, CABINET.height * 0.34, 0.35);
-// Looking down at the pink floor so toys read as sitting on the platform, not floating on the back wall.
-const ELEVATION = MathUtils.degToRad(28);
-const ELEVATION_TALL = MathUtils.degToRad(34);
 const AIM_EMPTY = new Color("#FFFFFF");
 const AIM_TOY = new Color("#3DFF88");
 
@@ -68,7 +60,7 @@ const AIM_TOY = new Color("#3DFF88");
 export class ClawRenderer {
   private readonly renderer: WebGLRenderer;
   private readonly scene = new Scene();
-  private readonly camera = new PerspectiveCamera(FOV, 1, 0.5, 200);
+  private readonly camera = new PerspectiveCamera(CAMERA_FOV, 1, 0.5, 200);
   private readonly kit = new MeshKit();
   private readonly particles = new Particles();
   private readonly toyRoot = new Group();
@@ -77,11 +69,13 @@ export class ClawRenderer {
   /** Ring on whatever the claw would land on, plus a faint beam down from the fingers. */
   private readonly aimRing: Mesh;
   private readonly aimBeam: Mesh;
+  private readonly floorMark: Mesh;
   private readonly aimMat: MeshStandardMaterial;
   private readonly sign: WallSign;
   private readonly titleFont: string;
   private disposed = false;
   private readonly wallPlane = new Plane(new Vector3(0, 0, 1), -WALL_Z);
+  private readonly floorPlane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly fill: PointLight;
   private readonly ground: Mesh;
   private cabinet: CabinetRig;
@@ -168,9 +162,18 @@ export class ClawRenderer {
       this.kit.track(new MeshStandardMaterial({ color: "#FFFFFF", emissive: new Color("#FFFFFF"), emissiveIntensity: 0.6, transparent: true, opacity: 0.22, depthWrite: false })),
     );
     this.aimBeam.renderOrder = 5;
+    // Footprint on the checkered floor, drawn through the toys: the claw head
+    // hangs at ceiling height, so without this it looks like it stops short of
+    // the glass when it is actually at the front or side edge of the floor.
+    this.floorMark = new Mesh(
+      this.kit.cylinder(0.42, 0.42, 0.01, 28),
+      this.kit.track(new MeshStandardMaterial({ color: "#FFFFFF", emissive: new Color("#FFFFFF"), emissiveIntensity: 0.7, transparent: true, opacity: 0.4, depthWrite: false, depthTest: false })),
+    );
+    this.floorMark.renderOrder = 4;
+    this.floorMark.visible = false;
     this.aimRing.visible = false;
     this.aimBeam.visible = false;
-    this.scene.add(this.aimRing, this.aimBeam);
+    this.scene.add(this.aimRing, this.aimBeam, this.floorMark);
 
     this.sign = new WallSign(this.kit, GAME_TITLE);
     this.sign.addTo(this.scene);
@@ -249,6 +252,22 @@ export class ClawRenderer {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** Floor tile under a pointer (canvas-relative pixels), for tap-to-aim on empty tiles. */
+  pickFloor(px: number, py: number): { x: number; z: number } | null {
+    this.ndc.set((px / this.size.w) * 2 - 1, -(py / this.size.h) * 2 + 1);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    const hit = this.raycaster.ray.intersectPlane(this.floorPlane, new Vector3());
+    if (!hit) return null;
+    return aimOnFloor(hit.x, hit.z);
+  }
+
+  /** True when the pointer is on the cabinet's 3D joystick. */
+  pickStick(px: number, py: number): boolean {
+    this.ndc.set((px / this.size.w) * 2 - 1, -(py / this.size.h) * 2 + 1);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    return this.raycaster.intersectObject(this.cabinet.stick, true).length > 0;
+  }
+
   /** The toy under a pointer position (canvas-relative pixels), for tap-to-aim. */
   pick(px: number, py: number): number | null {
     this.ndc.set((px / this.size.w) * 2 - 1, -(py / this.size.h) * 2 + 1);
@@ -293,48 +312,21 @@ export class ClawRenderer {
   }
 
   private fitCamera(): void {
-    const aspect = this.camera.aspect;
-    const t = MathUtils.clamp((1.2 - aspect) / (1.2 - 0.55), 0, 1);
-    const elevation = MathUtils.lerp(ELEVATION, ELEVATION_TALL, t);
-    const dir = new Vector3(0, Math.sin(elevation), Math.cos(elevation));
-    // Fit the glass box and marquee; the plinth and control panel below may sit behind the DOM controls.
-    const corners: Vector3[] = [];
-    const hx = CABINET.width / 2 + 0.5;
-    const top = CABINET.height + 0.25 + MARQUEE_H;
-    for (const x of [-hx, hx]) {
-      for (const z of [-CABINET.depth / 2 - 0.4, CABINET.depth / 2 + 0.5]) {
-        corners.push(new Vector3(x, -0.35, z), new Vector3(x, top, z));
-      }
-    }
-    const lo = -1 + 2 * this.insets.bottom + 0.02;
-    const hi = 1 - 2 * this.insets.top - 0.02;
+    fitCamera(this.camera, this.insets);
     const p = new Vector3();
-    const fits = (d: number) => {
-      this.camera.position.copy(TARGET).addScaledVector(dir, d);
-      this.camera.lookAt(TARGET);
-      this.camera.updateMatrixWorld();
-      return corners.every((c) => {
-        p.copy(c).project(this.camera);
-        return Math.abs(p.x) <= 0.97 && p.y >= lo && p.y <= hi && p.z < 1;
-      });
-    };
-    let a = 4;
-    let b = 120;
-    for (let i = 0; i < 32; i++) {
-      const mid = (a + b) / 2;
-      if (fits(mid)) b = mid;
-      else a = mid;
-    }
-    fits(b);
-
-    // Where the cabinet ended up on screen, so the wall sign can use the space around it.
     let cabX = 0;
     let cabTop = -1;
-    for (const c of corners) {
+    for (const c of [
+      new Vector3(-CABINET.width / 2, CABINET.height + MARQUEE_H, 0),
+      new Vector3(CABINET.width / 2, CABINET.height + MARQUEE_H, 0),
+      new Vector3(-CABINET.width / 2, 0, CABINET.depth / 2),
+      new Vector3(CABINET.width / 2, 0, CABINET.depth / 2),
+    ]) {
       p.copy(c).project(this.camera);
       cabX = Math.max(cabX, Math.abs(p.x));
       cabTop = Math.max(cabTop, p.y);
     }
+    const { lo, hi } = ndcBand(this.insets);
     this.layoutSign(cabX, cabTop, lo, hi);
   }
 
@@ -519,9 +511,16 @@ export class ClawRenderer {
     const show = engine.phase === "positioning";
     this.aimRing.visible = show;
     this.aimBeam.visible = show;
-    if (!show) return;
+    if (!show) {
+      this.floorMark.visible = false;
+      return;
+    }
     const c = engine.claw;
     const target = highestUnder(c.x, c.z, engine.toys, engine.planar);
+    // Only shown over bare floor: over a toy the green ring is the target, and
+    // a floor marker under the pile would suggest the claw drops through it.
+    this.floorMark.visible = target === null;
+    this.floorMark.position.set(c.x, 0.03, c.z);
     const y = target ? target.y + target.radius + 0.03 : 0.04;
     this.aimRing.position.set(c.x, y, c.z);
     const pulse = calm ? 1 : 1 + 0.08 * Math.sin(this.time * 6);

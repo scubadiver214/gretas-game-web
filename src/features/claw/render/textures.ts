@@ -20,20 +20,23 @@ export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingC
  * it fits between the stars.
  */
 export function marqueeTexture(title: string, bg: string, fg: string, accent: string, family: string, aspect: number): Texture {
-  const h = 180;
+  // Drawn big (the sign fills most of the screen on a desktop) so the script
+  // letters stay crisp instead of being stretched from a small bitmap.
+  const h = 400;
   const w = Math.round(h * aspect);
-  return canvasTexture(w, h, (ctx) => {
+  const tex = canvasTexture(w, h, (ctx) => {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
     // Candy stripes behind the text.
     ctx.globalAlpha = 0.18;
     ctx.fillStyle = "#FFFFFF";
-    for (let x = -h; x < w; x += 54) {
+    const stripe = h * 0.3;
+    for (let x = -h; x < w; x += stripe) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x + 27, 0);
-      ctx.lineTo(x + 27 + 90, h);
-      ctx.lineTo(x + 90, h);
+      ctx.lineTo(x + stripe / 2, 0);
+      ctx.lineTo(x + stripe / 2 + h * 0.5, h);
+      ctx.lineTo(x + h * 0.5, h);
       ctx.closePath();
       ctx.fill();
     }
@@ -48,17 +51,22 @@ export function marqueeTexture(title: string, bg: string, fg: string, accent: st
     }
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.lineWidth = size * 0.2;
     ctx.lineJoin = "round";
-    ctx.strokeStyle = accent;
     // Cursive faces sit low in their box; nudge up so it looks centred.
     const y = h * 0.48;
+    // A thin dark edge keeps the loops of the script open; the old fat accent
+    // outline filled them in and made the name read as a smear.
+    ctx.lineWidth = size * 0.07;
+    ctx.strokeStyle = "rgba(70, 0, 45, 0.7)";
     ctx.strokeText(title, w / 2, y);
     ctx.fillStyle = fg;
     ctx.fillText(title, w / 2, y);
     // Stars either side.
+    ctx.fillStyle = accent;
     for (const cx of [starX, w - starX]) star(ctx, cx, h / 2, h * 0.17, h * 0.07);
   });
+  tex.anisotropy = 8;
+  return tex;
 }
 
 function star(ctx: CanvasRenderingContext2D, cx: number, cy: number, outer: number, inner: number): void {

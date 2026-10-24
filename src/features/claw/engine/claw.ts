@@ -1,7 +1,7 @@
 import { CABINET, CLAW } from "../config";
 import type { ClawState } from "./types";
 
-/** Where the head may travel: inside the glass, minus a margin. */
+/** Where the head may travel: the checkered floor, out to the inner glass. */
 export const RAIL_BOUNDS = {
   minX: -CABINET.width / 2 + CABINET.margin,
   maxX: CABINET.width / 2 - CABINET.margin,
@@ -32,6 +32,34 @@ export function clampX(x: number): number {
 
 export function clampZ(z: number): number {
   return Math.min(RAIL_BOUNDS.maxZ, Math.max(RAIL_BOUNDS.minZ, z));
+}
+
+/** A point on the checkered floor the claw can travel to, or null if it is way outside the cabinet. */
+export function aimOnFloor(x: number, z: number): { x: number; z: number } | null {
+  const halfW = CABINET.width / 2;
+  const halfD = CABINET.depth / 2;
+  // Clicks on the glass or the wall still count: pull them onto that floor edge.
+  if (x < -halfW - 2 || x > halfW + 2 || z < -halfD - 2 || z > halfD + 2) return null;
+  return { x: clampX(x), z: clampZ(z) };
+}
+
+/**
+ * Where a pointer tap should send the claw. A toy only wins if it actually
+ * sits on that floor tile; a toy that merely sat in the camera's line of
+ * sight toward the glass does not steal the aim.
+ */
+export function chooseAim(
+  tile: { x: number; z: number } | null,
+  toy: { x: number; z: number; radius: number; status: string } | null,
+): { x: number; z: number } | null {
+  if (toy && (toy.status === "resting" || toy.status === "falling")) {
+    // Only the toy sitting on that floor tile — a neighbour in the pile, or a
+    // tall toy along the camera ray toward the glass, must not steal the aim.
+    if (!tile || Math.hypot(toy.x - tile.x, toy.z - tile.z) <= toy.radius) {
+      return { x: toy.x, z: toy.z };
+    }
+  }
+  return tile;
 }
 
 /** World y of the finger tips for a cable extension. */

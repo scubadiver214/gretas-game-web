@@ -28,6 +28,20 @@ describe("difficulty curve", () => {
     }
   });
 
+  it("puts about twice as many toys in each machine as the original curve", () => {
+    expect(difficultyFor(1).toyCount).toBe(44);
+    expect(difficultyFor(10).toyCount).toBe(52);
+    expect(difficultyFor(50).toyCount).toBe(80);
+  });
+
+  it("makes a centred grab on level 1 a little less of a sure thing than the original 1.32 / 0.38 curve", () => {
+    const d = difficultyFor(1);
+    expect(d.gripStrength).toBeLessThan(1.32);
+    expect(d.alignTolerance).toBeLessThan(0.38);
+    expect(d.gripStrength).toBeGreaterThanOrEqual(1.15);
+    expect(d.alignTolerance).toBeGreaterThanOrEqual(0.3);
+  });
+
   it("clamps outside the curve", () => {
     expect(difficultyFor(0)).toEqual(difficultyFor(1));
     expect(difficultyFor(99)).toEqual(difficultyFor(50));

@@ -16,8 +16,8 @@ export const CABINET = {
   depth: 3.2,
   /** Rail height the claw head hangs from. */
   height: 4.3,
-  /** The claw head stays this far from the glass. */
-  margin: 0.4,
+  /** How far the claw centre stays inside the glass. Zero so it can hover on the floor edge. */
+  margin: 0,
   /** Depth of the toy band on simple (left/right) machines, centred on the rail. */
   planarBand: 1.7,
 } as const;
@@ -78,13 +78,13 @@ export const MAX_STEPS_PER_FRAME = 5;
 /** Weights of the grip resolver (see engine/grab.ts). */
 export const GRAB = {
   /** Alignment is raised to this power: a slightly off-centre claw is still fine, a far one is not. */
-  alignPower: 1.5,
+  alignPower: 1.65,
   /** Chance terms: gripStrength - weight * weightPenalty - gripDifficulty * gripPenalty + gripBias. */
   weightPenalty: 0.55,
   gripPenalty: 0.45,
   gripBias: 0.25,
   /** Each neighbouring toy pressed against the target costs this much. */
-  crowdPenalty: 0.08,
+  crowdPenalty: 0.09,
   /** Toys wider than the jaw lose chance per unit of overflow. */
   oversizePenalty: 1.2,
   /** Floor and ceiling for the rolled chance when something is under the claw. */

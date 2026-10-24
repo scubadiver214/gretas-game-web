@@ -18,12 +18,12 @@ import type { WorldDef } from "../content/worlds";
 import ReducedMotionToggle from "./ReducedMotionToggle";
 
 const HOW_TO_DEPTH = [
-  "Left and right slide the claw across. Up and down move it to the back and the front.",
+  "Drag the stick (or drag on the floor) to slide the claw anywhere — including right up to the glass.",
   "Line up the glowing ring on a toy you like (or tap the toy), then press GRAB (or Space).",
   "Caught one? It rides to the chute and joins your toy collection!",
 ];
 const HOW_TO_SIMPLE = [
-  "Move the claw with the arrows (or ← → keys) until it hangs over a toy you like.",
+  "Drag the stick or the floor (or use ← → keys) until the claw hangs over a toy you like.",
   "Press the big GRAB button (or Space). The claw drops, closes and lifts.",
   "Caught one? It rides to the chute and joins your toy collection!",
 ];

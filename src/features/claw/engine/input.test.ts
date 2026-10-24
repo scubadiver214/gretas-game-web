@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionForKeyDown, actionForKeyUp, isGameKey } from "./input";
+import { actionForKeyDown, actionForKeyUp, isGameKey, stickFromDrag } from "./input";
 
 describe("keyboard mapping", () => {
   it("holds directions on arrows and WASD", () => {
@@ -24,5 +24,24 @@ describe("keyboard mapping", () => {
     expect(isGameKey(" ")).toBe(true);
     expect(isGameKey("ArrowDown")).toBe(true);
     expect(isGameKey("q")).toBe(false);
+  });
+});
+
+describe("stickFromDrag", () => {
+  it("maps a left drag to the left glass and a down drag toward the player (the front glass)", () => {
+    expect(stickFromDrag(-40, 0, 40)).toEqual({ x: -1, z: 0 });
+    expect(stickFromDrag(40, 0, 40)).toEqual({ x: 1, z: 0 });
+    expect(stickFromDrag(0, 40, 40)).toEqual({ x: 0, z: 1 });
+    expect(stickFromDrag(0, -40, 40)).toEqual({ x: 0, z: -1 });
+  });
+
+  it("reaches the front-left glass with a down-left drag", () => {
+    const stick = stickFromDrag(-40, 40, 40);
+    expect(stick.x).toBeCloseTo(-Math.SQRT1_2, 5);
+    expect(stick.z).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  it("ignores tiny thumb noise inside the dead zone", () => {
+    expect(stickFromDrag(4, 3, 40)).toEqual({ x: 0, z: 0 });
   });
 });

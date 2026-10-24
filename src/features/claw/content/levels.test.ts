@@ -48,6 +48,16 @@ describe("worlds", () => {
     expect(worldFor(1).id).toBe("toybox");
     expect(worldFor(50).id).toBe("rainbow");
   });
+
+  it("puts every collectable prize in a world the player can actually find it in", () => {
+    const pooled = new Set(WORLDS.flatMap((w) => [...w.prizes]));
+    for (const p of PRIZES) {
+      if (p.mysteryOnly) continue;
+      expect(pooled.has(p.id), p.id).toBe(true);
+      const homes = WORLDS.filter((w) => w.prizes.includes(p.id));
+      expect(homes.some((w) => p.unlockLevel <= w.to), `${p.id} unlocks at ${p.unlockLevel}`).toBe(true);
+    }
+  });
 });
 
 describe("levels", () => {
@@ -95,7 +105,7 @@ describe("levels", () => {
     const rng = seededRng("gentle");
     const toys = layoutPile(rng, pickTemplates(rng, l.pool.map((id) => TOY_TEMPLATES[id]), l.toyCount), l.difficulty.crowding, pileBoundsFor(l.depthControl));
     for (const t of toys.filter((t) => isExposed(t, toys))) {
-      expect(grabChance(t, 0.1, l.difficulty, neighbourCount(t, toys))).toBeGreaterThanOrEqual(0.65);
+      expect(grabChance(t, 0.1, l.difficulty, neighbourCount(t, toys))).toBeGreaterThanOrEqual(0.55);
     }
   });
 

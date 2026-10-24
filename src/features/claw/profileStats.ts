@@ -1,8 +1,25 @@
-import type { ClawProfile } from "./api";
+import { emptyProfile, type ClawProfile } from "./api";
 import { AVATARS } from "./content/avatars";
 import { PRIZES } from "./content/prizes";
 import { WORLDS, type WorldDef } from "./content/worlds";
+import { MAX_LEVEL } from "./engine/difficulty";
 import type { MilestoneContext } from "./engine/rewards";
+
+/** Level to open after a clear. Uses the just-beaten level so a stale profile cache cannot pin the player. */
+export function nextLevelAfterClear(cleared: number, unlocked: number, max = MAX_LEVEL): number {
+  return Math.min(max, Math.max(1, cleared + 1, unlocked));
+}
+
+/** Menu picks stay inside what is unlocked. */
+export function clampPickedLevel(requested: number, unlocked: number, max = MAX_LEVEL): number {
+  return Math.min(max, Math.max(1, Math.min(requested, unlocked)));
+}
+
+/** Prefer the on-device mirror when it is ahead of a React Query snapshot that has not refetched yet. */
+export function selectClawProfile(server: ClawProfile | undefined, mirrored: ClawProfile | null, nickname: string): ClawProfile {
+  if (server && mirrored) return mirrored.currentLevel >= server.currentLevel ? mirrored : server;
+  return server ?? mirrored ?? emptyProfile(nickname);
+}
 
 /** Everything the avatar rules look at, derived from a profile (same shape the server builds). */
 export function milestoneContext(p: ClawProfile): MilestoneContext {

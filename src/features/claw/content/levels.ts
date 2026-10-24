@@ -28,23 +28,19 @@ export function hasDepthControl(level: number): boolean {
   return level >= DEPTH_FROM_LEVEL;
 }
 
-/** Hand-tuned tweaks on top of the curve. */
-const OVERRIDES: Partial<Record<number, Partial<Pick<LevelSetup, "toyCount" | "goal">>>> = {};
-
 export function levelDef(level: number): LevelDef {
   const l = Math.min(MAX_LEVEL, Math.max(1, Math.round(level)));
   const world = worldFor(l);
   const curve = difficultyFor(l);
   const unlocked = world.prizes.map((id) => PRIZE_BY_ID[id]).filter((p) => p && !p.mysteryOnly && p.unlockLevel <= l);
   const pool = (unlocked.length >= 3 ? unlocked : prizesUnlockedAt(l)).map((p) => p.id);
-  const override = OVERRIDES[l] ?? {};
   return {
     level: l,
     world: world.id,
     tier: tierFor(l).id,
     title: `Level ${l}`,
-    goal: override.goal ?? goalFor(l),
-    toyCount: override.toyCount ?? curve.toyCount,
+    goal: goalFor(l),
+    toyCount: curve.toyCount,
     pool,
     difficulty: {
       clawSpeed: curve.clawSpeed,
