@@ -50,6 +50,14 @@ export const fx = {
   home: () => fire("home", "success", 0.25),
   levelClear: () => fire("levelclear", "success", 0.5),
   gameOver: () => fire("gameover", "heavy", 0.5),
+  /** Claw machine. */
+  motor: () => fire("motor"),
+  jawClose: () => fire("jawclose", "light"),
+  prizeLift: () => fire("prizelift"),
+  prizeDrop: () => fire("prizedrop", "light"),
+  chute: () => fire("chute", "success", 0.3),
+  rarePrize: () => fire("rareprize", "success", 0.5),
+  miss: () => fire("miss"),
   /** Call from a user gesture (e.g. the Start button) so iOS allows audio. */
   unlock: () => unlockAudio(),
 };

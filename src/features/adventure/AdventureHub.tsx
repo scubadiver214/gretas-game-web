@@ -11,10 +11,12 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import NeonPage from "@/components/PageContainer";
-import PlayerAvatar from "@/components/PlayerAvatar";
 import RequirePlayer from "@/components/RequirePlayer";
 import { SettingsToggles } from "@/components/HUD";
 import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
+import AvatarBadge from "@/features/claw/components/AvatarBadge";
+import { GAME_TITLE as CLAW_TITLE } from "@/features/claw/config";
+import { useClawProfile } from "@/features/claw/hooks";
 import { usePlayerStore } from "@/features/player/store";
 import { usePersonalBests } from "@/features/scores/hooks";
 import { ACHIEVEMENTS } from "@/features/player/achievements";
@@ -32,6 +34,12 @@ const ADVENTURES: {
   art?: { src: string; alt: string };
   /** Arcade games always start at level 1, so the card shows no star level. */
   arcade?: boolean;
+  /** Where the card goes; defaults to /play/<mode>. */
+  to?: string;
+  /** Status chip override for the card. */
+  status?: string;
+  /** Leave the game out of the daily-challenge strip. */
+  daily?: boolean;
 }[] = [
   {
     mode: "kitchen",
@@ -66,7 +74,21 @@ const ADVENTURES: {
     art: { src: "/characters/frogger-neon.jpg", alt: "A happy green frog leaping over a glowing river" },
     arcade: true,
   },
+  {
+    mode: "claw",
+    title: CLAW_TITLE,
+    blurb: "Grab toys, collect avatars",
+    emoji: "🧸",
+    accent: N.claw,
+    art: { src: "/characters/claw-neon.jpg", alt: "A girl reaching for a teddy in a glowing claw machine" },
+    arcade: true,
+    to: "/claw",
+    status: "Arcade · 50 levels",
+    daily: false,
+  },
 ];
+
+const DAILY_ADVENTURES = ADVENTURES.filter((a) => a.daily !== false);
 
 /** Star pips showing progress inside the current level. */
 function StarPips({ stars }: { stars: number }) {
@@ -133,6 +155,7 @@ function Inner() {
   const achievements = usePlayerStore((s) => s.achievements);
   const bests = usePersonalBests(nickname);
   const bestFor = (mode: GameMode) => bests.data?.find((b) => b.mode === mode)?.score;
+  const { profile: claw } = useClawProfile(nickname);
 
   const today = dailyKey();
   const dailyDone = (mode: GameMode) => history.some((h) => h.challengeDate === today && h.mode === mode);
@@ -149,7 +172,7 @@ function Inner() {
         {/* Player bar: name badge on the left, stars + settings on the right. */}
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <ButtonBase onClick={() => router.push("/character")} sx={{ ...pillSx, pl: 0.5, pr: 1.5, cursor: "pointer" }}>
-            <PlayerAvatar nickname={nickname} character={character} color={color} size={34} />
+            <AvatarBadge avatarId={claw.selectedAvatar} nickname={nickname} character={character} color={color} size={34} />
             <Typography sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "1rem", color: N.text }}>
               {nickname}
             </Typography>
@@ -181,23 +204,24 @@ function Inner() {
         </Typography>
 
         {/* Game cards: stacked rows with art on the right on phones, portrait cards with art on top from md up. */}
-        <Box
+          <Box
           sx={{
             flex: { xs: 1, md: "none" },
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(5, 1fr)" },
             gridAutoRows: { xs: "minmax(116px, 1fr)", md: "auto" },
-            gap: { xs: 1.25, md: 2.5 },
+            gap: { xs: 1.25, md: 2 },
           }}
         >
-          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art, arcade }) => {
+          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art, arcade, to, status }) => {
             const modeStars = stars[mode] ?? 0;
             const level = levelForStars(modeStars);
             const best = bestFor(mode);
+            const chip = status ?? (arcade ? "Arcade · 3 lives" : `Lv ${level} · ${LEVEL_NAMES[level]}`);
             return (
               <ButtonBase
                 key={mode}
-                onClick={() => router.push(`/play/${mode}`)}
+                onClick={() => router.push(to ?? `/play/${mode}`)}
                 aria-label={`Play ${MODE_LABELS[mode]}`}
                 sx={{
                   textAlign: "left",
@@ -255,7 +279,8 @@ function Inner() {
                   </Typography>
                   <Typography sx={{ color: N.textSoft, fontSize: "0.9rem", mb: 1 }}>{blurb}</Typography>
                   <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", alignItems: "center" }}>
-                    <StatChip accent={accent}>{arcade ? "Arcade · 3 lives" : `Lv ${level} · ${LEVEL_NAMES[level]}`}</StatChip>
+                    <StatChip accent={accent}>{chip}</StatChip>
+                    {mode === "claw" && claw.currentLevel > 1 && <StatChip accent={accent}>Level {claw.currentLevel}</StatChip>}
                     {best !== undefined && (
                       <StatChip accent={accent}>
                         <EmojiEventsRoundedIcon sx={{ fontSize: 15, color: N.sun }} /> {best}
@@ -366,7 +391,7 @@ function Inner() {
               Everyone gets the same orders, street, words and pond. One shot a day!
             </Typography>
             <Stack direction="row" spacing={1}>
-              {ADVENTURES.map(({ mode, emoji, accent }) => {
+              {DAILY_ADVENTURES.map(({ mode, emoji, accent }) => {
                 const done = dailyDone(mode);
                 return (
                   <ButtonBase

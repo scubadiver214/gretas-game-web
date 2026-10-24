@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, Chakra_Petch, Nunito } from "next/font/google";
+import { Baloo_2, Chakra_Petch, Nunito, Pacifico } from "next/font/google";
 import BootSplash from "@/components/BootSplash";
 import { BOOT_BG, BOOT_SPLASH_CSS } from "@/components/bootSplashStyles";
 import ServiceWorker from "@/components/ServiceWorker";
@@ -29,6 +29,14 @@ const arcade = Chakra_Petch({
   display: "swap",
 });
 
+// Friendly cursive for the claw game's title and its neon wall sign.
+const script = Pacifico({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-script",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Greta's Game for fun",
   description:
@@ -51,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} ${arcade.variable}`}
+      className={`${display.variable} ${body.variable} ${arcade.variable} ${script.variable}`}
       style={{ backgroundColor: BOOT_BG, colorScheme: "dark" }}
       suppressHydrationWarning
     >

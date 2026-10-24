@@ -8,8 +8,9 @@ Players pick a nickname, a character (Max or Greta) and an outfit colour, then c
 - **Bike Delivery** - 60-second lane runner. Tap the arrows (or use ←/→ keys) to change lanes, ride through glowing mailboxes (+20), dodge cones and puddles (-10). Every 3 clean deliveries in a row earns a combo bonus.
 - **Word Quest** - guess five-letter words with green/yellow letter hints.
 - **Frogger Adventure** - arcade Frogger in low-poly 3D: hop across five lanes of traffic and a river of logs and diving turtles to fill five lily-pad bays, then the next level speeds up. See [Frogger Adventure](#frogger-adventure) below.
+- **Bea's Claw-some Adventure** - a 3D claw machine for ages 4-10: line the claw up, press GRAB, and win toys for a persistent collection. 50 levels across five arcade worlds, mystery machines with legendary prizes, and collectible avatars. No timers, no leaderboard, no purchases. See [Bea's Claw-some Adventure](#beas-claw-some-adventure) below.
 
-Scores are submitted to the API and shown on the global scoreboard.
+Scores are submitted to the API and shown on the global scoreboard (the claw game keeps its progress private on the player's profile instead).
 
 ### Progression and extras
 
@@ -51,16 +52,18 @@ API_URL=http://localhost:5080 pnpm dev   # API_URL defaults to http://localhost:
 | `pnpm start`     | Serve the production build          |
 | `pnpm lint`      | ESLint                              |
 | `pnpm typecheck` | `tsc --noEmit`                      |
-| `pnpm test`      | Vitest unit tests (game rules, Frogger engine, store migration) |
+| `pnpm test`      | Vitest unit tests (game rules, Frogger and claw engines, store migration) |
+| `pnpm claw:export-content` | Writes `features/claw/content/claw-content.json` (and the API's embedded copy when `../gretas-game-api` exists) from the TypeScript prize/level/avatar content |
 
 ## Project layout
 
 ```
 src/
   app/                    App Router pages (/, /character, /adventure, /play/kitchen, /play/delivery,
-                          /play/wordle, /play/frogger, /results, /scoreboard, /my-scores) and the /api/[...path] proxy
+                          /play/wordle, /play/frogger, /play/claw, /claw (+ /collection, /avatars, /progress),
+                          /results, /scoreboard, /my-scores) and the /api/[...path] proxy
   components/             PageContainer, GameShell, HUD (+ SettingsToggles), TouchControls, RequirePlayer,
-                          PlayerAvatar, three/FitCamera
+                          PlayerAvatar, three/FitCamera, three/kit (shared low-poly mesh kit), three/particles
   features/
     player/               zustand store (nickname, character, colour, history, rounds played), level rules,
                           useRoundSetup (level / daily seed from the URL)
@@ -71,6 +74,7 @@ src/
     delivery/             Bike Delivery: scene, game store, pure scoring + difficulty rules (+ tests)
     wordle/               Word Quest
     frogger/              Frogger Adventure (see below)
+    claw/                 Bea's Claw-some Adventure (see below)
     scores/               API client, TanStack Query hooks, results screen, scoreboard, My scores
     adventure/            Adventure hub (levels, daily challenge, settings)
   lib/fx/                 Web Audio sound synth, haptics, confetti
@@ -128,6 +132,42 @@ KitchenGame.tsx             menu -> countdown -> shift -> closing card -> /resul
 - **Progression.** Levels raise shift length, menu size, tickets on the rail, customer impatience, rush orders and crust swaps; within a shift orders speed up for the lunch rush around 12:40. Coins (a tenth of the score plus 15 per star) buy ingredients, which add new recipes, and upgrades (sneakers, sharp knife, turbo ovens, comfy chairs, tip jar, extra oven). The daily challenge uses the full pantry and no upgrades so it's fair.
 - **Players.** Solo controls two chefs and swaps between them (Q / Tab, or the Swap button). Co-op puts two players on one keyboard (WASD + Space/E/Shift and arrows + Enter / / .). Touch devices get a stick and Grab / Chop / Dash / Swap buttons and play in landscape: starting a shift goes fullscreen and locks landscape where the browser allows it (Android), and holding the device upright shows a "turn your device" screen and pauses the shift (the only option on iOS) (`landscape.ts`, `RotateOverlay`).
 - **Towards online multiplayer.** Everything a shift does goes through `engine.command({ type, chef, ... })`, the state is plain JSON, and the simulation is deterministic for a seed, so a later networked mode can relay the same commands (host- or server-authoritative) and stream snapshots without changing the rules. Shop progress is device-local today; it would move to the API with accounts.
+
+## Bea's Claw-some Adventure
+
+`/play/claw` is a 3D claw machine in `src/features/claw/`, built on the same shape as Frogger (pure engine, imperative three.js renderer, thin React shell) plus a server-side profile for the toy collection.
+
+```
+config.ts                   cabinet geometry, claw speeds and timings, grab-odds weights, assist thresholds, points, stars rule
+content/prizes.ts           the prize catalog (112 toys: id, rarity, points, size/weight/grip, unlock level, model + palette, finish)
+content/worlds.ts           five worlds (level range, palette, prize pool, mystery prize, avatar)
+content/levels.ts           levelDef(1..50): goal, toy count, pool and difficulty from the curve; mysterySetup(world)
+content/avatars.ts          13 avatars and the milestone rules that unlock them; avatarArt.tsx draws them as inline SVG
+content/export.ts           the slice the API embeds; claw-content.json is the committed export (content.test.ts guards drift)
+engine/                     pure TypeScript, fixed 120 Hz steps: ClawEngine (state machine, events, onHud, summary),
+                            claw (rails, cable, pendulum swing), pile (seeded layout, sphere stacking, settle),
+                            grab (grip resolution, slip point, hint), difficulty (level 1-50 curve + adaptive assist),
+                            rewards (points, stars, milestone evaluation), input (held keys) - no React, no three.js
+render/                     ClawRenderer (cabinet, marquee, gantry, claw rig, toys, chute, particles, camera fit),
+                            meshes/ (cabinet, claw), toys/ (45 procedural toy builders), textures, thumbnails (offscreen
+                            stills for the collection), ToyTurntable (R3F preview)
+components/                 canvas host, hold-to-move controls + GRAB, HUD chips, machine and mystery menus, prize
+                            celebration, level-clear card, pause, save-status chip, avatar badge
+screens/                    /claw arcade hub (worlds), toy collection, avatars, progress
+ClawGame.tsx                menu -> play -> celebrate -> level clear, plus the attempt lifecycle with the API
+api.ts, hooks.ts            claw endpoints, profile query (server first, device mirror as fallback), mutations
+outbox.ts, mirror.ts        queued grab/complete writes that retry in order; last known profile kept on the device
+fx.ts                       engine events -> sounds, haptics, popups, confetti
+```
+
+- **Loop.** Move the claw over a toy in 3D (left/right across the cabinet, up/down to the back and front, or tap a toy to glide to it), with a ring under the claw showing where it will land (green when a toy is under it), then press GRAB: the claw drops onto the pile, closes, lifts, carries the toy to the chute and drops it in. Win the level's goal (1-4 prizes) to clear it. There are no timers, lives or limits; a miss says "Great try!" and hands control straight back.
+- **Grab odds are a pure, inspectable function** (`engine/grab.ts`): alignment dominates, then grip strength vs. the toy's weight and grip difficulty, oversize toys and crowding. Level 1 tops out at 98% when centred on a light toy; level 50 asks for precision and can slip during the carry. Nothing looks at what the player has already won. Every level uses the full 2D distance (`hasDepthControl` / `DEPTH_FROM_LEVEL` in `content/levels.ts`); the engine still supports simple left/right machines, which measure alignment on x only and keep the pile in a band under the rail.
+- **Adaptive assist.** Two misses in a row widen the tolerance and strengthen the grip a notch (up to three notches), three highlight the easiest exposed toy with an arrow, four lift an easy toy to the top of the pile. Any success resets it. The player is never penalised for taking longer.
+- **Mystery machines.** Clearing a world's last level opens its mystery machine: one legendary prize on a pedestal and a claw that sweeps on its own; GRAB stops it, and the outcome is exact (inside the window wins, outside misses - no dice). Winning unlocks the world's avatar.
+- **Saving.** Pressing Play starts a server attempt (`POST /api/claw/players/{nickname}/attempts`). Every grab and the completion are queued in `outbox.ts` and sent in order; the server treats repeats as no-ops, so a flaky network never loses a toy and the queue drains again when the tab comes back online. If the API cannot be reached at the start, the level is still playable and the HUD says it will not be saved. The profile (current level, collection, avatars, cleared levels) is the server's; `mirror.ts` keeps the last copy on the device so the hub shows the avatar instantly and level gating still works offline.
+- **Content is the source of truth.** Adding a toy is a new entry in `content/prizes.ts` (plus, optionally, a builder in `render/toys`); worlds, levels and avatar rules are data too. Run `pnpm claw:export-content` afterwards so the API's embedded copy matches; `content.test.ts` fails when they drift.
+- **Rendering.** The cabinet, claw and all 112 toys are procedural low-poly meshes sharing one `MeshKit` (lifted from Frogger into `components/three/kit.ts`); no assets are downloaded. One shadow light, DPR capped at 2, smaller shadow maps on phones, and "Reduced motion" turns off wobble, bulb chasing, the sign's breathing glow, fireworks and confetti. The game's name hangs on the arcade's back wall as a cursive neon sign (`render/meshes/wallSign.ts`, Pacifico via `--font-script`): beside the cabinet on wide screens, above the marquee on tall ones, kept dim and never over the cabinet or HUD. The title itself is `GAME_TITLE` in `config.ts`. Each prize has an optional `asset.glb` slot for CC0 models later.
+- **Decisions and tradeoffs.** three.js over Phaser so the cabinet is really 3D and reuses the repo's existing stack; rules-based grab resolution over a rigid-body library so odds are tunable, testable and honest; server-side profiles keyed by nickname (the repo's identity model) with the caveat that nicknames are not authenticated, so another device typing the same nickname shares the collection; the claw game has no leaderboard by design.
 
 ## How the API is reached
 

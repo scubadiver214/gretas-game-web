@@ -1,7 +1,8 @@
 export type CharacterId = "boy" | "girl";
 
-export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger";
+export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger" | "claw";
 
+/** Modes with a public leaderboard (the claw arcade keeps its progress private: no scoreboard). */
 export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger"] as const;
 
 export const MODE_LABELS: Record<GameMode, string> = {
@@ -9,6 +10,7 @@ export const MODE_LABELS: Record<GameMode, string> = {
   delivery: "Bike Delivery",
   wordle: "Word Quest",
   frogger: "Frogger Adventure",
+  claw: "Bea's Claw-some Adventure",
 };
 
 /** One-word labels for tabs and small buttons. */
@@ -17,6 +19,7 @@ export const MODE_SHORT_LABELS: Record<GameMode, string> = {
   delivery: "Delivery",
   wordle: "Words",
   frogger: "Frogger",
+  claw: "Claw",
 };
 
 export const MODE_EMOJI: Record<GameMode, string> = {
@@ -24,6 +27,7 @@ export const MODE_EMOJI: Record<GameMode, string> = {
   delivery: "🛵",
   wordle: "🔤",
   frogger: "🐸",
+  claw: "🧸",
 };
 
 export const CHARACTER_LABELS: Record<CharacterId, string> = {

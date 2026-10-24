@@ -140,12 +140,13 @@ function Inner() {
             <Tab value="delivery" label="Delivery" sx={{ minHeight: 52 }} />
             <Tab value="wordle" label="Words" sx={{ minHeight: 52 }} />
             <Tab value="frogger" label="Frogger" sx={{ minHeight: 52 }} />
+            <Tab value="claw" label="Claw" sx={{ minHeight: 52 }} />
           </Tabs>
 
           <Stack direction="row" spacing={1} useFlexGap sx={{ p: 1.5, flexWrap: "wrap" }}>
             <Chip label={`${rows.length} ${rows.length === 1 ? "round" : "rounds"}`} />
             <Chip label={`Best: ${best}`} color="primary" variant="outlined" />
-            {mode === "frogger" ? (
+            {mode === "frogger" || mode === "claw" ? (
               <Chip label={`Top level ${topLevel}`} color="secondary" variant="outlined" />
             ) : (
               <Chip label={`Level ${level} · ${LEVEL_NAMES[level]}`} color="secondary" variant="outlined" />

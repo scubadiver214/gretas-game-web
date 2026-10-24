@@ -22,7 +22,7 @@ import {
 } from "./types";
 
 const HISTORY_LIMIT = 200;
-const STORE_VERSION = 7;
+const STORE_VERSION = 8;
 
 interface PlayerState {
   nickname: string;
@@ -241,6 +241,14 @@ export function migratePlayerState(persisted: unknown, version: number): Partial
       color: follow(p.color, LEGACY_DEFAULT_COLOR[char], DEFAULT_COLOR[char]),
       hairColor: follow(p.hairColor, LEGACY_DEFAULT_HAIR_COLOR[char], DEFAULT_HAIR_COLOR[char]),
       skinColor: follow(p.skinColor, LEGACY_DEFAULT_SKIN_COLOR[char], DEFAULT_SKIN_COLOR[char]),
+    };
+  }
+  if (version < 8) {
+    // New "claw" mode: give existing players zeroed claw counters.
+    p = {
+      ...p,
+      roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+      stars: { ...EMPTY_STARS, ...p.stars },
     };
   }
   return p;

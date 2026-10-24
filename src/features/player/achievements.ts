@@ -60,6 +60,12 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: "frogger-level-3", title: "Pond hopper", description: "Clear level 3 in Frogger Adventure.", emoji: "🪷", tier: "silver", check: (c) => c.result.mode === "frogger" && m(c, "levelsCompleted") >= 3 },
   { id: "frogger-perfect", title: "Not a splash", description: "Clear a Frogger level without losing a life.", emoji: "💚", tier: "gold", check: (c) => c.result.mode === "frogger" && m(c, "perfectLevels") >= 1 },
 
+  // --- claw ------------------------------------------------------------------
+  { id: "claw-first", title: "Toy catcher", description: "Win your first claw machine prize.", emoji: "🧸", tier: "bronze", check: (c) => c.result.mode === "claw" && m(c, "successes") >= 1 },
+  { id: "claw-clean", title: "Clean sweep", description: "Clear a claw level without a single miss (2+ prizes).", emoji: "🎯", tier: "silver", check: (c) => c.result.mode === "claw" && m(c, "misses") === 0 && m(c, "successes") >= 2 },
+  { id: "claw-level-10", title: "Toy Box champion", description: "Clear level 10 of the claw arcade.", emoji: "🎪", tier: "gold", check: (c) => c.result.mode === "claw" && m(c, "mystery") === 0 && c.result.level >= 10 && c.result.stars >= 1 },
+  { id: "claw-mystery", title: "Mystery solved", description: "Win a mystery machine prize.", emoji: "🎁", tier: "gold", check: (c) => c.result.mode === "claw" && m(c, "mystery") >= 1 && m(c, "successes") >= 1 },
+
   // --- progression ---------------------------------------------------------
   { id: "three-stars", title: "Three stars", description: "Earn a three-star round.", emoji: "🌟", tier: "bronze", check: (c) => c.result.stars >= 3 },
   { id: "kitchen-legend", title: "Kitchen legend", description: "Reach level 5 in the kitchen.", emoji: "🏆", tier: "gold", check: (c) => c.result.mode === "kitchen" && c.levelAfter >= MAX_LEVEL },

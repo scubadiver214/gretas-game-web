@@ -40,7 +40,14 @@ export type SoundId =
   | "hop" // frog hop
   | "home" // frog reached a home bay
   | "levelclear" // all five bays filled
-  | "gameover"; // last life lost
+  | "gameover" // last life lost
+  | "motor" // claw machine motor whirr
+  | "jawclose" // claw fingers clamp shut
+  | "prizelift" // claw rising with a toy
+  | "prizedrop" // toy tumbles into the chute
+  | "chute" // prize lands in the bin
+  | "rareprize" // rare / legendary prize sting
+  | "miss"; // gentle "great try" for an empty claw
 
 /**
  * Optional recorded samples. Paths are relative to /public. Provide one or
@@ -454,6 +461,78 @@ const SYNTH: Record<SoundId, { variation: number; alternates: ((v: Voice) => voi
           tone(v, { type: "triangle", from: f, start: i * 0.2, duration: i === 3 ? 0.7 : 0.22, gain: 0.13 });
           tone(v, { type: "square", from: f / 2, start: i * 0.2, duration: i === 3 ? 0.7 : 0.2, gain: 0.03, lowpass: 900 });
         });
+      },
+    ],
+  },
+  motor: {
+    variation: 0.05,
+    alternates: [
+      (v) => {
+        tone(v, { type: "sawtooth", from: 95, to: 120, duration: 0.42, gain: 0.05, lowpass: 600, attack: 0.05 });
+        noise(v, { duration: 0.42, gain: 0.025, type: "lowpass", frequency: 900, attack: 0.05 });
+      },
+    ],
+  },
+  jawclose: {
+    variation: 0.04,
+    alternates: [
+      (v) => {
+        noise(v, { duration: 0.07, gain: 0.1, frequency: 3200, q: 1.5, attack: 0.002 });
+        tone(v, { type: "square", from: 1400, to: 900, duration: 0.08, gain: 0.05, lowpass: 3500, attack: 0.002 });
+        tone(v, { type: "sine", from: 2600, duration: 0.18, gain: 0.04, attack: 0.002 });
+      },
+    ],
+  },
+  prizelift: {
+    variation: 0.04,
+    alternates: [
+      (v) => {
+        tone(v, { type: "triangle", from: 300, to: 760, duration: 0.5, gain: 0.07, attack: 0.03 });
+        noise(v, { duration: 0.45, gain: 0.03, frequency: 500, to: 1600, q: 0.8, attack: 0.05 });
+      },
+    ],
+  },
+  prizedrop: {
+    variation: 0.08,
+    alternates: [
+      (v) => {
+        tone(v, { type: "sine", from: 420, to: 160, duration: 0.3, gain: 0.1 });
+        noise(v, { duration: 0.12, start: 0.22, gain: 0.07, type: "lowpass", frequency: 900 });
+      },
+    ],
+  },
+  chute: {
+    variation: 0.02,
+    alternates: [
+      (v) => {
+        tone(v, { type: "sine", from: 160, to: 70, duration: 0.14, gain: 0.14, attack: 0.002 });
+        noise(v, { duration: 0.08, gain: 0.06, type: "lowpass", frequency: 700 });
+        [G5, C6, E6].forEach((f, i) => pluck(v, f, 0.14 + i * 0.07, 0.22, 0.14));
+        tone(v, { type: "sine", from: 2093, start: 0.36, duration: 0.5, gain: 0.05, attack: 0.002 });
+      },
+    ],
+  },
+  rareprize: {
+    variation: 0,
+    alternates: [
+      (v) => {
+        [C5, E5, G5, C6, E6, G6, C6 * 2].forEach((f, i) => pluck(v, f, i * 0.07, 0.3, 0.13));
+        chord(v, [C6, E6, G6, C6 * 2], 0.5, 1.2, 0.06, "sine");
+        for (let i = 0; i < 8; i++) tone(v, { type: "sine", from: 2093 + i * 310, start: 0.55 + i * 0.05, duration: 0.3, gain: 0.03 });
+        noise(v, { duration: 1.1, start: 0.5, gain: 0.03, type: "highpass", frequency: 5000, attack: 0.05 });
+      },
+    ],
+  },
+  miss: {
+    variation: 0.03,
+    alternates: [
+      (v) => {
+        tone(v, { type: "triangle", from: E5, duration: 0.14, gain: 0.08 });
+        tone(v, { type: "triangle", from: C5, start: 0.13, duration: 0.24, gain: 0.08 });
+      },
+      (v) => {
+        tone(v, { type: "triangle", from: D5, duration: 0.14, gain: 0.08 });
+        tone(v, { type: "triangle", from: 440, start: 0.13, duration: 0.24, gain: 0.08 });
       },
     ],
   },
