@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import Alert from "@mui/material/Alert";
@@ -213,13 +213,18 @@ export default function Scoreboard() {
   const hydrated = usePlayerHydrated();
   const storedNickname = usePlayerStore((s) => s.nickname);
   const nickname = hydrated ? storedNickname : "";
-  // /scoreboard?mode=racing opens that game after mount so SSR markup stays kitchen.
+  // /scoreboard?mode=racing selects that game. The page suspends on the query,
+  // so this first render already has it. Later query changes reset the tab here
+  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
   const requested = useSearchParams().get("mode");
-  const [mode, setMode] = useState<GameMode>("kitchen");
+  const queryMode: GameMode = isGameMode(requested) ? requested : "kitchen";
+  const [mode, setMode] = useState<GameMode>(queryMode);
   const [board, setBoard] = useState<Board>("all");
-  useEffect(() => {
+  const [trackedQuery, setTrackedQuery] = useState(requested);
+  if (requested !== trackedQuery) {
+    setTrackedQuery(requested);
     if (isGameMode(requested)) setMode(requested);
-  }, [requested]);
+  }
   const daily = DAILY_MODES.includes(mode);
   const accent = MODE_ACCENT[mode];
   const pickMode = (next: GameMode) => {
