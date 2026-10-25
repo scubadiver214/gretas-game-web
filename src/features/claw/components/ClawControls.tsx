@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import Stack from "@mui/material/Stack";
@@ -47,18 +47,19 @@ function AnalogStick({
     setKnob({ x: 0, y: 0 });
     onStick(0, 0);
   };
-  const releaseRef = useRef(release);
-  releaseRef.current = release;
+  // Effect Events always see the latest release without re-subscribing the
+  // window listeners (and without touching a ref during render).
+  const releaseIfHeld = useEffectEvent((pointerId?: number) => {
+    if (pointer.current === null) return;
+    if (pointerId !== undefined && pointer.current !== pointerId) return;
+    release();
+  });
 
   // A lost pointerup (window blur, pointer leaving the window) must never leave
   // the stick pushed, or the claw keeps sliding on its own.
   useEffect(() => {
-    const onWindowUp = (e: PointerEvent) => {
-      if (pointer.current === e.pointerId) releaseRef.current();
-    };
-    const onBlur = () => {
-      if (pointer.current !== null) releaseRef.current();
-    };
+    const onWindowUp = (e: PointerEvent) => releaseIfHeld(e.pointerId);
+    const onBlur = () => releaseIfHeld();
     window.addEventListener("pointerup", onWindowUp);
     window.addEventListener("pointercancel", onWindowUp);
     window.addEventListener("blur", onBlur);

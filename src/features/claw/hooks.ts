@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CharacterId } from "@/features/player/types";
-import { emptyProfile, getProfile, selectAvatar, setFavorite, type ClawProfile } from "./api";
+import { getProfile, selectAvatar, setFavorite, type ClawProfile } from "./api";
 import { useClawMirror } from "./mirror";
 import { flushClawOutbox, useClawOutbox } from "./outbox";
 import { selectClawProfile } from "./profileStats";
