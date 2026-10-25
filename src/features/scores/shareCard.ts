@@ -20,8 +20,8 @@ const W = 1080;
 const H = 1080;
 
 // Neon mode accents, matching the adventure cards in the hub.
-const MODE_FILL: Record<GameMode, string> = { kitchen: N.kitchen, delivery: N.delivery, wordle: N.wordle, frogger: N.frogger, claw: N.claw };
-const MODE_DEEP: Record<GameMode, string> = { kitchen: N.kitchenDeep, delivery: N.deliveryDeep, wordle: N.wordleDeep, frogger: N.froggerDeep, claw: N.clawDeep };
+const MODE_FILL: Record<GameMode, string> = { kitchen: N.kitchen, delivery: N.delivery, wordle: N.wordle, frogger: N.frogger, claw: N.claw, racing: N.racing };
+const MODE_DEEP: Record<GameMode, string> = { kitchen: N.kitchenDeep, delivery: N.deliveryDeep, wordle: N.wordleDeep, frogger: N.froggerDeep, claw: N.clawDeep, racing: N.racingDeep };
 
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   g.beginPath();

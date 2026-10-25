@@ -22,7 +22,7 @@ import {
 } from "./types";
 
 const HISTORY_LIMIT = 200;
-const STORE_VERSION = 8;
+const STORE_VERSION = 9;
 
 interface PlayerState {
   nickname: string;
@@ -245,6 +245,14 @@ export function migratePlayerState(persisted: unknown, version: number): Partial
   }
   if (version < 8) {
     // New "claw" mode: give existing players zeroed claw counters.
+    p = {
+      ...p,
+      roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+      stars: { ...EMPTY_STARS, ...p.stars },
+    };
+  }
+  if (version < 9) {
+    // New "racing" mode: give existing players zeroed racing counters.
     p = {
       ...p,
       roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },

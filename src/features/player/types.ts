@@ -1,9 +1,19 @@
 export type CharacterId = "boy" | "girl";
 
-export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger" | "claw";
+export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger" | "claw" | "racing";
 
-/** Modes with a public leaderboard (the claw arcade keeps its progress private: no scoreboard). */
-export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger"] as const;
+/** Every playable game, in hub/scoreboard order. */
+export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger", "claw", "racing"] as const;
+
+/** Games that post a finished round straight to POST /api/scores. Frogger and claw use their own attempt APIs. */
+export const DIRECT_SUBMIT_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "racing"] as const;
+
+/** Games that have a daily-challenge board. */
+export const DAILY_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger"] as const;
+
+export function isGameMode(value: string | null | undefined): value is GameMode {
+  return !!value && (GAME_MODES as readonly string[]).includes(value);
+}
 
 export const MODE_LABELS: Record<GameMode, string> = {
   kitchen: "Pizza Kitchen",
@@ -11,6 +21,7 @@ export const MODE_LABELS: Record<GameMode, string> = {
   wordle: "Word Quest",
   frogger: "Frogger Adventure",
   claw: "Bea's Claw-some Adventure",
+  racing: "The Fitz and Furious",
 };
 
 /** One-word labels for tabs and small buttons. */
@@ -20,6 +31,7 @@ export const MODE_SHORT_LABELS: Record<GameMode, string> = {
   wordle: "Words",
   frogger: "Frogger",
   claw: "Claw",
+  racing: "Racing",
 };
 
 export const MODE_EMOJI: Record<GameMode, string> = {
@@ -28,6 +40,7 @@ export const MODE_EMOJI: Record<GameMode, string> = {
   wordle: "🔤",
   frogger: "🐸",
   claw: "🧸",
+  racing: "🏎️",
 };
 
 export const CHARACTER_LABELS: Record<CharacterId, string> = {

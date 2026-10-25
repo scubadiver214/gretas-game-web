@@ -30,8 +30,8 @@ export const LEVEL_NAMES: Record<number, string> = {
 export type RoundsPlayed = Record<GameMode, number>;
 export type StarsEarned = Record<GameMode, number>;
 
-export const EMPTY_ROUNDS: RoundsPlayed = { kitchen: 0, delivery: 0, wordle: 0, frogger: 0, claw: 0 };
-export const EMPTY_STARS: StarsEarned = { kitchen: 0, delivery: 0, wordle: 0, frogger: 0, claw: 0 };
+export const EMPTY_ROUNDS: RoundsPlayed = { kitchen: 0, delivery: 0, wordle: 0, frogger: 0, claw: 0, racing: 0 };
+export const EMPTY_STARS: StarsEarned = { kitchen: 0, delivery: 0, wordle: 0, frogger: 0, claw: 0, racing: 0 };
 
 /**
  * Daily-challenge streak: consecutive UTC days (ending today or yesterday)

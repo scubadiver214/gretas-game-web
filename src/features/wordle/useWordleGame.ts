@@ -6,10 +6,18 @@ import { seededRng } from "@/lib/rng";
 import {
   evaluateGuess,
   generatePuzzleAnswers,
+  isAllowedGuess,
+  isLetterInWordHintUnlocked,
+  isRevealSpotHintUnlocked,
+  letterFillHintsAllowed,
+  pickLetterInWordClue,
+  pickRevealSpot,
   scorePuzzle,
   wordleDifficultyFor,
   type LetterStatus,
+  type SpotHint,
   type WordleDifficulty,
+  type WordleHintKind,
 } from "./scoring";
 
 export type WordlePhase = "intro" | "countdown" | "playing" | "result" | "finished";
@@ -27,7 +35,10 @@ export interface PuzzleState {
   answer: string;
   guesses: string[];
   statuses: LetterStatus[][];
-  hintUsed: boolean;
+  hintsUsed: number;
+  letterFillHintsUsed: number;
+  letterClue: string | null;
+  spotHint: SpotHint | null;
   solved: boolean;
   failed: boolean;
 }
@@ -51,6 +62,7 @@ interface WordleState {
   startedAt: number;
   /** Feedback line shown under the grid (e.g. "Need 4 letters", the reveal on a miss). */
   message: string | null;
+  messageTone: "error" | "info";
   /** Bumped to retrigger the "not enough letters" shake animation. */
   shake: number;
   begin: (config: RoundConfig) => void;
@@ -58,8 +70,26 @@ interface WordleState {
   typeLetter: (letter: string) => void;
   backspace: () => void;
   submitGuess: () => void;
-  useHint: () => void;
+  useHint: (kind: WordleHintKind) => void;
   reset: () => void;
+}
+
+function emptyPuzzle(answer: string): PuzzleState {
+  return {
+    answer,
+    guesses: [],
+    statuses: [],
+    hintsUsed: 0,
+    letterFillHintsUsed: 0,
+    letterClue: null,
+    spotHint: null,
+    solved: false,
+    failed: false,
+  };
+}
+
+function bumpHint(puzzle: PuzzleState, extra: Partial<PuzzleState>): PuzzleState {
+  return { ...puzzle, ...extra, hintsUsed: puzzle.hintsUsed + 1 };
 }
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -82,6 +112,7 @@ const initial = {
   stats: initialStats,
   startedAt: 0,
   message: null as string | null,
+  messageTone: "info" as const,
   shake: 0,
 };
 
@@ -94,14 +125,7 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     useJuice.getState().clear();
     const difficulty = wordleDifficultyFor(config.level);
     const rng = config.seed ? seededRng(`${config.seed}:wordle`) : Math.random;
-    const puzzles: PuzzleState[] = generatePuzzleAnswers(difficulty, rng).map((answer) => ({
-      answer,
-      guesses: [],
-      statuses: [],
-      hintUsed: false,
-      solved: false,
-      failed: false,
-    }));
+    const puzzles: PuzzleState[] = generatePuzzleAnswers(difficulty, rng).map(emptyPuzzle);
     set({ ...initial, config, difficulty, puzzles, phase: "countdown" });
   },
 
@@ -115,7 +139,7 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     const puzzle = s.puzzles[s.puzzleIndex];
     if (!puzzle || s.currentGuess.length >= puzzle.answer.length) return;
     fx.tap();
-    set({ currentGuess: s.currentGuess + letter.toUpperCase(), message: null });
+    set({ currentGuess: s.currentGuess + letter.toUpperCase(), message: null, messageTone: "info" });
   },
 
   backspace: () => {
@@ -125,16 +149,47 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     set({ currentGuess: s.currentGuess.slice(0, -1) });
   },
 
-  useHint: () => {
+  useHint: (kind) => {
     const s = get();
     if (s.phase !== "playing") return;
     const puzzle = s.puzzles[s.puzzleIndex];
-    if (!puzzle || puzzle.hintUsed || s.currentGuess.length >= puzzle.answer.length) return;
-    const nextLetter = puzzle.answer[s.currentGuess.length].toUpperCase();
-    const puzzles = s.puzzles.map((p, i) => (i === s.puzzleIndex ? { ...p, hintUsed: true } : p));
+    if (!puzzle) return;
+
+    let next: PuzzleState | null = null;
+    let currentGuess = s.currentGuess;
+    let message = s.message;
+    let messageTone: "error" | "info" = s.messageTone;
+    let popup = "Hint!";
+
+    if (kind === "nextLetter") {
+      if (s.currentGuess.length >= puzzle.answer.length) return;
+      if (puzzle.letterFillHintsUsed >= letterFillHintsAllowed(puzzle.guesses.length)) return;
+      currentGuess = s.currentGuess + puzzle.answer[s.currentGuess.length].toUpperCase();
+      next = bumpHint(puzzle, { letterFillHintsUsed: puzzle.letterFillHintsUsed + 1 });
+    } else if (kind === "letterInWord") {
+      if (!isLetterInWordHintUnlocked(puzzle.guesses.length) || puzzle.letterClue) return;
+      const clue = pickLetterInWordClue(puzzle.answer, puzzle.guesses, puzzle.statuses);
+      if (!clue) return;
+      next = bumpHint(puzzle, { letterClue: clue });
+      message = `Hint: this word has a ${clue}!`;
+      messageTone = "info";
+      popup = `Has a ${clue}!`;
+    } else if (kind === "revealSpot") {
+      if (!isRevealSpotHintUnlocked(puzzle.guesses.length) || puzzle.spotHint) return;
+      const spot = pickRevealSpot(puzzle.answer, puzzle.statuses);
+      if (!spot) return;
+      next = bumpHint(puzzle, { spotHint: spot });
+      message = `Hint: letter ${spot.index + 1} is ${spot.letter}!`;
+      messageTone = "info";
+      popup = `Letter ${spot.index + 1} is ${spot.letter}!`;
+    }
+
+    if (!next) return;
+    const updated = next;
+    const puzzles = s.puzzles.map((p, i) => (i === s.puzzleIndex ? updated : p));
     fx.tick();
-    useJuice.getState().popup("Hint!", "neutral", { x: 0.5, y: 0.3 });
-    set({ puzzles, currentGuess: s.currentGuess + nextLetter, stats: { ...s.stats, hints: s.stats.hints + 1 } });
+    useJuice.getState().popup(popup, "neutral", { x: 0.5, y: 0.3 });
+    set({ puzzles, currentGuess, message, messageTone, stats: { ...s.stats, hints: s.stats.hints + 1 } });
   },
 
   submitGuess: () => {
@@ -145,11 +200,17 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     const length = puzzle.answer.length;
     if (s.currentGuess.length !== length) {
       fx.bad();
-      set({ message: `Need ${length} letters`, shake: s.shake + 1 });
+      set({ message: `Need ${length} letters`, messageTone: "error", shake: s.shake + 1 });
       return;
     }
 
     const guess = s.currentGuess;
+    if (!isAllowedGuess(guess, puzzle.answer)) {
+      fx.bad();
+      set({ message: "Not on our word list. Try another!", messageTone: "error", shake: s.shake + 1 });
+      return;
+    }
+
     const statuses = evaluateGuess(guess, puzzle.answer);
     const guesses = [...puzzle.guesses, guess];
     const solvedNow = guess.toLowerCase() === puzzle.answer.toLowerCase();
@@ -165,7 +226,7 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     const juice = useJuice.getState();
 
     if (solvedNow) {
-      const points = scorePuzzle(guesses.length, length, updatedPuzzle.hintUsed ? 1 : 0);
+      const points = scorePuzzle(guesses.length, length, updatedPuzzle.hintsUsed);
       fx.great();
       juice.popup(`+${points}!`, "great", { x: 0.5, y: 0.32 }, true);
       juice.flashScreen("rgba(223,255,223,0.6)");
@@ -176,6 +237,7 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
         phase: "result",
         score: s.score + points,
         message: guesses.length === 1 ? "First try! Amazing!" : "Nailed it! 🎉",
+        messageTone: "info",
         stats: {
           ...s.stats,
           solved: s.stats.solved + 1,
@@ -192,12 +254,19 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
         currentGuess: "",
         phase: "result",
         message: `So close! It was "${puzzle.answer.toUpperCase()}"`,
+        messageTone: "info",
         stats: { ...s.stats, failed: s.stats.failed + 1, totalGuesses: s.stats.totalGuesses + guesses.length },
       });
       advance(set, get, 2200);
     } else {
       fx.pop();
-      set({ puzzles, currentGuess: "", message: null });
+      const unlockedSpot = isRevealSpotHintUnlocked(guesses.length) && !isRevealSpotHintUnlocked(puzzle.guesses.length);
+      const unlockedLetter =
+        isLetterInWordHintUnlocked(guesses.length) && !isLetterInWordHintUnlocked(puzzle.guesses.length);
+      let unlockMessage: string | null = null;
+      if (unlockedSpot) unlockMessage = "New hint unlocked: show a spot!";
+      else if (unlockedLetter) unlockMessage = "New hint unlocked: a letter in the word!";
+      set({ puzzles, currentGuess: "", message: unlockMessage, messageTone: "info" });
     }
   },
 
@@ -220,7 +289,7 @@ function advance(set: Set, get: Get, delayMs: number) {
       clearTimers();
       set({ phase: "finished" });
     } else {
-      set({ phase: "playing", puzzleIndex: s.puzzleIndex + 1, currentGuess: "", message: null });
+      set({ phase: "playing", puzzleIndex: s.puzzleIndex + 1, currentGuess: "", message: null, messageTone: "info" });
     }
   }, delayMs);
 }

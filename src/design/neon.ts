@@ -36,6 +36,8 @@ export const N = {
   froggerDeep: "#6FC21A",
   claw: "#FF8AD0",
   clawDeep: "#D13A9A",
+  racing: "#FFB020",
+  racingDeep: "#D98400",
 
   /** Stars, coins, streaks. */
   sun: "#FFD54D",

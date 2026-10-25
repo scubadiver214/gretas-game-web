@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import Alert from "@mui/material/Alert";
@@ -11,8 +11,7 @@ import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
+import ButtonBase from "@mui/material/ButtonBase";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -23,14 +22,20 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import LocalPizzaRoundedIcon from "@mui/icons-material/LocalPizzaRounded";
-import PedalBikeRoundedIcon from "@mui/icons-material/PedalBikeRounded";
-import AbcRoundedIcon from "@mui/icons-material/AbcRounded";
 import PageContainer from "@/components/PageContainer";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
-import { CHARACTER_LABELS, GAME_MODES, MODE_EMOJI, MODE_LABELS, type GameMode } from "@/features/player/types";
+import {
+  CHARACTER_LABELS,
+  DAILY_MODES,
+  GAME_MODES,
+  MODE_EMOJI,
+  MODE_LABELS,
+  MODE_SHORT_LABELS,
+  isGameMode,
+  type GameMode,
+} from "@/features/player/types";
 import { dailyKey } from "@/lib/rng";
 import { useTopScores } from "./hooks";
 import type { Board, ScoreEntry } from "./api";
@@ -99,6 +104,15 @@ const columns = helper.columns([
 ]);
 
 const EMPTY: ScoreEntry[] = [];
+
+const MODE_ACCENT: Record<GameMode, string> = {
+  kitchen: N.kitchen,
+  delivery: N.delivery,
+  wordle: N.wordle,
+  frogger: N.frogger,
+  claw: N.claw,
+  racing: N.racing,
+};
 
 export function formatWhen(iso: string): string {
   const d = new Date(iso);
@@ -199,12 +213,19 @@ export default function Scoreboard() {
   const hydrated = usePlayerHydrated();
   const storedNickname = usePlayerStore((s) => s.nickname);
   const nickname = hydrated ? storedNickname : "";
-  // /scoreboard?mode=frogger opens straight onto that game's tab.
+  // /scoreboard?mode=racing opens that game after mount so SSR markup stays kitchen.
   const requested = useSearchParams().get("mode");
-  const [mode, setMode] = useState<GameMode>(() =>
-    GAME_MODES.includes(requested as GameMode) ? (requested as GameMode) : "kitchen",
-  );
+  const [mode, setMode] = useState<GameMode>("kitchen");
   const [board, setBoard] = useState<Board>("all");
+  useEffect(() => {
+    if (isGameMode(requested)) setMode(requested);
+  }, [requested]);
+  const daily = DAILY_MODES.includes(mode);
+  const accent = MODE_ACCENT[mode];
+  const pickMode = (next: GameMode) => {
+    setMode(next);
+    if (!DAILY_MODES.includes(next)) setBoard("all");
+  };
 
   return (
     <PageContainer maxWidth={560}>
@@ -218,52 +239,74 @@ export default function Scoreboard() {
             component="h1"
             sx={{
               flex: 1,
-              color: N.delivery,
-              textShadow: textGlow(N.delivery),
+              color: accent,
+              textShadow: textGlow(accent),
             }}
           >
-            Top pizzaiolos
+            Scoreboard
           </Typography>
           {nickname && <Chip label={nickname} variant="outlined" />}
         </Stack>
+        <Typography sx={{ color: "text.secondary" }}>Every game, best runs first.</Typography>
 
         <ToggleButtonGroup
           exclusive
           fullWidth
           size="small"
-          value={board}
+          value={daily ? board : "all"}
           onChange={(_, v: Board | null) => v && setBoard(v)}
           aria-label="Leaderboard period"
         >
           <ToggleButton value="all">All time</ToggleButton>
-          <ToggleButton value="daily">Today&apos;s challenge</ToggleButton>
+          <ToggleButton value="daily" disabled={!daily}>
+            Today&apos;s challenge
+          </ToggleButton>
         </ToggleButtonGroup>
 
-        <Paper sx={{ overflow: "hidden", clipPath: CLIP.card, border: `1px solid ${N.delivery}59` }}>
-          <Tabs
-            value={mode}
-            onChange={(_, v: GameMode) => setMode(v)}
-            variant="fullWidth"
-            textColor="primary"
-            indicatorColor="primary"
-            sx={{ "& .MuiTab-root": { minWidth: 0, px: { xs: 0.5, sm: 1.5 }, gap: { xs: 0.25, sm: 0.75 } } }}
+        <Paper sx={{ overflow: "hidden", clipPath: CLIP.card, border: `1px solid ${accent}59` }}>
+          <Box
+            role="tablist"
+            aria-label="Game"
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(3, 1fr)", sm: "repeat(6, 1fr)" },
+              gap: 0.75,
+              p: 1.25,
+              borderBottom: `1px solid ${N.panelEdge}`,
+            }}
           >
-            <Tab value="kitchen" icon={<LocalPizzaRoundedIcon />} iconPosition="start" label="Kitchen" sx={{ minHeight: 56 }} />
-            <Tab value="delivery" icon={<PedalBikeRoundedIcon />} iconPosition="start" label="Delivery" sx={{ minHeight: 56 }} />
-            <Tab value="wordle" icon={<AbcRoundedIcon />} iconPosition="start" label="Words" sx={{ minHeight: 56 }} />
-            <Tab
-              value="frogger"
-              icon={
-                <Box component="span" aria-hidden sx={{ fontSize: 20, lineHeight: 1 }}>
-                  🐸
-                </Box>
-              }
-              iconPosition="start"
-              label="Frogger"
-              sx={{ minHeight: 56 }}
-            />
-          </Tabs>
-          <ScoreTable mode={mode} board={board} me={nickname} />
+            {GAME_MODES.map((m) => {
+              const on = m === mode;
+              return (
+                <ButtonBase
+                  key={m}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => pickMode(m)}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.25,
+                    py: 0.9,
+                    px: 0.5,
+                    clipPath: CLIP.button,
+                    bgcolor: on ? `${MODE_ACCENT[m]}22` : N.bgRaise,
+                    border: `1px solid ${on ? MODE_ACCENT[m] : N.panelEdge}`,
+                    color: on ? MODE_ACCENT[m] : N.textSoft,
+                    boxShadow: on ? `0 0 10px ${MODE_ACCENT[m]}44` : "none",
+                  }}
+                >
+                  <Box component="span" aria-hidden sx={{ fontSize: 20, lineHeight: 1 }}>
+                    {MODE_EMOJI[m]}
+                  </Box>
+                  <Box sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "0.72rem", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    {MODE_SHORT_LABELS[m]}
+                  </Box>
+                </ButtonBase>
+              );
+            })}
+          </Box>
+          <ScoreTable mode={mode} board={daily ? board : "all"} me={nickname} />
         </Paper>
 
         <Stack spacing={1}>

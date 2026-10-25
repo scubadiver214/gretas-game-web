@@ -3,8 +3,14 @@ import {
   bestPuzzleScore,
   evaluateGuess,
   generatePuzzleAnswers,
+  isAllowedGuess,
+  isLetterInWordHintUnlocked,
+  isRevealSpotHintUnlocked,
   lengthForPuzzle,
+  letterFillHintsAllowed,
   maxScore,
+  pickLetterInWordClue,
+  pickRevealSpot,
   pickWord,
   scorePuzzle,
   wordleDifficultyFor,
@@ -52,6 +58,42 @@ describe("kids word list", () => {
     expect(KIDS_WORDS.length).toBeGreaterThan(0);
     expect(KIDS_WORDS.every((word) => /^[a-z]{5}$/.test(word))).toBe(true);
     expect(new Set(KIDS_WORDS).size).toBe(KIDS_WORDS.length);
+  });
+  it("accepts list words as guesses and rejects random strings", () => {
+    expect(isAllowedGuess("apple")).toBe(true);
+    expect(isAllowedGuess("APPLE")).toBe(true);
+    expect(isAllowedGuess("zzzzz")).toBe(false);
+    expect(isAllowedGuess("qwxz")).toBe(false);
+    expect(isAllowedGuess("")).toBe(false);
+  });
+  it("still accepts the secret answer even if it is not on the list", () => {
+    expect(isAllowedGuess("zzzzz", "zzzzz")).toBe(true);
+  });
+});
+
+describe("progressive hints", () => {
+  it("starts with one next-letter fill and unlocks more after misses", () => {
+    expect(letterFillHintsAllowed(0)).toBe(1);
+    expect(letterFillHintsAllowed(1)).toBe(1);
+    expect(letterFillHintsAllowed(2)).toBe(2);
+    expect(letterFillHintsAllowed(3)).toBe(3);
+    expect(letterFillHintsAllowed(5)).toBe(3);
+  });
+  it("unlocks extra hint kinds as the player struggles", () => {
+    expect(isLetterInWordHintUnlocked(1)).toBe(false);
+    expect(isLetterInWordHintUnlocked(2)).toBe(true);
+    expect(isRevealSpotHintUnlocked(2)).toBe(false);
+    expect(isRevealSpotHintUnlocked(3)).toBe(true);
+  });
+  it("picks a letter from the answer that has not been guessed yet", () => {
+    expect(pickLetterInWordClue("apple", ["storm"], [["absent", "absent", "absent", "absent", "absent"]])).toBe("A");
+  });
+  it("reveals the first unknown correct spot", () => {
+    expect(pickRevealSpot("apple", [["correct", "absent", "absent", "absent", "absent"]])).toEqual({
+      index: 1,
+      letter: "P",
+    });
+    expect(pickRevealSpot("apple", [["correct", "correct", "correct", "correct", "correct"]])).toBeNull();
   });
 });
 

@@ -21,7 +21,7 @@ import { N, neonGlow, textGlow } from "@/design/neon";
 import { ACHIEVEMENT_BY_ID } from "@/features/player/achievements";
 import { usePlayerStore, useStars } from "@/features/player/store";
 import { LEVEL_NAMES, levelForStars, starsToNextLevel } from "@/features/player/progress";
-import { BIKE_SKINS, MODE_LABELS } from "@/features/player/types";
+import { BIKE_SKINS, DIRECT_SUBMIT_MODES, MODE_LABELS } from "@/features/player/types";
 import { celebrate, fx } from "@/lib/fx";
 import { useSubmitScore } from "./hooks";
 import { shareResult } from "./shareCard";
@@ -83,6 +83,8 @@ function Inner() {
     if (!character) return;
     if (submittedRounds.includes(result.roundId)) return;
     if (attempted.current === result.roundId) return;
+    // Frogger and claw scores are written by their own attempt APIs.
+    if (!DIRECT_SUBMIT_MODES.includes(result.mode)) return;
     attempted.current = result.roundId;
     submit.mutate(
       {

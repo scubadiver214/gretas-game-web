@@ -10,13 +10,15 @@
  * shuffles again and avoids opening with the track that just played.
  */
 
+import { isMetalPlaying, startMetal, stopMetal } from "./metal/player";
 import { getAudioContext, getMusicBus } from "./mixer";
 import { KITCHEN_BED, SHOP_TRACKS, shuffleShopTracks, type ShopTrack } from "./shopTracks";
 
 /** Kitchen bed sits under SFX at about a third of menu loudness. */
 const KITCHEN_BED_GAIN = 0.32;
 
-export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger";
+/** "racing" is synthesized (see ./metal); the rest stream from public/music. */
+export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger" | "racing";
 
 let audioEl: HTMLAudioElement | null = null;
 let mediaNode: MediaElementAudioSourceNode | null = null;
@@ -128,14 +130,32 @@ function fadeIn(ac: AudioContext, target = 1): void {
 
 /** Start a track, or keep playing if that same track is already going. */
 export function startMusic(id: MusicTrackId): void {
-  if (currentTrack === id && audioEl && !audioEl.paused) return;
+  if (id === "racing" ? currentTrack === id && isMetalPlaying() : currentTrack === id && audioEl && !audioEl.paused) return;
 
   const ac = getAudioContext();
   const bus = getMusicBus();
   if (!ac || !bus) return;
 
-  ensureNodes(ac, bus);
   cancelFade();
+
+  if (id === "racing") {
+    // The band replaces the playlist: park the file stream and bring the amps up.
+    if (audioEl && gainNode) {
+      const t = ac.currentTime;
+      gainNode.gain.cancelScheduledValues(t);
+      gainNode.gain.setValueAtTime(Math.max(0.0001, gainNode.gain.value), t);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      const parked = audioEl;
+      fadeTimer = setTimeout(() => parked.pause(), 350);
+    }
+    currentTrack = id;
+    if (ac.state === "suspended") void ac.resume();
+    startMetal(ac, bus);
+    return;
+  }
+
+  if (isMetalPlaying()) stopMetal(0.3);
+  ensureNodes(ac, bus);
   currentTrack = id;
 
   if (ac.state === "suspended") void ac.resume();
@@ -159,6 +179,11 @@ export function startMusic(id: MusicTrackId): void {
 
 /** Stop the playlist. The next start shuffles again unless `keepQueue` is set. */
 export function stopMusic(fadeSeconds = 0.5, keepQueue = false): void {
+  if (currentTrack === "racing") {
+    currentTrack = null;
+    stopMetal(fadeSeconds);
+    return;
+  }
   if (!audioEl || !gainNode || !currentTrack) {
     if (!keepQueue) {
       queue = [];

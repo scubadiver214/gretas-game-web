@@ -81,6 +81,10 @@ export interface CompleteAttemptResponse {
   currentLevel: number;
   newAvatars: string[];
   mysteryUnlocked: WorldId | null;
+  /** Points earned on this attempt; also the public leaderboard score. */
+  score?: number;
+  rank?: number;
+  isPersonalBest?: boolean;
 }
 
 const base = "/api/claw";

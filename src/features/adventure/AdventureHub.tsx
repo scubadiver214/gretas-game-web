@@ -16,6 +16,7 @@ import { SettingsToggles } from "@/components/HUD";
 import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
 import AvatarBadge from "@/features/claw/components/AvatarBadge";
 import { GAME_TITLE as CLAW_TITLE } from "@/features/claw/config";
+import { GAME_TITLE as RACING_TITLE } from "@/features/racing/config";
 import { useClawProfile } from "@/features/claw/hooks";
 import { usePlayerStore } from "@/features/player/store";
 import { usePersonalBests } from "@/features/scores/hooks";
@@ -84,6 +85,18 @@ const ADVENTURES: {
     arcade: true,
     to: "/claw",
     status: "Arcade · 50 levels",
+    daily: false,
+  },
+  {
+    mode: "racing",
+    title: RACING_TITLE,
+    blurb: "Race the desert, snow, mountains, beach and jungle",
+    emoji: "🏎️",
+    art: { src: "/characters/racing-fitzmagic-neon.jpg", alt: "A kid in a blue helmet launching a pearl-white and black Fitzmagic hypercar off a ramp through a glowing neon arch, snowy and green mountains behind" },
+    accent: N.racing,
+    arcade: true,
+    to: "/play/racing",
+    status: "5 tracks · New!",
     daily: false,
   },
 ];
@@ -208,7 +221,7 @@ function Inner() {
           sx={{
             flex: { xs: 1, md: "none" },
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(5, 1fr)" },
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(6, 1fr)" },
             gridAutoRows: { xs: "minmax(116px, 1fr)", md: "auto" },
             gap: { xs: 1.25, md: 2 },
           }}

@@ -11,8 +11,26 @@ const TONE: Record<LetterStatus, { bg: string; edge: string; fg: string }> = {
   absent: { bg: N.panelEdge, edge: N.bgRaise, fg: N.textSoft },
 };
 
-function Tile({ letter, status, filled, delayMs }: { letter: string; status?: LetterStatus; filled: boolean; delayMs: number }) {
-  const tone = status ? TONE[status] : filled ? { bg: N.bgRaise, edge: N.wordle, fg: N.text } : { bg: N.bgRaise, edge: N.panelEdge, fg: N.text };
+function Tile({
+  letter,
+  status,
+  filled,
+  delayMs,
+  ghost = false,
+}: {
+  letter: string;
+  status?: LetterStatus;
+  filled: boolean;
+  delayMs: number;
+  ghost?: boolean;
+}) {
+  const tone = status
+    ? TONE[status]
+    : ghost
+      ? { bg: N.bgRaise, edge: N.wordle, fg: N.wordle }
+      : filled
+        ? { bg: N.bgRaise, edge: N.wordle, fg: N.text }
+        : { bg: N.bgRaise, edge: N.panelEdge, fg: N.text };
   return (
     <Box
       sx={{
@@ -23,12 +41,13 @@ function Tile({ letter, status, filled, delayMs }: { letter: string; status?: Le
         borderRadius: "14px",
         bgcolor: tone.bg,
         color: tone.fg,
-        border: `3px solid ${tone.edge}`,
+        border: `${ghost ? 2 : 3}px ${ghost ? "dashed" : "solid"} ${tone.edge}`,
         fontFamily: "var(--font-display)",
         fontWeight: 800,
         fontSize: "clamp(1.1rem, 6vw, 1.7rem)",
         textTransform: "uppercase",
         lineHeight: 1,
+        opacity: ghost ? 0.55 : 1,
         boxShadow: status ? `0 0 10px ${tone.edge}99` : "none",
         transition: "background-color 120ms, border-color 120ms",
         ...(status && {
@@ -93,9 +112,20 @@ export default function WordGrid({
                 }),
             }}
           >
-            {Array.from({ length }, (_, c) => (
-              <Tile key={c} letter={letters[c] ?? ""} status={statuses?.[c]} filled={!statuses && !!letters[c]} delayMs={c * 70} />
-            ))}
+            {Array.from({ length }, (_, c) => {
+              const typed = letters[c] ?? "";
+              const ghost = isActive && !typed && puzzle.spotHint?.index === c;
+              return (
+                <Tile
+                  key={c}
+                  letter={ghost ? puzzle.spotHint!.letter : typed}
+                  status={statuses?.[c]}
+                  filled={!statuses && !!typed}
+                  delayMs={c * 70}
+                  ghost={ghost}
+                />
+              );
+            })}
           </Box>
         );
       })}

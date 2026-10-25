@@ -160,6 +160,7 @@ function Inner() {
         if (result.kind !== "complete") return null;
         applyComplete(nickname, attempt.level, summary.grabs, result.response);
         void qc.invalidateQueries({ queryKey: clawKeys.profile(nickname) });
+        void qc.invalidateQueries({ queryKey: ["scores"] });
         setSave("saved");
         return result.response;
       } catch {
@@ -199,10 +200,10 @@ function Inner() {
         { label: "Grabs", value: String(summary.grabs) },
       ],
     });
-    // The claw game has no leaderboard: the round is complete for "My runs" right away.
     markSubmitted(roundIdRef.current);
     void sendComplete(summary).then((res) => {
       if (!res) return;
+      if (res.rank != null) markSubmitted(roundIdRef.current, { rank: res.rank, personalBest: res.isPersonalBest ?? false });
       setClear((c) => (c ? { ...c, newAvatars: res.newAvatars, mysteryUnlocked: res.mysteryUnlocked } : c));
     });
   });

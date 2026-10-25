@@ -18,8 +18,7 @@ import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
+import ButtonBase from "@mui/material/ButtonBase";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -36,7 +35,7 @@ import RequirePlayer from "@/components/RequirePlayer";
 import { CLIP, N, textGlow } from "@/design/neon";
 import { usePlayerStore } from "@/features/player/store";
 import { LEVEL_NAMES, levelForStars } from "@/features/player/progress";
-import { MODE_EMOJI, MODE_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
+import { GAME_MODES, MODE_EMOJI, MODE_LABELS, MODE_SHORT_LABELS, type GameMode, type RoundRecord } from "@/features/player/types";
 import { formatWhen } from "./Scoreboard";
 
 const features = tableFeatures({
@@ -135,18 +134,48 @@ function Inner() {
         <Typography sx={{ color: "text.secondary" }}>Rounds played on this device. Scores also live on the global scoreboard.</Typography>
 
         <Paper sx={{ overflow: "hidden", clipPath: CLIP.card, border: `1px solid ${N.delivery}59` }}>
-          <Tabs value={mode} onChange={(_, v: GameMode) => setMode(v)} variant="fullWidth" textColor="primary" indicatorColor="primary">
-            <Tab value="kitchen" label="Kitchen" sx={{ minHeight: 52 }} />
-            <Tab value="delivery" label="Delivery" sx={{ minHeight: 52 }} />
-            <Tab value="wordle" label="Words" sx={{ minHeight: 52 }} />
-            <Tab value="frogger" label="Frogger" sx={{ minHeight: 52 }} />
-            <Tab value="claw" label="Claw" sx={{ minHeight: 52 }} />
-          </Tabs>
+          <Box
+            role="tablist"
+            aria-label="Game"
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(3, 1fr)", sm: "repeat(6, 1fr)" },
+              gap: 0.75,
+              p: 1.25,
+              borderBottom: `1px solid ${N.panelEdge}`,
+            }}
+          >
+            {GAME_MODES.map((m) => {
+              const on = m === mode;
+              return (
+                <ButtonBase
+                  key={m}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setMode(m)}
+                  sx={{
+                    py: 1,
+                    clipPath: CLIP.button,
+                    bgcolor: on ? N.bgRaise : "transparent",
+                    border: `1px solid ${on ? N.delivery : N.panelEdge}`,
+                    color: on ? N.text : N.textSoft,
+                    fontFamily: "var(--font-arcade)",
+                    fontWeight: 700,
+                    fontSize: "0.72rem",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {MODE_SHORT_LABELS[m]}
+                </ButtonBase>
+              );
+            })}
+          </Box>
 
           <Stack direction="row" spacing={1} useFlexGap sx={{ p: 1.5, flexWrap: "wrap" }}>
             <Chip label={`${rows.length} ${rows.length === 1 ? "round" : "rounds"}`} />
             <Chip label={`Best: ${best}`} color="primary" variant="outlined" />
-            {mode === "frogger" || mode === "claw" ? (
+            {mode === "frogger" || mode === "claw" || mode === "racing" ? (
               <Chip label={`Top level ${topLevel}`} color="secondary" variant="outlined" />
             ) : (
               <Chip label={`Level ${level} · ${LEVEL_NAMES[level]}`} color="secondary" variant="outlined" />

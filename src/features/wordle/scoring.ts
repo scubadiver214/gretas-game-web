@@ -2,13 +2,13 @@
  * Pure game rules for the kids' word game. No React, so this file is
  * trivially unit-testable (see scoring.test.ts).
  *
- * Secret words come only from kids_wordle_words.txt (see words.ts).
- * Unlike the original Wordle, guesses only need to match the secret word's
- * length - there is no "not in word list" rejection. That keeps things
- * forgiving for younger players who are still building their vocabulary.
+ * Secret words and guesses both come from kids_wordle_words.txt (see words.ts).
+ * Random letter strings are rejected. Extra hint types unlock after missed guesses.
  */
 
 import { WORDS_BY_LENGTH, type WordLength } from "./words";
+
+export { isAllowedGuess } from "./words";
 
 export type LetterStatus = "correct" | "present" | "absent";
 
@@ -21,6 +21,67 @@ export const POINTS_PER_EXTRA_GUESS = 15;
 export const POINTS_LENGTH_BONUS = 10;
 export const POINTS_HINT_PENALTY = 20;
 export const MIN_PUZZLE_SCORE = 20;
+
+export type WordleHintKind = "nextLetter" | "letterInWord" | "revealSpot";
+
+export interface SpotHint {
+  index: number;
+  letter: string;
+}
+
+/** Next-letter fills allowed after this many committed guesses. Starts at 1; more unlock when stuck. */
+export function letterFillHintsAllowed(guessesUsed: number): number {
+  if (guessesUsed >= 3) return 3;
+  if (guessesUsed >= 2) return 2;
+  return 1;
+}
+
+/** Unlocks after two misses: tell the player a letter that is in the word. */
+export function isLetterInWordHintUnlocked(guessesUsed: number): boolean {
+  return guessesUsed >= 2;
+}
+
+/** Unlocks after three misses: reveal one letter in its correct spot. */
+export function isRevealSpotHintUnlocked(guessesUsed: number): boolean {
+  return guessesUsed >= 3;
+}
+
+/** Prefer a letter from the answer that has not been guessed yet; skip letters already known-correct. */
+export function pickLetterInWordClue(
+  answer: string,
+  guesses: readonly string[],
+  statuses: readonly LetterStatus[][],
+): string | null {
+  const a = answer.toLowerCase();
+  const knownCorrect = new Set<string>();
+  const guessed = new Set<string>();
+  for (let r = 0; r < guesses.length; r++) {
+    const guess = guesses[r].toLowerCase();
+    const row = statuses[r] ?? [];
+    for (let i = 0; i < guess.length; i++) {
+      guessed.add(guess[i]);
+      if (row[i] === "correct") knownCorrect.add(guess[i]);
+    }
+  }
+  const unused = [...a].find((ch) => !guessed.has(ch));
+  if (unused) return unused.toUpperCase();
+  const hidden = [...a].find((ch) => !knownCorrect.has(ch));
+  return hidden ? hidden.toUpperCase() : null;
+}
+
+/** First answer index that has never been marked correct. */
+export function pickRevealSpot(answer: string, statuses: readonly LetterStatus[][]): SpotHint | null {
+  const a = answer.toLowerCase();
+  const known = new Array<boolean>(a.length).fill(false);
+  for (const row of statuses) {
+    for (let i = 0; i < row.length; i++) {
+      if (row[i] === "correct") known[i] = true;
+    }
+  }
+  const index = known.findIndex((already) => !already);
+  if (index < 0) return null;
+  return { index, letter: a[index].toUpperCase() };
+}
 
 /** Knobs that scale with the player's level, mirroring kitchen/delivery difficulty. */
 export interface WordleDifficulty {

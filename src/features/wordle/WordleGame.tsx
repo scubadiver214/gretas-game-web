@@ -6,7 +6,10 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+import AbcRoundedIcon from "@mui/icons-material/AbcRounded";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
+import PinDropRoundedIcon from "@mui/icons-material/PinDropRounded";
 import { useRoundMusic } from "@/components/MusicDirector";
 import RequirePlayer from "@/components/RequirePlayer";
 import { CountdownOverlay, FlashOverlay, IntroCard, QuitButton, ScorePill, ScorePopups, SettingsToggles } from "@/components/HUD";
@@ -15,7 +18,15 @@ import { usePlayerStore } from "@/features/player/store";
 import { useRoundSetup } from "@/features/player/useRoundConfig";
 import { LEVEL_NAMES } from "@/features/player/progress";
 import Keyboard from "./Keyboard";
-import { maxScore, POINTS_HINT_PENALTY, wordleDifficultyFor, wordleStars } from "./scoring";
+import {
+  isLetterInWordHintUnlocked,
+  isRevealSpotHintUnlocked,
+  letterFillHintsAllowed,
+  maxScore,
+  POINTS_HINT_PENALTY,
+  wordleDifficultyFor,
+  wordleStars,
+} from "./scoring";
 import { useWordleGame } from "./useWordleGame";
 import WordGrid from "./WordGrid";
 
@@ -34,6 +45,7 @@ function Inner() {
   const score = useWordleGame((s) => s.score);
   const stats = useWordleGame((s) => s.stats);
   const message = useWordleGame((s) => s.message);
+  const messageTone = useWordleGame((s) => s.messageTone);
   const shake = useWordleGame((s) => s.shake);
   const startedAt = useWordleGame((s) => s.startedAt);
   const begin = useWordleGame((s) => s.begin);
@@ -102,7 +114,15 @@ function Inner() {
   const levelLabel = setup.isDaily ? "📅 Daily challenge" : `Level ${setup.level} · ${LEVEL_NAMES[setup.level]}`;
   const puzzle = puzzles[puzzleIndex];
   const playing = phase === "playing" || phase === "result";
-  const canHint = phase === "playing" && !!puzzle && !puzzle.hintUsed && currentGuess.length < puzzle.answer.length;
+  const letterFillsLeft = puzzle
+    ? letterFillHintsAllowed(puzzle.guesses.length) - puzzle.letterFillHintsUsed
+    : 0;
+  const canNextLetter =
+    phase === "playing" && !!puzzle && letterFillsLeft > 0 && currentGuess.length < puzzle.answer.length;
+  const letterHintUnlocked = !!puzzle && isLetterInWordHintUnlocked(puzzle.guesses.length);
+  const spotHintUnlocked = !!puzzle && isRevealSpotHintUnlocked(puzzle.guesses.length);
+  const canLetterClue = phase === "playing" && letterHintUnlocked && !!puzzle && !puzzle.letterClue;
+  const canRevealSpot = phase === "playing" && spotHintUnlocked && !!puzzle && !puzzle.spotHint;
 
   return (
     <Box
@@ -164,9 +184,34 @@ function Inner() {
 
           <WordGrid puzzle={puzzle} currentGuess={currentGuess} maxGuesses={difficulty.maxGuesses} shakeToken={shake} />
 
+          {(puzzle.letterClue || puzzle.spotHint) && (
+            <Stack direction="row" spacing={0.75} sx={{ justifyContent: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+              {puzzle.letterClue && (
+                <Chip
+                  size="small"
+                  label={`Has a ${puzzle.letterClue}`}
+                  sx={{ bgcolor: N.panel, color: N.text, border: `1px solid ${N.wordle}59`, fontWeight: 800 }}
+                />
+              )}
+              {puzzle.spotHint && (
+                <Chip
+                  size="small"
+                  label={`Letter ${puzzle.spotHint.index + 1} is ${puzzle.spotHint.letter}`}
+                  sx={{ bgcolor: N.panel, color: N.text, border: `1px solid ${N.wordle}59`, fontWeight: 800 }}
+                />
+              )}
+            </Stack>
+          )}
+
           <Box sx={{ minHeight: 28, textAlign: "center" }}>
             {message && (
-              <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: phase === "result" ? N.text : N.kitchen }}>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 800,
+                  color: phase === "result" || messageTone === "info" ? N.text : N.kitchen,
+                }}
+              >
                 {message}
               </Typography>
             )}
@@ -184,17 +229,42 @@ function Inner() {
           }}
         >
           <Stack spacing={1} sx={{ maxWidth: 520, mx: "auto" }}>
-            <Button
-              size="small"
-              variant="text"
-              color="secondary"
-              startIcon={<LightbulbRoundedIcon />}
-              disabled={!canHint}
-              onClick={useHint}
-              sx={{ alignSelf: "center" }}
-            >
-              Hint (−{POINTS_HINT_PENALTY} pts)
-            </Button>
+            <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+              <Button
+                size="small"
+                variant="text"
+                color="secondary"
+                startIcon={<LightbulbRoundedIcon />}
+                disabled={!canNextLetter}
+                onClick={() => useHint("nextLetter")}
+              >
+                Next letter (−{POINTS_HINT_PENALTY})
+              </Button>
+              {letterHintUnlocked && (
+                <Button
+                  size="small"
+                  variant="text"
+                  color="secondary"
+                  startIcon={<AbcRoundedIcon />}
+                  disabled={!canLetterClue}
+                  onClick={() => useHint("letterInWord")}
+                >
+                  A letter in it (−{POINTS_HINT_PENALTY})
+                </Button>
+              )}
+              {spotHintUnlocked && (
+                <Button
+                  size="small"
+                  variant="text"
+                  color="secondary"
+                  startIcon={<PinDropRoundedIcon />}
+                  disabled={!canRevealSpot}
+                  onClick={() => useHint("revealSpot")}
+                >
+                  Show a spot (−{POINTS_HINT_PENALTY})
+                </Button>
+              )}
+            </Stack>
             <Keyboard puzzle={puzzle} onKey={typeLetter} onEnter={submitGuess} onBackspace={backspace} disabled={phase !== "playing"} />
           </Stack>
         </Box>
@@ -208,11 +278,11 @@ function Inner() {
           badge={levelLabel}
           accent={N.wordle}
           lines={[
-            "Guess the secret word. Every word is 5 letters.",
+            "Guess the secret word. Every word is 5 letters, from our kids list.",
             "🟩 Green = right letter, right spot.",
             "🟨 Yellow = right letter, wrong spot.",
             `You get ${wordleDifficultyFor(setup.level).maxGuesses} tries per word.`,
-            "Stuck? Use a hint to reveal the next letter.",
+            "Stuck? Hints unlock as you go — next letter, a letter in the word, or a spot.",
             ...(setup.isDaily ? ["Everyone gets the same words today. Beat the world!"] : []),
           ]}
           cta="Start guessing"
