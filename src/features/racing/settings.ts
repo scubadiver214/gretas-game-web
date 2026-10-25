@@ -6,6 +6,9 @@ import type { CameraDistance } from "./config";
 import type { AssistLevel } from "./engine/difficulty";
 import { TRACKS } from "./world";
 
+/** Race the rival cars, or drive alone against the clock. */
+export type RaceMode = "rivals" | "timeTrial";
+
 interface RacingSettings {
   /** How much help the driver gets. Helper by default: kids first. */
   assist: AssistLevel;
@@ -14,14 +17,17 @@ interface RacingSettings {
   simpleHud: boolean;
   /** Which track the menu has picked. Anything unknown falls back to the first (see `trackById`). */
   trackId: string;
+  mode: RaceMode;
   setAssist: (a: AssistLevel) => void;
   setCameraDistance: (d: CameraDistance) => void;
   setSimpleHud: (v: boolean) => void;
   setTrackId: (id: string) => void;
+  setMode: (m: RaceMode) => void;
 }
 
 const ASSISTS: readonly AssistLevel[] = ["off", "helper", "extra"];
 const DISTANCES: readonly CameraDistance[] = ["close", "normal", "far"];
+const MODES: readonly RaceMode[] = ["rivals", "timeTrial"];
 
 export const useRacingSettings = create<RacingSettings>()(
   persist(
@@ -30,14 +36,16 @@ export const useRacingSettings = create<RacingSettings>()(
       cameraDistance: "normal",
       simpleHud: false,
       trackId: TRACKS[0].id,
+      mode: "rivals",
       setAssist: (assist) => set({ assist }),
       setCameraDistance: (cameraDistance) => set({ cameraDistance }),
       setSimpleHud: (simpleHud) => set({ simpleHud }),
       setTrackId: (trackId) => set({ trackId }),
+      setMode: (mode) => set({ mode }),
     }),
     {
       name: "gretas-game:racing-settings",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() =>
         typeof window === "undefined" ? { getItem: () => null, setItem: () => undefined, removeItem: () => undefined } : window.localStorage,
       ),
@@ -49,6 +57,7 @@ export const useRacingSettings = create<RacingSettings>()(
           cameraDistance: DISTANCES.includes(p.cameraDistance as CameraDistance) ? (p.cameraDistance as CameraDistance) : "normal",
           simpleHud: p.simpleHud === true,
           trackId: TRACKS.some((t) => t.id === p.trackId) ? (p.trackId as string) : TRACKS[0].id,
+          mode: MODES.includes(p.mode as RaceMode) ? (p.mode as RaceMode) : "rivals",
         } as RacingSettings;
       },
     },

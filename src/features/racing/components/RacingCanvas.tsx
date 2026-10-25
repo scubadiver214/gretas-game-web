@@ -6,21 +6,29 @@ import { useSettingsStore } from "@/features/settings/store";
 import { runLoop } from "@/lib/game/loop";
 import type { RaceEngine } from "../engine/RaceEngine";
 import { useRacingSettings } from "../settings";
-import type { VehicleStyle } from "../render/vehicle/styles";
+import type { CarLook } from "../render/vehicle/styles";
 import { RacingRenderer } from "../render/RacingRenderer";
 
 /**
  * Hosts the three.js view of the engine and drives the frame loop. The canvas is
  * created imperatively per mount so a strict-mode remount never reuses a WebGL
  * context that was just force-lost. The world builds on the first frame after a
- * paint, so the loading screen shows first.
+ * paint, so the loading screen shows first. New car looks are swapped in without
+ * rebuilding the world.
  */
-export default function RacingCanvas({ engine, styles, lowPower, onReady, onFail }: { engine: RaceEngine; styles: readonly VehicleStyle[]; lowPower: boolean; onReady: () => void; onFail: () => void }) {
+export default function RacingCanvas({ engine, cars, lowPower, onReady, onFail }: { engine: RaceEngine; cars: readonly CarLook[]; lowPower: boolean; onReady: () => void; onFail: () => void }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const callbacks = useRef({ onReady, onFail });
+  const carsRef = useRef(cars);
+  const rendererRef = useRef<RacingRenderer | null>(null);
   useEffect(() => {
     callbacks.current = { onReady, onFail };
   }, [onReady, onFail]);
+
+  useEffect(() => {
+    carsRef.current = cars;
+    rendererRef.current?.setCars(cars);
+  }, [cars]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -54,7 +62,8 @@ export default function RacingCanvas({ engine, styles, lowPower, onReady, onFail
         if (cancelled) return;
         try {
           renderer.load(engine.track, engine.content);
-          renderer.attach(engine, styles);
+          renderer.attach(engine, carsRef.current);
+          rendererRef.current = renderer;
         } catch (err) {
           console.error("[racing] could not build the track", err);
           callbacks.current.onFail();
@@ -74,13 +83,14 @@ export default function RacingCanvas({ engine, styles, lowPower, onReady, onFail
 
     return () => {
       cancelled = true;
+      rendererRef.current = null;
       cancelAnimationFrame(raf);
       stop();
       ro?.disconnect();
       renderer.dispose();
       canvas.remove();
     };
-  }, [engine, styles, lowPower]);
+  }, [engine, lowPower]);
 
   return <Box ref={hostRef} sx={{ position: "absolute", inset: 0, overflow: "hidden" }} />;
 }

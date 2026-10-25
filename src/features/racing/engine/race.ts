@@ -134,7 +134,8 @@ export class RaceManager {
         if (a.finished && b.finished) return (a.place ?? 0) - (b.place ?? 0);
         if (a.lap !== b.lap) return b.lap - a.lap;
         if (a.passed !== b.passed) return b.passed - a.passed;
-        return b.fraction - a.fraction;
+        // Equal fractions happen on the grid (progress is 0 behind the line): the car further up the road leads.
+        return b.fraction - a.fraction || wrapLoop(b.s - a.s, this.track.length);
       })
       .map((r) => r.id);
   }

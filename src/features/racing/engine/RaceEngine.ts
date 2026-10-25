@@ -1,22 +1,32 @@
 import { Emitter } from "@/lib/game/events";
-import { BUGGY, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS } from "../config";
+import { AI, BUGGY, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS } from "../config";
 import { neutralControls, type Controls, type HudSnapshot, type RaceEvent, type RacePhase, type RaceSummary, type VehicleParams } from "../types";
 import type { AnimalSpec, Collectible, Obstacle, TrackContent } from "../world/content";
 import { SpatialGrid } from "../world/spatial";
 import type { AnimalKind, Track } from "../world/track";
-import { resolveBoundary, resolveObstacles } from "./collision";
-import { playerTuning, type AssistLevel, type PlayerTuning } from "./difficulty";
+import { AiDriver, type AiPersonality, type AiView } from "./ai";
+import { resolveBoundary, resolveCars, resolveObstacles } from "./collision";
+import { difficultyFor, playerTuning, type AssistLevel, type DifficultyConfig, type PlayerTuning } from "./difficulty";
 import { angleDiff, clamp, headingOf, lerp, lerpAngle } from "./math";
 import { RaceManager, type ProgressEvent } from "./race";
 import { createVehicle, integrateDrive, integrateVertical, placeVehicle, snapshot, type VehicleState, type VerticalResult } from "./vehicle";
 import { TrackWeather, weatherIsHeavy, weatherKindFor, type WeatherSample } from "./weather";
+
+/** A computer-driven car: how it handles and how it drives. */
+export interface RivalSetup {
+  name: string;
+  params: VehicleParams;
+  personality: AiPersonality;
+}
 
 export interface RaceOptions {
   /** Difficulty tier 1-5. */
   tier?: number;
   assist?: AssistLevel;
   params?: VehicleParams;
-  /** Grid slot of the player: 0 is the front row, left. */
+  /** Computer cars to race against. None is a time trial. */
+  rivals?: readonly RivalSetup[];
+  /** Grid slot of the player: 0 is the front row, left. Defaults to the back of the grid. */
   playerSlot?: number;
 }
 
@@ -84,7 +94,8 @@ const HIT_COOLDOWN = 0.28;
  * animation frame: it runs fixed 60 Hz steps (so the car handles identically at
  * any frame rate) and exposes `pose()` to read the cars interpolated between
  * steps. The HUD subscribes through `onHud`, which only fires when a displayed
- * value changes. Built for any number of cars; Phase 2 races the player alone.
+ * value changes. The player is car 0; any rivals follow, each with its own handling
+ * and an AiDriver. With no rivals it is a time trial.
  */
 export class RaceEngine {
   phase: RacePhase = "ready";
@@ -92,7 +103,14 @@ export class RaceEngine {
   readonly track: Track;
   readonly content: TrackContent;
   readonly vehicles: VehicleState[] = [];
-  readonly race: RaceManager;
+  /** Handling of each car, indexed like `vehicles`. */
+  readonly carParams: VehicleParams[] = [];
+  /** The computer driver of each car; null for the player. */
+  readonly drivers: (AiDriver | null)[] = [];
+  /** Each car's name: empty for the player. */
+  readonly names: string[] = [];
+  race: RaceManager;
+  rivals: readonly RivalSetup[] = [];
   /** 1 once a collectible has been picked up this lap, indexed by Collectible.id. */
   readonly collected: Uint8Array;
   readonly params: VehicleParams;
@@ -107,6 +125,7 @@ export class RaceEngine {
   tier: number;
   assist: AssistLevel;
   tuning: PlayerTuning;
+  difficulty: DifficultyConfig;
 
   /** Seconds since GO. */
   time = 0;
@@ -128,7 +147,12 @@ export class RaceEngine {
   private accumulator = 0;
   private pausedFrom: RacePhase | null = null;
   private resultsReady = false;
-  private readonly slot: number;
+  private readonly playerSlot: number | undefined;
+  /** Grid slot of each car. */
+  private slots: number[] = [];
+  private readonly radii: number[] = [];
+  /** Reused every step, so driving the rivals never allocates. */
+  private readonly aiView: AiView;
   private readonly hitCooldown: number[] = [];
   private readonly obstacleGrid = new SpatialGrid<Obstacle>(20);
   private readonly pickupGrid = new SpatialGrid<Collectible>(12);
@@ -147,7 +171,9 @@ export class RaceEngine {
     this.tier = opts.tier ?? 1;
     this.assist = opts.assist ?? "helper";
     this.tuning = playerTuning(this.tier, this.assist);
-    this.slot = opts.playerSlot ?? 0;
+    this.difficulty = difficultyFor(this.tier);
+    this.playerSlot = opts.playerSlot;
+    this.aiView = { track, params: this.params, difficulty: this.difficulty, gap: 0, finished: false, cars: this.vehicles, radii: this.radii, self: 0 };
     this.collected = new Uint8Array(content.collectibles.length);
     for (const o of content.obstacles) this.obstacleGrid.insert(o);
     for (const c of content.collectibles) this.pickupGrid.insert(c);
@@ -170,9 +196,7 @@ export class RaceEngine {
       });
     }
     this.placeAnimals();
-    this.vehicles.push(createVehicle(0));
-    this.hitCooldown.push(0);
-    this.race = new RaceManager(track, 1, track.def.laps);
+    this.race = this.buildField(opts.rivals ?? []);
     this.weatherPlan = new TrackWeather(weatherKindFor(track.def.world), track.def.seed);
     this.weather = this.weatherPlan.at(0);
     this.placeAll();
@@ -182,11 +206,16 @@ export class RaceEngine {
     return this.vehicles[this.playerIndex];
   }
 
-  /** Changes difficulty and assist for the next race (applied on reset). */
-  configure(tier: number, assist: AssistLevel): void {
+  /**
+   * Changes difficulty, assist and (optionally) the rivals for the next race. Applied on
+   * reset: call `reset()` straight after, which also tells the renderer the cars changed.
+   */
+  configure(tier: number, assist: AssistLevel, rivals: readonly RivalSetup[] = this.rivals): void {
     this.tier = tier;
     this.assist = assist;
     this.tuning = playerTuning(tier, assist);
+    this.difficulty = difficultyFor(tier);
+    if (rivals !== this.rivals) this.race = this.buildField(rivals);
   }
 
   /** Back to a fresh grid in the "ready" phase. */
@@ -208,6 +237,7 @@ export class RaceEngine {
     this.weather = this.weatherPlan.at(0);
     this.controls = neutralControls();
     this.collected.fill(0);
+    for (const d of this.drivers) d?.reset();
     this.placeAll();
     this.placeAnimals();
     this.events.emit({ type: "reset" });
@@ -329,7 +359,17 @@ export class RaceEngine {
       coins: this.coins,
       gems: this.gems,
       finished: r.finished,
+      standings: this.race.rank().map((id) => {
+        const o = this.race.racers[id];
+        return { racer: id, name: this.names[id], finished: o.finished, time: o.finishTime };
+      }),
     };
+  }
+
+  /** How far a car has come in the race, in metres (gates are evenly spaced). */
+  raceDistance(index: number): number {
+    const r = this.race.racers[index];
+    return ((r.passed + r.fraction) * this.track.length) / this.track.checkpoints.length;
   }
 
   hud(): HudSnapshot {
@@ -373,11 +413,42 @@ export class RaceEngine {
 
   // ---------------------------------------------------------------------------
 
+  /** The player plus one car per rival, and the grid they start on. Returns the race to track them. */
+  private buildField(rivals: readonly RivalSetup[]): RaceManager {
+    this.rivals = rivals;
+    const n = 1 + rivals.length;
+    this.vehicles.length = 0;
+    this.carParams.length = 0;
+    this.drivers.length = 0;
+    this.names.length = 0;
+    this.radii.length = 0;
+    this.hitCooldown.length = 0;
+    this.vehicles.push(createVehicle(0));
+    this.carParams.push(this.params);
+    this.drivers.push(null);
+    this.names.push("");
+    rivals.forEach((r, k) => {
+      this.vehicles.push(createVehicle(k + 1));
+      this.carParams.push(r.params);
+      this.drivers.push(new AiDriver(r.personality, `${this.track.def.seed}:${r.name}`));
+      this.names.push(r.name);
+    });
+    for (let i = 0; i < n; i++) {
+      this.radii.push(this.carParams[i].radius);
+      this.hitCooldown.push(0);
+    }
+    // The player starts at the back by default, so there is someone to chase.
+    const mine = clamp(this.playerSlot ?? n - 1, 0, n - 1);
+    this.slots = [mine];
+    for (let s = 0; s < n; s++) if (s !== mine) this.slots.push(s);
+    return new RaceManager(this.track, n, this.track.def.laps);
+  }
+
   private placeAll(): void {
     const starts: number[] = [];
     for (let i = 0; i < this.vehicles.length; i++) {
       const v = this.vehicles[i];
-      const pose = this.track.gridPose(i === this.playerIndex ? this.slot : i);
+      const pose = this.track.gridPose(this.slots[i]);
       placeVehicle(v, pose.x, pose.z, pose.heading);
       v.boost = 0;
       v.grace = 0;
@@ -458,7 +529,7 @@ export class RaceEngine {
   }
 
   /** Cars bump into animals that are on or near their path. */
-  private hitAnimals(v: VehicleState, i: number, penalty: number): void {
+  private hitAnimals(v: VehicleState, i: number, radius: number, penalty: number): void {
     const list = this.nearAnimals;
     list.length = 0;
     for (let k = 0; k < this.animals.length; k++) {
@@ -466,9 +537,9 @@ export class RaceEngine {
       if (Math.abs(a.x - v.x) < 6 && Math.abs(a.z - v.z) < 6) list.push(a.body);
     }
     if (list.length === 0) return;
-    const hit = resolveObstacles(v, list, this.params.radius, penalty);
+    const hit = resolveObstacles(v, list, radius, penalty);
     if (hit > 0) {
-      for (const a of this.animals) if (a.phase === "cross" && Math.hypot(a.x - v.x, a.z - v.z) < a.spec.r + this.params.radius + 0.5) a.spooked = true;
+      for (const a of this.animals) if (a.phase === "cross" && Math.hypot(a.x - v.x, a.z - v.z) < a.spec.r + radius + 0.5) a.spooked = true;
     }
     if (hit > 1.2) this.emitHit("bump", i, hit);
   }
@@ -495,6 +566,7 @@ export class RaceEngine {
     this.stepWeather();
     this.stepAnimals(dt);
     for (let i = 0; i < this.vehicles.length; i++) this.stepVehicle(i, dt);
+    if (this.vehicles.length > 1) this.resolveTraffic();
     if (this.phase === "finished") {
       this.finishedFor += dt;
       if (!this.resultsReady && this.finishedFor >= RACE.resultsDelaySeconds) this.resultsReady = true;
@@ -532,20 +604,34 @@ export class RaceEngine {
     return strength * clamp(-err * 1.8, -1, 1) * (1 - Math.abs(v.steer));
   }
 
+  /** A rival's controls for this step; it also tops up its boost meter, since it collects no coins. */
+  private rivalControls(i: number, ai: AiDriver, finished: boolean, dt: number): Controls {
+    const v = this.vehicles[i];
+    if (!v.boosting && !finished) v.boost = Math.min(1, v.boost + AI.boostCharge * dt);
+    const view = this.aiView;
+    view.params = this.carParams[i];
+    view.difficulty = this.difficulty;
+    view.gap = this.raceDistance(this.playerIndex) - this.raceDistance(i);
+    view.finished = finished;
+    view.self = i;
+    return ai.drive(v, view, dt);
+  }
+
   private stepVehicle(i: number, dt: number): void {
     const v = this.vehicles[i];
-    const p = this.params;
+    const p = this.carParams[i];
+    const ai = this.drivers[i];
     const prog = this.race.racers[i];
     const q = v.query;
     snapshot(v);
 
     const wasBoosting = v.boosting;
     const wasDrifting = v.drifting;
-    const c = this.playerControls(prog.finished, v);
-    const assist = this.assistSteer(v, prog.finished ? 1 : this.tuning.steeringAssist);
+    const c = ai ? this.rivalControls(i, ai, prog.finished, dt) : this.playerControls(prog.finished, v);
+    const assist = ai ? 0 : this.assistSteer(v, prog.finished ? 1 : this.tuning.steeringAssist);
     const slope = this.track.hills.length > 0 ? this.track.hillSlopeAt(q.s) * Math.cos(angleDiff(v.heading, q.heading)) : 0;
     integrateDrive(v, c, p, this.track.surfaceAt(q), {
-      accelScale: this.tuning.accelScale,
+      accelScale: ai ? 1 : this.tuning.accelScale,
       assistSteer: assist,
       slope,
       gripScale: this.weather.gripScale,
@@ -569,7 +655,7 @@ export class RaceEngine {
     if (this.vertical.takeoff) this.events.emit({ type: "takeoff", racer: i });
     if (this.vertical.landed && this.vertical.impact > 3.5) this.events.emit({ type: "land", racer: i, impact: this.vertical.impact });
 
-    const penalty = this.tuning.collisionPenalty;
+    const penalty = ai ? this.difficulty.collisionPenalty : this.tuning.collisionPenalty;
     const wall = resolveBoundary(v, q, p.radius, penalty, dt);
     if (wall > 1.2) this.emitHit("wall", i, wall);
     const near = this.obstacleGrid.queryInto(this.nearObstacles, v.x, v.z, p.radius + 5);
@@ -577,14 +663,14 @@ export class RaceEngine {
       const hit = resolveObstacles(v, this.nearObstacles, p.radius, penalty);
       if (hit > 1.2) this.emitHit("bump", i, hit);
     }
-    if (this.animals.length > 0) this.hitAnimals(v, i, penalty);
+    if (this.animals.length > 0) this.hitAnimals(v, i, p.radius, penalty);
     if (this.hitCooldown[i] > 0) this.hitCooldown[i] -= dt;
     if (v.grace > 0) v.grace -= dt;
 
     // Speed shown to HUD / physics follows the (possibly collided) velocity.
     v.speed = v.vx * Math.sin(v.heading) + v.vz * Math.cos(v.heading);
 
-    this.race.update(i, q.s, q.lateral, this.time, this.tuning.gateScale, this.onProgress);
+    this.race.update(i, q.s, q.lateral, this.time, ai ? AI.gateScale : this.tuning.gateScale, this.onProgress);
 
     if (v.boosting !== wasBoosting) this.events.emit({ type: v.boosting ? "boostStart" : "boostEnd", racer: i });
     if (v.drifting !== wasDrifting) {
@@ -596,10 +682,49 @@ export class RaceEngine {
       }
     }
 
-    if (i === this.playerIndex && !prog.finished) {
+    if (ai) {
+      this.watchRival(i, v, dt);
+    } else if (!prog.finished) {
       this.collectPickups(v, i);
       this.watchProgress(v, c, dt);
     }
+  }
+
+  /** Cars shove each other apart. The player's car is heavier the more help they have, so a bump never ruins a little one's race. */
+  private resolveTraffic(): void {
+    const n = this.vehicles.length;
+    const playerWeight = 1 / Math.max(0.35, this.tuning.collisionPenalty);
+    for (let i = 0; i < n; i++) {
+      const a = this.vehicles[i];
+      if (a.grace > 0) continue;
+      for (let j = i + 1; j < n; j++) {
+        const b = this.vehicles[j];
+        if (b.grace > 0) continue;
+        const ra = this.radii[i];
+        const rb = this.radii[j];
+        const ma = ra * ra * (i === this.playerIndex ? playerWeight : 1);
+        const mb = rb * rb * (j === this.playerIndex ? playerWeight : 1);
+        const hit = resolveCars(a, ra, ma, b, rb, mb);
+        if (hit <= 0) continue;
+        a.speed = a.vx * Math.sin(a.heading) + a.vz * Math.cos(a.heading);
+        b.speed = b.vx * Math.sin(b.heading) + b.vz * Math.cos(b.heading);
+        if (hit > 2) {
+          this.emitHit("bump", i, hit);
+          this.emitHit("bump", j, hit);
+        }
+      }
+    }
+  }
+
+  /** A rival that is stuck or facing the wrong way goes back to its last gate. */
+  private watchRival(i: number, v: VehicleState, dt: number): void {
+    if (this.phase !== "racing" && this.phase !== "finished") return;
+    if (v.grounded && Math.abs(v.speed) < RACE.stuckSpeed) v.stuckTime += dt;
+    else v.stuckTime = Math.max(0, v.stuckTime - dt * 2);
+    const q = v.query;
+    if (v.vx * q.tx + v.vz * q.tz < -2) v.wrongWayTime += dt;
+    else v.wrongWayTime = Math.max(0, v.wrongWayTime - dt * 2);
+    if (v.stuckTime > AI.stuckSeconds || v.wrongWayTime > AI.stuckSeconds) this.respawnCar(i, true);
   }
 
   private stepWeather(): void {
@@ -662,20 +787,24 @@ export class RaceEngine {
   }
 
   private respawnPlayer(auto: boolean): void {
-    const v = this.player;
-    const r = this.race.racers[this.playerIndex];
-    const pose = this.track.respawnPose(r.lastCheckpoint, r.passed > 0, this.slot);
+    this.respawnCar(this.playerIndex, auto);
+    this.stuck = false;
+    this.wrongWay = false;
+  }
+
+  private respawnCar(i: number, auto: boolean): void {
+    const v = this.vehicles[i];
+    const r = this.race.racers[i];
+    const pose = this.track.respawnPose(r.lastCheckpoint, r.passed > 0, this.slots[i]);
     const keepBoost = v.boost;
     placeVehicle(v, pose.x, pose.z, pose.heading);
     v.boost = keepBoost;
     this.track.projectGlobal(v.x, v.z, v.query);
     v.y = this.track.heightAt(v.query.s);
     snapshot(v);
-    this.race.teleport(this.playerIndex, v.query.s);
+    this.race.teleport(i, v.query.s);
     v.grace = RACE.respawnGraceSeconds;
-    this.stuck = false;
-    this.wrongWay = false;
-    this.events.emit({ type: "respawn", racer: this.playerIndex, auto });
+    this.events.emit({ type: "respawn", racer: i, auto });
   }
 
   private handleProgress(e: ProgressEvent): void {

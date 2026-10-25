@@ -70,7 +70,7 @@ interface WordleState {
   typeLetter: (letter: string) => void;
   backspace: () => void;
   submitGuess: () => void;
-  useHint: (kind: WordleHintKind) => void;
+  applyHint: (kind: WordleHintKind) => void;
   reset: () => void;
 }
 
@@ -149,7 +149,7 @@ export const useWordleGame = create<WordleState>()((set, get) => ({
     set({ currentGuess: s.currentGuess.slice(0, -1) });
   },
 
-  useHint: (kind) => {
+  applyHint: (kind) => {
     const s = get();
     if (s.phase !== "playing") return;
     const puzzle = s.puzzles[s.puzzleIndex];

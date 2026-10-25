@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Obstacle } from "../world/content";
 import { Track, newQuery } from "../world/track";
 import { DUSTY_DESERT_DASH } from "../world/tracks/desert";
-import { resolveBoundary, resolveObstacles } from "./collision";
+import { resolveBoundary, resolveCars, resolveObstacles } from "./collision";
 import { createVehicle, placeVehicle, type VehicleState } from "./vehicle";
 
 const track = new Track(DUSTY_DESERT_DASH);
@@ -175,5 +175,50 @@ describe("query helpers used by collisions", () => {
     const q = newQuery();
     expect(q.tz).toBe(1);
     expect(q.lateral).toBe(0);
+  });
+});
+
+describe("car to car", () => {
+  it("leaves cars that are not touching alone", () => {
+    const a = carAt(300, -4, 20);
+    const b = carAt(300, 4, 20);
+    const before = [a.x, a.z, b.x, b.z];
+    expect(resolveCars(a, R, 1, b, R, 1)).toBe(0);
+    expect([a.x, a.z, b.x, b.z]).toEqual(before);
+  });
+
+  it("pushes overlapping cars apart, the lighter one further", () => {
+    const a = carAt(300, -1, 20);
+    const b = carAt(300, 1, 20);
+    const [ax, az, bx, bz] = [a.x, a.z, b.x, b.z];
+    resolveCars(a, 2, 4, b, 1, 1);
+    expect(Math.hypot(b.x - a.x, b.z - a.z)).toBeCloseTo(3, 5);
+    expect(Math.hypot(b.x - bx, b.z - bz)).toBeGreaterThan(Math.hypot(a.x - ax, a.z - az) * 3);
+  });
+
+  it("trades the closing speed and conserves momentum", () => {
+    // Side by side, a swerving into b.
+    const a = carAt(300, -1.2, 20, 6);
+    const b = carAt(300, 1.2, 20, 0);
+    const ma = 2;
+    const mb = 1;
+    const px = ma * a.vx + mb * b.vx;
+    const pz = ma * a.vz + mb * b.vz;
+    const impact = resolveCars(a, R, ma, b, R, mb);
+    expect(impact).toBeCloseTo(6, 1);
+    expect(ma * a.vx + mb * b.vx).toBeCloseTo(px, 6);
+    expect(ma * a.vz + mb * b.vz).toBeCloseTo(pz, 6);
+    // Now moving apart sideways, both still rolling forward.
+    expect(rightSpeed(b) - rightSpeed(a)).toBeGreaterThan(0);
+    const fwd = (v: VehicleState) => v.vx * v.query.tx + v.vz * v.query.tz;
+    expect(fwd(a)).toBeCloseTo(20, 1);
+    expect(fwd(b)).toBeCloseTo(20, 1);
+  });
+
+  it("lets a car mid-jump pass over another", () => {
+    const a = carAt(300, 0, 20);
+    const b = carAt(300, 0.5, 20);
+    a.y = 3;
+    expect(resolveCars(a, R, 1, b, R, 1)).toBe(0);
   });
 });

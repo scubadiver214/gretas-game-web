@@ -165,7 +165,7 @@ const corner: SxProps<Theme> = { position: "absolute", display: "flex", flexDire
  * down the left, clock and speed top right, the track map bottom left and the boost
  * meter bottom right. Ticking numbers are live text (no React renders per frame).
  */
-export default function RacingHud({ engine, touch }: { engine: RaceEngine; touch: boolean }) {
+export default function RacingHud({ engine, touch, colors }: { engine: RaceEngine; touch: boolean; colors: readonly string[] }) {
   const coins = useRacingHud((s) => s.coins);
   const gems = useRacingHud((s) => s.gems);
   const lap = useRacingHud((s) => s.lap);
@@ -224,7 +224,7 @@ export default function RacingHud({ engine, touch }: { engine: RaceEngine; touch
 
       {!simple && (
         <Box sx={{ position: "absolute", left: touch ? "max(12px, env(safe-area-inset-left))" : "max(16px, env(safe-area-inset-left))", bottom: touch ? "auto" : "max(16px, env(safe-area-inset-bottom))", top: touch ? "46%" : "auto" }}>
-          <Minimap engine={engine} size={touch ? 92 : 168} />
+          <Minimap engine={engine} size={touch ? 92 : 168} colors={colors} />
         </Box>
       )}
 

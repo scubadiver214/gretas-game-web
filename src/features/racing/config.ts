@@ -95,6 +95,47 @@ export const BUGGY: VehicleParams = {
   wheelRadius: 0.54,
 };
 
+/**
+ * Computer drivers. Their base pace is the tier's `aiSpeedMultiplier`; on top of that the
+ * pack keeps itself near the player (catch up when far behind, ease off when far ahead) so
+ * a race always looks like a race, without ever letting a rival drive faster than its car can.
+ */
+export const AI = {
+  /** Gate half-width multiple for rivals: a computer car never misses a gate. */
+  gateScale: 3,
+  /** Furthest a rival's lane may sit from the centre line, as a fraction of the road half-width. */
+  maxLane: 0.62,
+  /** Pack-keeping reaches full strength at this gap to the player (metres along the race). */
+  bandDistance: 140,
+  /** A rival far behind may speed up to its tier pace plus this (as a fraction of its top speed). */
+  catchUp: 0.27,
+  /** ...and takes bends this much more skilfully (added to cornering skill, 0..1). */
+  catchUpCornering: 0.45,
+  /** A rival far ahead slows by up to this fraction. */
+  easeOff: 0.16,
+  /** Boost meter units per second a rival charges (it collects no coins). */
+  boostCharge: 0.06,
+  /** A rival fires its boost from this much meter... */
+  boostAt: 0.55,
+  /** ...on a straight (heading change ahead below this, radians)... */
+  boostMaxTurn: 0.14,
+  /** ...when the player is ahead of it by less than this (metres). */
+  boostRange: 70,
+  /** How far ahead (metres) a rival looks for cars to steer round. */
+  trafficLook: 16,
+  /** Crawling for this long, or driving the wrong way, puts a rival back at its last gate. */
+  stuckSeconds: 2.5,
+  /** Fraction of pace after crossing the finish line (a lap of honour, out of the way). */
+  cruise: 0.55,
+} as const;
+
+/** Bumping between cars: a soft, friendly shove, heavier cars pushing lighter ones further. */
+export const TRAFFIC = {
+  bounce: 0.3,
+  /** Cars more than this apart in height (one mid-jump) pass each other. */
+  maxHeightGap: 1.6,
+} as const;
+
 /** Chase camera. */
 export const CAMERA = {
   distance: 10.5,

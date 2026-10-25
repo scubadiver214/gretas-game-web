@@ -1,3 +1,4 @@
+import { TRAFFIC } from "../config";
 import type { Obstacle } from "../world/content";
 import type { TrackQuery } from "../world/track";
 import { angleDiff, clamp } from "./math";
@@ -49,6 +50,46 @@ export function resolveBoundary(v: VehicleState, q: TrackQuery, radius: number, 
   v.vx *= rub;
   v.vz *= rub;
   return impact;
+}
+
+/**
+ * Two cars touching: pushes them apart and trades the closing part of their velocity,
+ * shared by mass (`ma`, `mb`), so a monster truck shoves a bubble car further than the
+ * other way round. Cars at different heights (one mid-jump) pass. Returns the closing
+ * speed, or 0 if they were not touching or were already separating.
+ */
+export function resolveCars(a: VehicleState, ra: number, ma: number, b: VehicleState, rb: number, mb: number): number {
+  if (Math.abs(a.y - b.y) > TRAFFIC.maxHeightGap) return 0;
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const min = ra + rb;
+  const d2 = dx * dx + dz * dz;
+  if (d2 >= min * min) return 0;
+  const d = Math.sqrt(d2);
+  let nx: number;
+  let nz: number;
+  if (d < 1e-4) {
+    nx = Math.cos(a.heading);
+    nz = -Math.sin(a.heading);
+  } else {
+    nx = dx / d;
+    nz = dz / d;
+  }
+  const wa = mb / (ma + mb);
+  const wb = ma / (ma + mb);
+  const overlap = min - d;
+  a.x -= nx * overlap * wa;
+  a.z -= nz * overlap * wa;
+  b.x += nx * overlap * wb;
+  b.z += nz * overlap * wb;
+  const closing = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+  if (closing >= 0) return 0;
+  const j = (-(1 + TRAFFIC.bounce) * closing) / (1 / ma + 1 / mb);
+  a.vx -= (nx * j) / ma;
+  a.vz -= (nz * j) / ma;
+  b.vx += (nx * j) / mb;
+  b.vz += (nz * j) / mb;
+  return -closing;
 }
 
 /** Fraction of the speed a car loses into an animal (the rest carries on past it). */

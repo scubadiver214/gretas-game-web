@@ -53,7 +53,7 @@ function Inner() {
   const typeLetter = useWordleGame((s) => s.typeLetter);
   const backspace = useWordleGame((s) => s.backspace);
   const submitGuess = useWordleGame((s) => s.submitGuess);
-  const useHint = useWordleGame((s) => s.useHint);
+  const applyHint = useWordleGame((s) => s.applyHint);
   const reset = useWordleGame((s) => s.reset);
 
   useEffect(() => () => reset(), [reset]);
@@ -236,7 +236,7 @@ function Inner() {
                 color="secondary"
                 startIcon={<LightbulbRoundedIcon />}
                 disabled={!canNextLetter}
-                onClick={() => useHint("nextLetter")}
+                onClick={() => applyHint("nextLetter")}
               >
                 Next letter (−{POINTS_HINT_PENALTY})
               </Button>
@@ -247,7 +247,7 @@ function Inner() {
                   color="secondary"
                   startIcon={<AbcRoundedIcon />}
                   disabled={!canLetterClue}
-                  onClick={() => useHint("letterInWord")}
+                  onClick={() => applyHint("letterInWord")}
                 >
                   A letter in it (−{POINTS_HINT_PENALTY})
                 </Button>
@@ -259,7 +259,7 @@ function Inner() {
                   color="secondary"
                   startIcon={<PinDropRoundedIcon />}
                   disabled={!canRevealSpot}
-                  onClick={() => useHint("revealSpot")}
+                  onClick={() => applyHint("revealSpot")}
                 >
                   Show a spot (−{POINTS_HINT_PENALTY})
                 </Button>

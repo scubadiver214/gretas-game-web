@@ -21,7 +21,8 @@ import { useSettingsStore } from "@/features/settings/store";
 import { fx } from "@/lib/fx";
 import { GAME_TITLE, type CameraDistance } from "../config";
 import { ASSIST_LABELS, ASSIST_LEVELS, difficultyFor, type AssistLevel } from "../engine/difficulty";
-import { useRacingSettings } from "../settings";
+import type { Rival } from "../rivals";
+import { useRacingSettings, type RaceMode } from "../settings";
 import { TRACKS } from "../world";
 import type { TrackDefinition, WorldId } from "../world/track";
 import { R, bigText, plate } from "./hudStyle";
@@ -127,6 +128,64 @@ function TrackPicker({ selected, onPick }: { selected: string; onPick: (id: stri
   );
 }
 
+const MODES: readonly { id: RaceMode; emoji: string; name: string; blurb: string }[] = [
+  { id: "rivals", emoji: "🏁", name: "Race rivals", blurb: "Beat four racing cars" },
+  { id: "timeTrial", emoji: "⏱️", name: "Time trial", blurb: "Just you and the clock" },
+];
+
+/** Race against the rival cars or drive alone against the clock, picked just before Play. */
+function ModePicker({ mode, rivals, onPick }: { mode: RaceMode; rivals: readonly Rival[]; onPick: (m: RaceMode) => void }) {
+  return (
+    <Box sx={{ width: "100%" }}>
+      <Box role="radiogroup" aria-label="How do you want to race?" sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+        {MODES.map((m) => {
+          const active = m.id === mode;
+          return (
+            <ButtonBase
+              key={m.id}
+              role="radio"
+              aria-checked={active}
+              onClick={() => {
+                if (active) return;
+                fx.tap();
+                onPick(m.id);
+              }}
+              sx={{
+                ...plate,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 1,
+                px: 1.2,
+                py: 0.8,
+                textAlign: "left",
+                background: active ? `linear-gradient(180deg, ${R.goldLight}, ${R.gold})` : plate.background,
+                borderColor: active ? R.goldLight : "rgba(232,169,29,0.45)",
+                boxShadow: active ? `0 0 0 3px ${R.goldLight}, 0 6px 12px rgba(0,0,0,0.35)` : plate.boxShadow,
+                transition: "box-shadow 120ms",
+                "&.Mui-focusVisible": { outline: `3px solid ${R.white}`, outlineOffset: 2 },
+              }}
+            >
+              <Typography sx={{ fontSize: 28, lineHeight: 1, [SHORT]: { fontSize: 22 } }} aria-hidden>
+                {m.emoji}
+              </Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ ...bigText, fontSize: "1.05rem", lineHeight: 1.1, color: active ? R.ink : R.white, textShadow: active ? "none" : bigText.textShadow }}>{m.name}</Typography>
+                <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.75rem", color: active ? R.ink : R.goldLight, [SHORT]: { display: "none" } }}>{m.blurb}</Typography>
+              </Box>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+      {mode === "rivals" && (
+        <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: "0.85rem", mt: 0.6, textAlign: { xs: "center", md: "left" }, textShadow: "0 1px 3px rgba(0,0,0,0.6)", [SHORT]: { display: "none" } }}>
+          vs {rivals.map((r) => `${r.emoji} ${r.name}`).join("  ·  ")}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: readonly { id: T; text: string }[]; onChange: (v: T) => void }) {
   return (
     <Box>
@@ -154,7 +213,29 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
   );
 }
 
-export default function MainMenu({ track, nickname, vehicleName, touch, onPickTrack, onPlay, onQuit }: { track: TrackDefinition; nickname: string; vehicleName: string; touch: boolean; onPickTrack: (id: string) => void; onPlay: () => void; onQuit: () => void }) {
+export default function MainMenu({
+  track,
+  nickname,
+  vehicleName,
+  touch,
+  mode,
+  rivals,
+  onPickMode,
+  onPickTrack,
+  onPlay,
+  onQuit,
+}: {
+  track: TrackDefinition;
+  nickname: string;
+  vehicleName: string;
+  touch: boolean;
+  mode: RaceMode;
+  rivals: readonly Rival[];
+  onPickMode: (m: RaceMode) => void;
+  onPickTrack: (id: string) => void;
+  onPlay: () => void;
+  onQuit: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const assist = useRacingSettings((s) => s.assist);
   const setAssist = useRacingSettings((s) => s.setAssist);
@@ -211,6 +292,8 @@ export default function MainMenu({ track, nickname, vehicleName, touch, onPickTr
         </Box>
 
         <TrackPicker selected={track.id} onPick={onPickTrack} />
+
+        <ModePicker mode={mode} rivals={rivals} onPick={onPickMode} />
 
         <Button
           autoFocus

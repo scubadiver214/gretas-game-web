@@ -22,12 +22,19 @@ import { R, bigText, plate } from "./components/hudStyle";
 import { bindKeyboard, mergeControls } from "./engine/input";
 import { RaceEngine } from "./engine/RaceEngine";
 import { bindRacingFx } from "./fx";
-import { FITZMAGIC, type VehicleStyle } from "./render/vehicle/styles";
+import { FITZMAGIC, type CarLook } from "./render/vehicle/styles";
+import { RIVALS, rivalLooks, type Rival } from "./rivals";
 import { raceDurationSeconds, raceScore, raceStars } from "./score";
-import { useRacingSettings } from "./settings";
+import { useRacingSettings, type RaceMode } from "./settings";
 import { neutralControls, type Controls } from "./types";
 import { useRacingHud } from "./useRacingHud";
 import { loadWorld, trackById } from "./world";
+
+const NO_RIVALS: readonly Rival[] = [];
+const rivalsFor = (mode: RaceMode) => (mode === "rivals" ? RIVALS : NO_RIVALS);
+/** Minimap arrow colours: the player, then each rival. */
+const CAR_COLORS = [R.pink, ...RIVALS.map((r) => r.color)];
+const RIVAL_LOOKS = rivalLooks(RIVALS);
 
 function Inner() {
   const router = useRouter();
@@ -42,14 +49,20 @@ function Inner() {
   const assist = useRacingSettings((s) => s.assist);
   const trackId = useRacingSettings((s) => s.trackId);
   const setTrackId = useRacingSettings((s) => s.setTrackId);
+  const mode = useRacingSettings((s) => s.mode);
+  const setMode = useRacingSettings((s) => s.setMode);
   // This component only renders after the persisted player has loaded, so the media query is safe to read at once.
   const touch = useMediaQuery("(hover: none), (pointer: coarse)", { noSsr: true });
   const portrait = useMediaQuery("(orientation: portrait)", { noSsr: true });
 
   // Picking another track in the menu builds that world and a fresh engine for it; the canvas reloads around them.
   const world = useMemo(() => loadWorld(trackById(trackId)), [trackId]);
-  const engine = useMemo(() => new RaceEngine(world.track, world.content, { tier: world.track.def.tier, assist: useRacingSettings.getState().assist }), [world]);
-  const styles = useMemo<VehicleStyle[]>(() => [{ ...FITZMAGIC, helmet, skin }], [helmet, skin]);
+  const engine = useMemo(() => {
+    const { assist: a, mode: m } = useRacingSettings.getState();
+    return new RaceEngine(world.track, world.content, { tier: world.track.def.tier, assist: a, rivals: rivalsFor(m) });
+  }, [world]);
+  // Every car the race could need: the player's, then the rivals in grid order (a time trial only draws the first).
+  const cars = useMemo<CarLook[]>(() => [{ body: "fitzmagic", style: { ...FITZMAGIC, helmet, skin } }, ...RIVAL_LOOKS], [helmet, skin]);
 
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -116,11 +129,17 @@ function Inner() {
   const play = () => {
     fx.unlock();
     setBoard(null);
-    engine.configure(world.track.def.tier, assist);
+    engine.configure(world.track.def.tier, assist, rivalsFor(mode));
     engine.reset();
     engine.start();
   };
   const toMenu = () => engine.reset();
+  // The grid behind the menu fills up or empties straight away.
+  const pickMode = (m: RaceMode) => {
+    setMode(m);
+    engine.configure(world.track.def.tier, assist, rivalsFor(m));
+    engine.reset();
+  };
   const pickTrack = (id: string) => {
     if (id === world.track.def.id) return;
     setReady(false);
@@ -149,10 +168,7 @@ function Inner() {
       level,
       stars: raceStars(summary),
       metrics: { place: summary.place, coins: summary.coins, gems: summary.gems, laps: summary.laps },
-      highlights: [
-        { label: "Time", value: formatTime(summary.timeSeconds) },
-        { label: "Place", value: String(summary.place) },
-      ],
+      highlights: [{ label: "Time", value: formatTime(summary.timeSeconds) }, ...(summary.racers > 1 ? [{ label: "Place", value: String(summary.place) }] : [])],
     });
     submit.mutate(
       { nickname, character, color, mode: "racing", score, level, durationSeconds },
@@ -168,9 +184,9 @@ function Inner() {
 
   return (
     <Box sx={{ position: "fixed", inset: 0, overflow: "hidden", bgcolor: "#8cc7f2", userSelect: "none", touchAction: "none" }}>
-      <RacingCanvas engine={engine} styles={styles} lowPower={touch} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
+      <RacingCanvas engine={engine} cars={cars} lowPower={touch} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
 
-      {hudVisible && <RacingHud engine={engine} touch={touch} />}
+      {hudVisible && <RacingHud engine={engine} touch={touch} colors={CAR_COLORS} />}
       {hudVisible && touch && (phase === "racing" || phase === "countdown" || phase === "finished") && <TouchControls onChange={onPad} onReset={() => engine.respawn()} autoGas={assist === "extra"} />}
 
       {hudVisible && phase !== "paused" && !resultsReady && (
@@ -183,11 +199,26 @@ function Inner() {
         </IconButton>
       )}
 
-      {ready && phase === "ready" && <MainMenu track={world.track.def} nickname={nickname} vehicleName={FITZMAGIC.name} touch={touch} onPickTrack={pickTrack} onPlay={play} onQuit={quit} />}
+      {ready && phase === "ready" && (
+        <MainMenu
+          track={world.track.def}
+          nickname={nickname}
+          vehicleName={FITZMAGIC.name}
+          touch={touch}
+          mode={mode}
+          rivals={RIVALS}
+          onPickMode={pickMode}
+          onPickTrack={pickTrack}
+          onPlay={play}
+          onQuit={quit}
+        />
+      )}
       {ready && phase === "paused" && !needsRotate && <PauseOverlay touch={touch} onResume={() => engine.resume()} onRestart={play} onQuit={toMenu} />}
       {ready && resultsReady && summary && (
         <ResultsCard
           summary={summary}
+          playerName={nickname}
+          colors={CAR_COLORS}
           score={board?.score}
           rank={board?.rank}
           personalBest={board?.personalBest}

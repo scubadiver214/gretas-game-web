@@ -74,8 +74,37 @@ function Stat({ label, value, tone = R.white }: { label: string; value: string; 
   );
 }
 
+/** Who came where: every car, the player highlighted, rivals still on the road marked as racing. */
+function Standings({ summary, playerName, colors }: { summary: RaceSummary; playerName: string; colors: readonly string[] }) {
+  return (
+    <Box component="ol" aria-label="Finishing order" sx={{ listStyle: "none", m: 0, mb: 2, p: 0, display: "grid", gap: 0.5 }}>
+      {summary.standings.map((s, i) => {
+        const me = s.racer === 0;
+        return (
+          <Box
+            component="li"
+            key={s.racer}
+            sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.2, py: 0.4, borderRadius: "10px", bgcolor: me ? "rgba(255,210,63,0.22)" : "rgba(0,0,0,0.22)", border: me ? `2px solid ${R.goldLight}` : "2px solid transparent" }}
+          >
+            <Typography sx={{ ...bigText, fontSize: "1.05rem", width: 38, textAlign: "left", color: i === 0 ? R.goldLight : R.white }}>{ordinal(i + 1)}</Typography>
+            <Box aria-hidden sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: colors[s.racer] ?? R.white, border: "2px solid #fff", flexShrink: 0 }} />
+            <Typography sx={{ ...bigText, fontSize: "1.05rem", flex: 1, textAlign: "left" }} noWrap>
+              {me ? `${playerName} (you)` : s.name}
+            </Typography>
+            <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 700, color: s.finished ? R.white : "rgba(255,255,255,0.7)", fontSize: "0.95rem" }}>
+              {s.finished && s.time !== null ? formatTime(s.time) : "still racing"}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 export function ResultsCard({
   summary,
+  playerName,
+  colors,
   score,
   rank,
   personalBest,
@@ -84,6 +113,8 @@ export function ResultsCard({
   onRanks,
 }: {
   summary: RaceSummary;
+  playerName: string;
+  colors: readonly string[];
   score?: number;
   rank?: number;
   personalBest?: boolean;
@@ -118,6 +149,7 @@ export function ResultsCard({
         {summary.lapTimes.length > 1 && (
           <Typography sx={{ color: "rgba(255,255,255,0.8)", mb: 2, fontSize: "0.95rem" }}>{summary.lapTimes.map((t, i) => `Lap ${i + 1}: ${formatTime(t)}`).join("   ·   ")}</Typography>
         )}
+        {placed && <Standings summary={summary} playerName={playerName} colors={colors} />}
         <Stack spacing={1.4}>
           <Button autoFocus fullWidth variant="contained" color="success" startIcon={<ReplayRoundedIcon />} onClick={onAgain} sx={bigButton}>
             Race again

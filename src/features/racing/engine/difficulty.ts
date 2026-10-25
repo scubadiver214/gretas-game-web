@@ -4,8 +4,10 @@ import { clamp01 } from "./math";
  * Difficulty is data. Each tier changes how fast and how well the AI drives,
  * how forgiving collisions are, how much steering help the player gets by
  * default, how many obstacles a track carries and how generous rewards are.
- * Nothing here is rubber-banding: the AI's speed is a fixed fraction of the
- * vehicle's top speed, so skill always matters.
+ * The AI's base speed is a fixed fraction of its car's top speed; the only
+ * pack-keeping is in engine/ai.ts (config AI): rivals far behind speed up to
+ * at most their car's top speed, rivals far ahead ease off, so a race always
+ * looks close but driving well still wins.
  */
 export interface DifficultyConfig {
   tier: number;

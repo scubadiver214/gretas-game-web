@@ -145,4 +145,15 @@ export interface RaceSummary {
   coins: number;
   gems: number;
   finished: boolean;
+  /** Every car from first to last; a time trial has just the player. */
+  standings: Standing[];
+}
+
+export interface Standing {
+  racer: number;
+  /** The rival's name; empty for the player. */
+  name: string;
+  /** Crossed the line (with `time`), or still racing. */
+  finished: boolean;
+  time: number | null;
 }

@@ -9,7 +9,7 @@ Players pick a nickname, a character (Max or Greta) and an outfit colour, then c
 - **Word Quest** - guess five-letter words with green/yellow letter hints.
 - **Frogger Adventure** - arcade Frogger in low-poly 3D: hop across five lanes of traffic and a river of logs and diving turtles to fill five lily-pad bays, then the next level speeds up. See [Frogger Adventure](#frogger-adventure) below.
 - **Bea's Claw-some Adventure** - a 3D claw machine for ages 4-10: line the claw up, press GRAB, and win toys for a persistent collection. 50 levels across five arcade worlds, mystery machines with legendary prizes, and collectible avatars. No timers, no leaderboard, no purchases. See [Bea's Claw-some Adventure](#beas-claw-some-adventure) below.
-- **The Fitz and Furious** - a 3D kids' arcade racer (work in progress): drive the pearl-white Fitzmagic hypercar round five open tracks (desert, winter, sunny mountains, a rolling beach and a jungle with lions, tigers and giraffes), collect coins and gems, jump ramps, boost and drift. Steering help means a four-year-old can finish with one finger; switch it off for a proper challenge. Plays with keyboard or on-screen touch controls. See [The Fitz and Furious](#the-fitz-and-furious) below.
+- **The Fitz and Furious** - a 3D kids' arcade racer: drive the pearl-white Fitzmagic hypercar round five open tracks, race four computer cars (or a time trial), collect coins and gems, jump ramps, boost and drift. Steering help means a four-year-old can finish with one finger; switch it off for a proper challenge. Plays with keyboard or on-screen touch controls. See [The Fitz and Furious](#the-fitz-and-furious) below. Living spec: [`ai/specs/racing/`](ai/specs/racing/).
 
 Scores are submitted to the API and shown on the global scoreboard (the claw game keeps its progress private on the player's profile instead).
 
@@ -84,6 +84,7 @@ src/
   lib/rng.ts              seeded PRNG + daily key
   theme.ts                Material UI theme
 public/models/            CC0 character models (boy.glb, girl.glb) + LICENSE.md
+ai/specs/                 living specs per game (phases, decisions, todos, bugs) — see ai/specs/README.md
 ```
 
 ## Frogger Adventure
@@ -173,7 +174,7 @@ fx.ts                       engine events -> sounds, haptics, popups, confetti
 
 ## The Fitz and Furious
 
-`/play/racing` is a 3D kids' racing game in `src/features/racing/`, built on the same shape as claw and Frogger (a pure engine, an imperative three.js renderer, a thin React shell). **Status: phase 2 of 7, plus a variety pass** - five playable tracks (desert, winter, mountain meadows, beach, jungle) picked on the menu, solo, with no AI opponents, rewards or saving of progress yet. Everything on this page exists today; what is still to come is listed last.
+`/play/racing` is a 3D kids' racing game in `src/features/racing/`, built on the same shape as claw and Frogger (a pure engine, an imperative three.js renderer, a thin React shell). **Status: phases 1–3 of 7** — five playable tracks, Fitzmagic plus four rival cars, race-or-time-trial on the menu; rewards and saving of progress are still Phase 4. The living spec (what each phase is, decisions, todos, bugs) is [`ai/specs/racing/`](ai/specs/racing/). Everything below exists today; what is still to come is listed last.
 
 ```
 config.ts                   title, fixed step, vehicle / camera / race tuning (all the numbers that decide the feel)
@@ -204,7 +205,7 @@ RacingGame.tsx              menu -> countdown -> race -> results
 ```
 
 - **Driving.** W / Up gas, S / Down brake then reverse, A D / Left Right steer, Space handbrake-drift, Shift boost, R back to the last gate, Esc pause. Steering is speed-sensitive (no pivoting on the spot, a little less at top speed) and the handbrake trades grip for rotation but caps the slip angle so it cannot spin the car out. Drifting and coins fill the boost meter. Sand slows you, the boundary wall bounces you back, and ramps launch you for real (height follows a profile the renderer draws exactly). Phones get on-screen pads; Super helper drops the gas pedal.
-- **Races.** Gates must be passed in order and only count when crossed forwards inside their width, so driving the line back and forth, skipping gates or respawning can never award a lap. Ranking is laps, then gates passed, then distance along the segment (the `RaceManager` already ranks any number of cars; the game races the player alone for now). Wrong-way and stuck warnings appear on screen, and with Helper or above a stuck car is put back on the road automatically.
+- **Races.** Gates must be passed in order and only count when crossed forwards inside their width, so driving the line back and forth, skipping gates or respawning can never award a lap. Ranking is laps, then gates passed, then distance along the segment. The menu picks **Race rivals** (four computer cars of different shapes, player at the back of the grid) or **Time trial** (solo). Wrong-way and stuck warnings appear on screen, and with Helper or above a stuck car is put back on the road automatically.
 - **Difficulty and assist.** `engine/difficulty.ts` defines Rookie Racers to Fitz Champions (AI speed and cornering, mistakes, steering help, collision penalty, obstacle density, rewards, gate width). Tracks use tiers 1 to 3 today (the gas-only Helper test in `engine/tracks.test.ts` is why a harder tier needs gentler corners); the rest are data waiting for the AI. Assist is a separate player setting (Settings in the menu) so older children can turn it off.
 - **Worlds and the car.** A world is data plus three small renderer pieces: a `WorldProfile` (terrain style and scenery amounts), a `WorldTheme` (sky, fog, light, spray colour, snowfall) and a props builder. The menu's "Pick a track" row switches between them (the choice is saved on the device). The road is flat apart from the ramps, so the mountains are terrain beyond the walls. The Fitzmagic car is lofted from keyframe cross-sections (`render/vehicle/loft.ts`) with two-tone vertex paint and a logo texture that follows the bodywork.
 - **Determinism.** A track is a pure function of its definition (control points, ramps, trails, seed): the road, terrain, scenery, pickups and obstacles are identical every time, and `world.test.ts` validates every shipped track (no overlapping corridors, no corner tighter than 35 m, ramps clear of gates). The engine is fixed-step and deterministic, and a test drives a whole two-lap race with a pure-pursuit driver.
@@ -212,7 +213,7 @@ RacingGame.tsx              menu -> countdown -> race -> results
 - **Rendering.** All geometry and textures are procedural (no downloads). Rocks, cacti, hay, tyres, posts, grass, mesas, signs, coins and gems are instanced; each car is merged to a handful of draw calls. One shadow light follows the player; DPR is capped at 2 (1.5 on phones, with a smaller shadow map). "Reduced motion" turns off camera tilt, shake and the speed FOV.
 - **Soundtrack.** "Throttle Thunder" is synthesized, not a recording: `lib/fx/metal/` plays a 16-bar, 168 BPM, E-minor loop (palm-muted gallop and chug riffs on double-tracked distorted guitars, bass, a double-kick drum kit, and a vibrato lead with echo in the second half). `score.ts` is the song as plain data (tested), `synth.ts` is the band, and `player.ts` schedules it 150 ms ahead so the groove holds while the race renders. It plays through the shared music bus, so the music toggle and volume apply, and it runs from the countdown through pause until you leave to the menu. Level is matched to the shop tracks (about -21.5 dB RMS, checked with an offline render). If you would rather ship a recorded track, drop it in `public/music`, add a `MusicTrackId`, and nothing else changes.
 - **Tradeoffs.** No physics engine (Rapier): the arcade model is deterministic, testable and easy to tune for children, and the repo's other games made the same call. Identity is the repo's nickname model: nothing is persisted yet, and when it is, it will share that model's caveat (nicknames are not authenticated).
-- **Still to come** (phases 3-7): four AI racers and a five-car race with ranks on the HUD, power-ups, rewards, avatars and server-side progress, the 3D garage, two more worlds and the other difficulty tiers, engine and skid audio, quality presets and a performance pass.
+- **Still to come** (phases 4–7): power-ups, rewards, avatars and server-side progress, the 3D garage, difficulty unlocks, engine and skid audio, quality presets and a performance pass. Tracked in [`ai/specs/racing/todos.md`](ai/specs/racing/todos.md).
 
 ## How the API is reached
 

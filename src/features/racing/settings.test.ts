@@ -19,3 +19,19 @@ describe("racing settings: the saved track", () => {
     expect(migrate(undefined).trackId).toBe(TRACKS[0].id);
   });
 });
+
+describe("racing settings: race or time trial", () => {
+  it("races the rivals by default", () => {
+    expect(useRacingSettings.getState().mode).toBe("rivals");
+    expect(migrate({}).mode).toBe("rivals");
+  });
+
+  it("keeps a saved time trial and keeps the rest of an older save", () => {
+    expect(migrate({ mode: "timeTrial" }).mode).toBe("timeTrial");
+    expect(migrate({ trackId: TRACKS[1].id, assist: "extra" })).toMatchObject({ trackId: TRACKS[1].id, assist: "extra", mode: "rivals" });
+  });
+
+  it("falls back to racing for anything unexpected", () => {
+    expect(migrate({ mode: "demolition-derby" }).mode).toBe("rivals");
+  });
+});

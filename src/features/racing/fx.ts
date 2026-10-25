@@ -1,15 +1,21 @@
 import { celebrate, fx } from "@/lib/fx";
+import { ordinal } from "./components/format";
 import type { RaceEngine } from "./engine/RaceEngine";
 import { useRacingHud } from "./useRacingHud";
 
+/** Overtakes closer together than this are rolled into one banner (side-by-side cars swap places a lot). */
+const PLACE_BANNER_GAP_MS = 1500;
+
 /**
- * Engine events -> sounds, haptics and short HUD banners. Returns the unbind
- * function. (Engine and tyre noise and the racing soundtrack arrive in the
+ * Engine events -> sounds, haptics and short HUD banners, for the player's car only
+ * (rivals make no noise). Also calls out each place gained or lost in a race. Returns
+ * the unbind function. (Engine and tyre noise and the racing soundtrack arrive in the
  * polish phase; these are the moment-to-moment cues.)
  */
 export function bindRacingFx(engine: RaceEngine): () => void {
   const flash = useRacingHud.getState().flash;
-  return engine.events.on((e) => {
+  const unbindEvents = engine.events.on((e) => {
+    if ("racer" in e && e.racer !== engine.playerIndex) return;
     switch (e.type) {
       case "countdown":
         fx.tick();
@@ -36,8 +42,8 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         break;
       case "finish":
         fx.fanfare();
-        flash("FINISH!", "green");
-        void celebrate(true);
+        flash(engine.race.count > 1 ? `FINISHED ${ordinal(e.place).toUpperCase()}!` : "FINISH!", "green");
+        void celebrate(e.place === 1);
         break;
       case "wall":
       case "bump":
@@ -72,4 +78,23 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         break;
     }
   });
+
+  let lastPlaceBanner = 0;
+  const unbindRank = useRacingHud.subscribe((now, before) => {
+    if (now.phase !== "racing" || before.phase !== "racing" || now.racers < 2 || now.rank === before.rank) return;
+    const t = performance.now();
+    if (t - lastPlaceBanner < PLACE_BANNER_GAP_MS) return;
+    lastPlaceBanner = t;
+    if (now.rank < before.rank) {
+      fx.good();
+      flash(now.rank === 1 ? "You're in the lead!" : `Up to ${ordinal(now.rank)}!`, "green");
+    } else {
+      flash(`Down to ${ordinal(now.rank)}`, "red");
+    }
+  });
+
+  return () => {
+    unbindEvents();
+    unbindRank();
+  };
 }

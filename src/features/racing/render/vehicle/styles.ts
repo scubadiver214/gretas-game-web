@@ -21,6 +21,15 @@ export interface VehicleStyle {
   shirt: string;
 }
 
+/** Which model a car is built from. Each has its own shape and size (see render/vehicle/rivals.ts). */
+export type CarBody = "fitzmagic" | "monster" | "bubble" | "formula" | "bus";
+
+/** Everything the renderer needs to draw one car. */
+export interface CarLook {
+  body: CarBody;
+  style: VehicleStyle;
+}
+
 /** The starter: a pearl-white hypercar with a glossy black nose, a gold roundel and the Fitzmagic logo down its flanks. */
 export const FITZMAGIC: VehicleStyle = {
   id: "fitzmagic",

@@ -20,8 +20,9 @@ import { Precipitation } from "./meshes/precip";
 import { THEMES, type WorldTheme } from "./theme";
 import { RacingTextures } from "./textures";
 import { buildFitzmagic } from "./vehicle/fitzmagic";
+import { buildRival } from "./vehicle/rivals";
 import type { VehicleVisual, VehicleVisualState } from "./vehicle/visual";
-import type { VehicleStyle } from "./vehicle/styles";
+import type { CarLook } from "./vehicle/styles";
 
 export interface RendererOptions {
   /** Read each frame, so the settings toggle takes effect immediately. */
@@ -80,6 +81,9 @@ export class RacingRenderer {
   private cameraWorld: CameraOptions["world"] | null = null;
   private engine: RaceEngine | null = null;
   private visuals: VehicleVisual[] = [];
+  private cars: readonly CarLook[] = [];
+  /** Every car built so far, by look: switching between a time trial and a race only shows and hides them. */
+  private readonly garage = new Map<string, VehicleVisual>();
   private water: Water | null = null;
   /** Animals that cross the road (driven by the engine). */
   private crossers: AnimalVisual[] = [];
@@ -176,24 +180,44 @@ export class RacingRenderer {
     });
   }
 
-  /** Starts drawing `engine`: one visual per car, in the given styles. */
-  attach(engine: RaceEngine, styles: readonly VehicleStyle[]): void {
+  /** Starts drawing `engine`. `cars[i]` is how car i looks: the player first, then the rivals in grid order. */
+  attach(engine: RaceEngine, cars: readonly CarLook[]): void {
     this.unsubscribe?.();
-    for (const v of this.visuals) this.scene.remove(v.root);
-    this.visuals = engine.vehicles.map((_, i) => {
-      const visual = buildFitzmagic(styles[i % styles.length], this.kit, this.textures);
-      this.scene.add(visual.root);
-      return visual;
-    });
+    this.engine = engine;
+    this.cars = cars;
+    this.syncCars();
     for (const a of this.crossers) this.scene.remove(a.root);
     this.crossers = engine.animals.map((a) => {
       const visual = buildAnimal(a.kind, this.kit);
       this.scene.add(visual.root);
       return visual;
     });
-    this.engine = engine;
     this.unsubscribe = engine.events.on((e) => this.onEvent(e));
     this.resetCamera();
+  }
+
+  /** New looks (the player changed colours): rebuilds only what changed. */
+  setCars(cars: readonly CarLook[]): void {
+    this.cars = cars;
+    if (this.engine) this.syncCars();
+  }
+
+  /** One visual per car in the engine, built once per look and reused after that. */
+  private syncCars(): void {
+    const engine = this.engine;
+    if (!engine) return;
+    for (const v of this.visuals) this.scene.remove(v.root);
+    this.visuals = engine.vehicles.map((_, i) => {
+      const look = this.cars[i] ?? this.cars[0];
+      const key = `${i}|${look.body}|${Object.values(look.style).join("|")}`;
+      let visual = this.garage.get(key);
+      if (!visual) {
+        visual = look.body === "fitzmagic" ? buildFitzmagic(look.style, this.kit, this.textures) : buildRival(look.body, look.style, this.kit);
+        this.garage.set(key, visual);
+      }
+      this.scene.add(visual.root);
+      return visual;
+    });
   }
 
   resize(width: number, height: number): void {
@@ -214,6 +238,7 @@ export class RacingRenderer {
     const calm = this.options.reducedMotion();
 
     // Cars.
+    if (this.visuals.length !== engine.vehicles.length) this.syncCars();
     for (let i = 0; i < this.visuals.length; i++) {
       const v = engine.vehicles[i];
       engine.pose(i, this.pose);
@@ -410,6 +435,7 @@ export class RacingRenderer {
     if (!engine || !track) return;
     switch (e.type) {
       case "reset":
+        this.syncCars();
         this.particles.clear();
         this.pickups?.reset(-1);
         this.resetCamera();

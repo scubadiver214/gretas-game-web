@@ -9,8 +9,12 @@ import { R } from "./hudStyle";
  * The course outline with the cars on it. The outline is drawn once into an
  * offscreen canvas; each frame only the dots move, so it costs next to nothing.
  */
-export default function Minimap({ engine, size }: { engine: RaceEngine; size: number }) {
+export default function Minimap({ engine, size, colors }: { engine: RaceEngine; size: number; colors: readonly string[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const colorsRef = useRef(colors);
+  useEffect(() => {
+    colorsRef.current = colors;
+  }, [colors]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,7 +89,7 @@ export default function Minimap({ engine, size }: { engine: RaceEngine; size: nu
         ctx.lineTo(-r * 0.4, 0);
         ctx.lineTo(-r * 0.75, -r * 0.7);
         ctx.closePath();
-        ctx.fillStyle = isPlayer ? R.pink : "#46a0ff";
+        ctx.fillStyle = colorsRef.current[i] ?? (isPlayer ? R.pink : "#46a0ff");
         ctx.fill();
         ctx.lineWidth = 2 * dpr;
         ctx.strokeStyle = "#fff";
