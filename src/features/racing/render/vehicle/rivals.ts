@@ -369,11 +369,12 @@ export function buildRival(body: Exclude<CarBody, "fitzmagic">, style: VehicleSt
     land: (impact) => animator.land(impact),
     update(s, dt) {
       root.position.set(s.x, s.y, s.z);
-      root.rotation.y = s.heading;
+      const wreckSpin = s.wrecked > 0 ? s.wrecked * s.wrecked * 3.4 : 0;
+      root.rotation.y = s.heading + wreckSpin;
       animator.update(dt, { accel: s.accel, yawRate: s.yawRate, speed: s.speed, grounded: s.grounded, vy: s.vy, slope: s.slope, bumpiness: s.bumpiness });
       shell.position.y = pivotY + animator.bounce;
-      shell.rotation.x = animator.pitch;
-      shell.rotation.z = animator.roll;
+      shell.rotation.x = animator.pitch + (s.wrecked > 0 ? 0.18 : 0);
+      shell.rotation.z = animator.roll + (s.wrecked > 0 ? Math.sin(s.wrecked * 16) * 0.35 : 0);
       driver.rotation.z = -animator.roll * 0.5;
       for (let i = 0; i < pivots.length; i++) {
         // Wheels map front-left, front-right, rear-left, rear-right onto the animator's four corners.

@@ -40,6 +40,10 @@ export interface VehicleState {
   wheelSpin: number;
   /** Counts down after a respawn; the renderer flickers the car while it runs. */
   grace: number;
+  /** Counts down after a wreck. While it is above zero the car stays where it crashed and cannot drive. */
+  wrecked: number;
+  /** Seconds of oil-slick slide still to come. */
+  oiled: number;
   stuckTime: number;
   wrongWayTime: number;
   /** Where this car is on the track (updated every step). */
@@ -72,6 +76,8 @@ export function createVehicle(id: number): VehicleState {
     braking: false,
     wheelSpin: 0,
     grace: 0,
+    wrecked: 0,
+    oiled: 0,
     stuckTime: 0,
     wrongWayTime: 0,
     query: newQuery(),
@@ -98,6 +104,8 @@ export function placeVehicle(v: VehicleState, x: number, z: number, heading: num
   v.driftCharge = 0;
   v.boosting = false;
   v.braking = false;
+  v.wrecked = 0;
+  v.oiled = 0;
   v.stuckTime = 0;
   v.wrongWayTime = 0;
   snapshot(v);

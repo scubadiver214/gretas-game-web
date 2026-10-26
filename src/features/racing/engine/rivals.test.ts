@@ -119,25 +119,25 @@ describe("racing the rivals", () => {
     expect(s.standings.find((x) => x.racer === 0)!.name).toBe("");
   });
 
-  it("keeps the pack close to a fast driver on the easiest track", () => {
+  it("keeps a flat-out driver in a fight on the easiest track", () => {
     const e = newRace({ assist: "helper" });
     goRacing(e);
     raceToTheEnd(e, () => ({ ...neutralControls(), throttle: 1 }));
     const s = e.summary();
-    expect(s.place).toBe(1);
+    const winner = s.standings[0].time!;
+    // Holding the gas, with steering help, finishes in the pack and off the win.
+    expect(s.place).toBeGreaterThan(1);
+    expect(s.timeSeconds - winner).toBeLessThan(8);
     const last = s.standings[s.standings.length - 1].time!;
-    expect(last - s.timeSeconds).toBeLessThan(40);
+    expect(last - winner).toBeLessThan(12);
   });
 
-  it("bumps the player without stopping them", () => {
+  it("does not let a flat-out driver drop the field on the opening sprint", () => {
     const e = newRace({ assist: "helper" });
-    const events: RaceEvent[] = [];
-    e.events.on((x) => events.push(x));
     goRacing(e);
-    runFor(e, 20, () => ({ ...neutralControls(), throttle: 1 }));
-    // Starting at the back means driving through the pack.
-    expect(events.some((x) => x.type === "bump" && x.racer === 0)).toBe(true);
-    expect(e.player.speed).toBeGreaterThan(15);
+    runFor(e, 22, () => ({ ...neutralControls(), throttle: 1 }));
+    expect(e.player.speed).toBeGreaterThan(25);
+    expect(e.hud().rank).toBeGreaterThan(1);
   });
 });
 
@@ -162,8 +162,7 @@ describe.each(TRACKS)("rivals on $name", (def) => {
     expect(events.filter((x) => x.type === "respawn" && x.racer > 0)).toHaveLength(0);
     const places = e.race.racers.map((r) => r.place).sort();
     expect(places).toEqual([1, 2, 3, 4, 5]);
-    // A close race: the field finishes within half a minute.
-    const times = e.race.racers.map((r) => r.finishTime!);
-    expect(Math.max(...times) - Math.min(...times)).toBeLessThan(30);
+    const rivalTimes = e.race.racers.slice(1).map((r) => r.finishTime!);
+    expect(Math.max(...rivalTimes) - Math.min(...rivalTimes)).toBeLessThan(18);
   });
 });

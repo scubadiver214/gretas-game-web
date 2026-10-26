@@ -1,5 +1,6 @@
 import { seededRng } from "@/lib/rng";
-import { ARCH, GRAVITY } from "../config";
+import { ARCH, GRAVITY, WEAPONS } from "../config";
+import type { WeaponKind } from "../types";
 import { TAU, angleDiff } from "../engine/math";
 import { PROFILES, type Scenery } from "./profile";
 import { createTerrain, type Terrain } from "./terrain";
@@ -85,9 +86,21 @@ export interface Scatter {
   signs: Placement[];
 }
 
+/** A weapon icon sitting on the road. Driving over it adds one charge. */
+export interface WeaponCrate {
+  id: number;
+  kind: WeaponKind;
+  x: number;
+  y: number;
+  z: number;
+  s: number;
+}
+
 export interface TrackContent {
   terrain: Terrain;
   collectibles: Collectible[];
+  /** Gun, mine and oil icons, in order along the road. */
+  weapons: WeaponCrate[];
   obstacles: Obstacle[];
   scatter: Scatter;
   animals: AnimalSpec[];
@@ -163,6 +176,26 @@ function buildCollectibles(track: Track): Collectible[] {
   return out;
 }
 
+/** Gun, mine and oil icons along the racing line, clear of the grid and of ramps. */
+function buildWeaponCrates(track: Track): WeaponCrate[] {
+  const out: WeaponCrate[] = [];
+  const L = track.length;
+  for (let s = 80; s < L - 40; s += WEAPONS.spacing) {
+    if (track.nearRamp(s, 18)) continue;
+    const lateral = (out.length % 2 === 0 ? -1 : 1) * 2.4;
+    const p = pointAt(track, s, lateral);
+    out.push({
+      id: out.length,
+      kind: WEAPONS.kinds[out.length % WEAPONS.kinds.length],
+      x: p.x,
+      y: track.heightAt(s) + 1.55,
+      z: p.z,
+      s,
+    });
+  }
+  return out;
+}
+
 /**
  * Everything placed on a track that is not the road itself: pickups, solid
  * obstacles and decorative scenery. Deterministic for a track (seeded), so
@@ -176,6 +209,7 @@ export function buildTrackContent(track: Track): TrackContent {
   const rand = (lo: number, hi: number) => lo + rng() * (hi - lo);
 
   const collectibles = buildCollectibles(track);
+  const weapons = buildWeaponCrates(track);
 
   // Obstacles from the definition.
   const obstacles: Obstacle[] = [];
@@ -301,5 +335,5 @@ export function buildTrackContent(track: Track): TrackContent {
     lastSign = s;
   }
 
-  return { terrain, collectibles, obstacles, scatter, animals, roamers };
+  return { terrain, collectibles, weapons, obstacles, scatter, animals, roamers };
 }

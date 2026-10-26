@@ -106,6 +106,7 @@ function Inner() {
       },
       onPause: () => engine.togglePause(),
       onReset: () => engine.respawn(),
+      onWeapon: (action) => engine.weaponAction(action),
     });
     const onHide = () => {
       if (document.hidden) engine.pause();
@@ -187,7 +188,9 @@ function Inner() {
       <RacingCanvas engine={engine} cars={cars} lowPower={touch} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
 
       {hudVisible && <RacingHud engine={engine} touch={touch} colors={CAR_COLORS} />}
-      {hudVisible && touch && (phase === "racing" || phase === "countdown" || phase === "finished") && <TouchControls onChange={onPad} onReset={() => engine.respawn()} autoGas={assist === "extra"} />}
+      {hudVisible && touch && (phase === "racing" || phase === "countdown" || phase === "finished") && (
+        <TouchControls onChange={onPad} onReset={() => engine.respawn()} onCycle={() => engine.weaponAction("next")} onFire={() => engine.weaponAction("fire")} autoGas={assist === "extra"} />
+      )}
 
       {hudVisible && phase !== "paused" && !resultsReady && (
         <IconButton

@@ -303,11 +303,13 @@ export function buildFitzmagic(style: VehicleStyle, kit: MeshKit, textures: Raci
     land: (impact) => animator.land(impact),
     update(s, dt) {
       root.position.set(s.x, s.y, s.z);
-      root.rotation.y = s.heading;
+      // Spin the body through the wreck. The sim heading stays on the road, so the camera does not whirl.
+      const wreckSpin = s.wrecked > 0 ? s.wrecked * s.wrecked * 3.4 : 0;
+      root.rotation.y = s.heading + wreckSpin;
       animator.update(dt, { accel: s.accel, yawRate: s.yawRate, speed: s.speed, grounded: s.grounded, vy: s.vy, slope: s.slope, bumpiness: s.bumpiness });
       body.position.y = PIVOT_Y + animator.bounce;
-      body.rotation.x = animator.pitch;
-      body.rotation.z = animator.roll;
+      body.rotation.x = animator.pitch + (s.wrecked > 0 ? 0.18 : 0);
+      body.rotation.z = animator.roll + (s.wrecked > 0 ? Math.sin(s.wrecked * 16) * 0.35 : 0);
       driver.rotation.z = -animator.roll * 0.8;
       driver.rotation.x = animator.pitch * -0.5;
       for (let i = 0; i < 4; i++) {

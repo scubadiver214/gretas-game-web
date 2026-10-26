@@ -88,7 +88,10 @@ export class AiDriver {
     const slipping = this.mistakeT > 0;
 
     this.dodge = damp(this.dodge, this.trafficShift(v, view), 3, dt);
-    let lane = p.lane + p.weave * Math.sin(this.clock * 0.31 + this.phase) + this.dodge;
+    // A rival just in front holds a tidy line so a pass has to be driven, not waited for.
+    const lead = view.gap < 0 ? -view.gap : 0;
+    const defending = lead > 0 && lead < AI.defendRange;
+    let lane = p.lane + (defending ? 0.35 : 1) * p.weave * Math.sin(this.clock * 0.31 + this.phase) + this.dodge;
     if (slipping) lane += this.mistakeSide * 0.35;
     lane = clamp(lane, -AI.maxLane, AI.maxLane);
 
@@ -102,27 +105,30 @@ export class AiDriver {
     const err = angleDiff(headingOf(ax - v.x, az - v.z), v.heading);
     out.steer = clamp(-err * 2.4, -1, 1);
 
-    // How fast: the tier's pace, this driver's temperament, and where the player is.
+    // How fast: the tier's pace and this driver's temperament. A short lead is defended
+    // at full pace; only a long lead eases off. Falling far behind still only reaches the car's own top speed.
     let pace = d.aiSpeedMultiplier * p.pace;
     const behind = view.gap > 0 ? clamp01(view.gap / AI.bandDistance) : 0;
     if (behind > 0) pace = lerp(pace, Math.max(pace, (d.aiSpeedMultiplier + AI.catchUp) * p.pace), behind);
-    else pace *= 1 - AI.easeOff * clamp01(-view.gap / AI.bandDistance);
+    else if (lead > AI.holdLead) pace *= 1 - AI.easeOff * clamp01((lead - AI.holdLead) / AI.bandDistance);
     if (view.finished) pace *= AI.cruise;
     if (slipping) pace *= 0.85;
     const top = view.params.maxSpeed * pace;
 
-    // Slow for the bend coming up; better drivers carry more speed through it.
+    // Slow for the bend coming up; better drivers carry more speed through it, and nobody parks for a corner.
     const turn = Math.abs(angleDiff(track.sample(q.s + 25 + speed * 0.8).heading, track.sample(q.s + 8).heading));
     const skill = clamp01(d.aiCorneringSkill + p.cornering + AI.catchUpCornering * behind);
-    const target = clamp(top - turn * lerp(58, 16, skill), 12, top);
+    const drop = turn * lerp(AI.cornerDropWide, AI.cornerDropTight, skill);
+    const target = clamp(top - drop, top * AI.cornerFloor, top);
 
     out.throttle = v.speed < target ? 1 : 0;
     out.brake = clamp((v.speed - target - 3) / 6, 0, 1);
     out.handbrake = false;
 
-    // Fire the boost to pass a player just ahead on a straight; keep it lit until the bend.
+    // Fire the boost to attack a player just ahead, or to cover one closing from behind.
     const straight = turn < AI.boostMaxTurn;
-    out.boost = !view.finished && straight && (v.boosting || (v.boost >= AI.boostAt && view.gap > 0 && view.gap < AI.boostRange && this.rng() < p.aggression * dt * 1.5));
+    const chasing = view.gap > 0 && view.gap < AI.boostRange;
+    out.boost = !view.finished && straight && (v.boosting || (v.boost >= AI.boostAt && (chasing || defending) && this.rng() < p.aggression * dt * 2.2));
     if (out.boost) {
       out.throttle = 1;
       out.brake = 0;

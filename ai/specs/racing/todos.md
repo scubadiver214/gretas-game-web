@@ -4,7 +4,7 @@ Open work only. Finished items belong in [phases.md](phases.md). Point at a phas
 
 ## Phase 4 — persistence and rewards
 
-- [ ] Power-ups beyond coins / gems / boost
+- [ ] Saved rewards beyond the road weapons from phase 3.3 (those are session ammo only: gun, mine, oil)
 - [ ] Reward engine (stars already exist locally in `score.ts`; they are not saved)
 - [ ] Avatars earned from racing
 - [ ] API + migration in `gretas-game-api` on a feature branch (tables in [plan.md](plan.md) §4)

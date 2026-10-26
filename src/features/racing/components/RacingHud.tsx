@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import type { SxProps, Theme } from "@mui/material/styles";
 import type { ReactNode } from "react";
 import type { RaceEngine } from "../engine/RaceEngine";
+import type { WeaponKind } from "../types";
 import { useRacingSettings } from "../settings";
 import { useRacingHud, type BannerTone } from "../useRacingHud";
 import { readClock, readSpeed } from "./format";
@@ -160,6 +161,35 @@ function Banner() {
 
 const corner: SxProps<Theme> = { position: "absolute", display: "flex", flexDirection: "column", gap: 1.1 };
 
+const WEAPON_LABEL: Record<WeaponKind, string> = { gun: "GUN", mine: "MINE", oil: "OIL" };
+const WEAPON_TINT: Record<WeaponKind, string> = { gun: "#ffb020", mine: "#ff5a5a", oil: "#7eb6ff" };
+
+/** The three weapons and how many charges of each you are holding. The selected one is lit. */
+function WeaponTray({ touch }: { touch: boolean }) {
+  const weapon = useRacingHud((s) => s.weapon);
+  const gun = useRacingHud((s) => s.gun);
+  const mine = useRacingHud((s) => s.mine);
+  const oil = useRacingHud((s) => s.oil);
+  const ammo: Record<WeaponKind, number> = { gun, mine, oil };
+  return (
+    <Box sx={{ position: "absolute", left: "50%", bottom: touch ? "auto" : "max(18px, env(safe-area-inset-bottom))", top: touch ? "max(58px, calc(env(safe-area-inset-top) + 48px))" : "auto", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 0.4 }}>
+      <Box sx={{ display: "flex", gap: 0.7 }}>
+        {(Object.keys(WEAPON_LABEL) as WeaponKind[]).map((kind, i) => {
+          const on = weapon === kind;
+          return (
+            <Box key={kind} sx={{ ...plate, px: touch ? 0.7 : 1.1, py: 0.35, minWidth: touch ? 58 : 78, textAlign: "center", outline: on ? `3px solid ${WEAPON_TINT[kind]}` : "3px solid transparent", opacity: ammo[kind] > 0 || on ? 1 : 0.55 }}>
+              <Typography sx={{ ...bigText, fontSize: touch ? "0.62rem" : "0.78rem", color: WEAPON_TINT[kind] }}>{WEAPON_LABEL[kind]}</Typography>
+              <Typography sx={{ ...bigText, fontSize: touch ? "0.95rem" : "1.15rem", lineHeight: 1 }}>{ammo[kind]}</Typography>
+              {!touch && <Typography sx={{ ...bigText, fontSize: "0.62rem", opacity: 0.7 }}>{i + 1}</Typography>}
+            </Box>
+          );
+        })}
+      </Box>
+      {!touch && <Typography sx={{ ...bigText, fontSize: "0.72rem", opacity: 0.85 }}>Q E switch · F fire</Typography>}
+    </Box>
+  );
+}
+
 /**
  * The racing HUD, laid out like the reference: coins and gems top left, lap and rank
  * down the left, clock and speed top right, the track map bottom left and the boost
@@ -175,6 +205,7 @@ export default function RacingHud({ engine, touch, colors }: { engine: RaceEngin
   const countdown = useRacingHud((s) => s.countdown);
   const wrongWay = useRacingHud((s) => s.wrongWay);
   const stuck = useRacingHud((s) => s.stuck);
+  const crashed = useRacingHud((s) => s.crashed);
   const simple = useRacingSettings((s) => s.simpleHud);
   const iconSize = touch ? 24 : 34;
 
@@ -233,11 +264,32 @@ export default function RacingHud({ engine, touch, colors }: { engine: RaceEngin
           <BoostMeter />
         </Box>
       )}
+      <WeaponTray touch={touch} />
 
       {countdown !== null && <Countdown n={countdown} />}
       <Banner />
 
-      {wrongWay && (
+      {crashed && (
+        <Typography
+          sx={{
+            ...bigText,
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "34%",
+            textAlign: "center",
+            fontSize: "clamp(2rem, 8vmin, 4.2rem)",
+            color: "#ffb020",
+            WebkitTextStroke: "7px rgba(40,22,0,0.8)",
+            paintOrder: "stroke fill",
+            animation: "racingCrash 420ms ease-in-out infinite alternate",
+            "@keyframes racingCrash": { from: { transform: "scale(1) rotate(-2deg)" }, to: { transform: "scale(1.06) rotate(2deg)" } },
+          }}
+        >
+          CRASH!
+        </Typography>
+      )}
+      {wrongWay && !crashed && (
         <Typography
           sx={{
             ...bigText,

@@ -78,7 +78,7 @@ function HoldButton({ id, label, onHold, size, color, children, ariaLabel }: { i
  * and boost on the right. Auto-gas (from the assist level) drops the gas pedal so
  * the littlest drivers only steer.
  */
-export default function TouchControls({ onChange, onReset, autoGas }: { onChange: (c: Controls) => void; onReset: () => void; autoGas: boolean }) {
+export default function TouchControls({ onChange, onReset, onCycle, onFire, autoGas }: { onChange: (c: Controls) => void; onReset: () => void; onCycle: () => void; onFire: () => void; autoGas: boolean }) {
   const held = useRef(new Set<ButtonId>());
   const boost = useRacingHud((s) => s.boost);
   const boosting = useRacingHud((s) => s.boosting);
@@ -128,6 +128,31 @@ export default function TouchControls({ onChange, onReset, autoGas }: { onChange
             </Box>
           </Box>
           {!autoGas && <HoldButton id="gas" label="GO" onHold={onHold} size={104} color="#2fb44a" ariaLabel="Accelerate" />}
+        </Box>
+      </Box>
+
+      <Box sx={{ position: "absolute", left: "50%", bottom: "max(18px, env(safe-area-inset-bottom))", transform: "translateX(-50%)", display: "flex", gap: 1.2 }}>
+        <Box
+          role="button"
+          aria-label="Next weapon"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onCycle();
+          }}
+          sx={{ ...plate, width: 78, height: 48, borderRadius: 999, display: "grid", placeItems: "center", touchAction: "none", ...bigText, fontSize: "0.85rem" }}
+        >
+          SWAP
+        </Box>
+        <Box
+          role="button"
+          aria-label="Fire weapon"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onFire();
+          }}
+          sx={{ ...plate, width: 78, height: 48, borderRadius: 999, display: "grid", placeItems: "center", touchAction: "none", ...bigText, fontSize: "0.85rem", color: "#ffb020" }}
+        >
+          FIRE
         </Box>
       </Box>
 

@@ -24,7 +24,7 @@ Conventions:
 ## 2. Module layout (`src/features/racing/`)
 
 ```
-config.ts                  title, fixed step, vehicle + camera + AI + traffic tuning
+config.ts                  title, fixed step, vehicle + camera + AI + crash + weapons tuning
 types.ts                   Controls, HudSnapshot, events, RaceSummary, Standing
 rivals.ts                  four computer cars: body, paint, handling, personality
 engine/
@@ -32,6 +32,7 @@ engine/
   difficulty.ts            5 DifficultyConfig tiers + assist presets
   ai.ts                    pure-pursuit computer driver
   camera.ts, RaceEngine.ts, input.ts, weather.ts
+  (bolts, mines and slicks live on RaceEngine; icons come from world/content.ts)
 world/                     spline track, terrain, content, five track defs
 render/
   RacingRenderer.ts
@@ -89,4 +90,4 @@ Full write-up: [phases.md](phases.md).
 - **Track corridor overlap.** Cars stay in the corridor; `validateTrack` forbids distant sections overlapping.
 - **Draw calls / triangles.** Repeated props are instanced; terrain is one mesh; shadow map follows the player.
 - **Visual identity.** App shell is neon arcade; racing uses gold-framed plates on its own screens.
-- **Pack-keeping.** Rivals speed up when far behind and ease off when far ahead, capped at their car's top speed. Skill still wins. Tuning: `config.ts` `AI`.
+- **Pack-keeping.** Rivals race near their car's real pace, defend a short lead, and only ease off once they are a long way ahead. Catch-up when they fall behind is still capped at the car's top speed. A hard hit (animal, car, roadside obstacle) wrecks a car in place; the boundary wall stays a bounce. Tuning: `config.ts` `AI` and `CRASH`.

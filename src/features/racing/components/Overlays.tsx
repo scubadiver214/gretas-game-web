@@ -57,7 +57,7 @@ export function PauseOverlay({ onResume, onRestart, onQuit, touch }: { onResume:
         </Stack>
         {!touch && (
           <Typography sx={{ color: "rgba(255,255,255,0.75)", mt: 2, fontSize: "0.95rem" }}>
-            W A S D or arrows to drive · Space drifts · Shift boosts · R resets · Esc pauses
+            W A S D or arrows to drive · Q E or 1 2 3 weapons · F fires · Space drifts · Shift boosts · R resets · Esc pauses
           </Typography>
         )}
       </Box>

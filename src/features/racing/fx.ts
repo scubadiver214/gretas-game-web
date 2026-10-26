@@ -65,6 +65,26 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         fx.whoosh();
         flash(e.auto ? "Back on the road!" : "Reset!", "blue");
         break;
+      case "crash":
+        fx.crash();
+        break;
+      case "weaponPickup":
+        fx.ding();
+        flash(`+ ${e.kind.toUpperCase()}`, "gold");
+        break;
+      case "weaponFire":
+        fx.whoosh();
+        break;
+      case "weaponEmpty":
+        flash("Empty!", "red");
+        break;
+      case "weaponHit":
+        if (e.shooter === engine.playerIndex || e.target === engine.playerIndex) fx.crash();
+        break;
+      case "oil":
+        fx.whoosh();
+        flash("Slippery!", "blue");
+        break;
       case "reset":
         useRacingHud.setState({ banner: null });
         break;

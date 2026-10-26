@@ -354,7 +354,7 @@ export default function MainMenu({
         </Collapse>
 
         <Typography sx={{ color: "rgba(255,255,255,0.92)", fontSize: "0.95rem", textAlign: { xs: "center", md: "left" }, textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
-          {touch ? "Use the arrow pads to steer and GO to race!" : "W A S D or arrow keys to drive · Space drifts · Shift boosts · R resets · Esc pauses"}
+          {touch ? "Steer, GO, and tap FIRE. SWAP changes weapon." : "W A S D or arrows to drive · Q E or 1 2 3 weapons · F fires · Space drifts · Shift boosts · R resets · Esc pauses"}
         </Typography>
       </Stack>
     </Box>

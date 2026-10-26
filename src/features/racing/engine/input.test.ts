@@ -65,8 +65,9 @@ describe("bindKeyboard", () => {
     const onControls = vi.fn();
     const onPause = vi.fn();
     const onReset = vi.fn();
-    const unbind = bindKeyboard(win as unknown as Window, { onControls, onPause, onReset });
-    return { win, onControls, onPause, onReset, unbind };
+    const onWeapon = vi.fn();
+    const unbind = bindKeyboard(win as unknown as Window, { onControls, onPause, onReset, onWeapon });
+    return { win, onControls, onPause, onReset, onWeapon, unbind };
   }
 
   it("publishes controls as keys go down and up", () => {
@@ -84,8 +85,8 @@ describe("bindKeyboard", () => {
     win.fire("keydown", { code: "KeyW" });
     onControls.mockClear();
     win.fire("keydown", { code: "KeyW", repeat: true });
-    win.fire("keydown", { code: "KeyQ" });
-    win.fire("keyup", { code: "KeyQ" });
+    win.fire("keydown", { code: "KeyZ" });
+    win.fire("keyup", { code: "KeyZ" });
     expect(onControls).not.toHaveBeenCalled();
   });
 
@@ -102,7 +103,8 @@ describe("bindKeyboard", () => {
     const { win } = setup();
     expect(win.fire("keydown", { code: "Space" }).defaultPrevented).toBe(true);
     expect(win.fire("keydown", { code: "ArrowDown" }).defaultPrevented).toBe(true);
-    expect(win.fire("keydown", { code: "KeyQ" }).defaultPrevented).toBe(false);
+    expect(win.fire("keydown", { code: "KeyZ" }).defaultPrevented).toBe(false);
+    expect(win.fire("keydown", { code: "KeyF" }).defaultPrevented).toBe(true);
   });
 
   it("lets go of everything when the window loses focus", () => {
@@ -115,6 +117,19 @@ describe("bindKeyboard", () => {
     onControls.mockClear();
     win.fire("blur");
     expect(onControls).not.toHaveBeenCalled();
+  });
+
+  it("sends Q, E, 1-3 and F to the weapon handler without steering", () => {
+    const { win, onWeapon, onControls } = setup();
+    win.fire("keydown", { code: "KeyQ" });
+    win.fire("keydown", { code: "KeyE" });
+    win.fire("keydown", { code: "Digit2" });
+    win.fire("keydown", { code: "KeyF" });
+    expect(onWeapon.mock.calls.map((c) => c[0])).toEqual(["prev", "next", "mine", "fire"]);
+    expect(onControls).not.toHaveBeenCalled();
+    onWeapon.mockClear();
+    win.fire("keydown", { code: "KeyF", repeat: true });
+    expect(onWeapon).not.toHaveBeenCalled();
   });
 
   it("unbinds cleanly and leaves the car with neutral controls", () => {

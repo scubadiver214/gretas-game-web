@@ -4,10 +4,10 @@ import { clamp01 } from "./math";
  * Difficulty is data. Each tier changes how fast and how well the AI drives,
  * how forgiving collisions are, how much steering help the player gets by
  * default, how many obstacles a track carries and how generous rewards are.
- * The AI's base speed is a fixed fraction of its car's top speed; the only
- * pack-keeping is in engine/ai.ts (config AI): rivals far behind speed up to
- * at most their car's top speed, rivals far ahead ease off, so a race always
- * looks close but driving well still wins.
+ * The AI's base speed is a fixed fraction of its car's top speed, close to what
+ * the car can actually do. Pack-keeping in engine/ai.ts only adds a little when
+ * a rival is far behind (never past the car's top speed) and eases off only a
+ * long lead, so passing one takes a real run.
  */
 export interface DifficultyConfig {
   tier: number;
@@ -30,11 +30,11 @@ export interface DifficultyConfig {
 }
 
 export const DIFFICULTY_TIERS: readonly DifficultyConfig[] = [
-  { tier: 1, name: "Rookie Racers", aiSpeedMultiplier: 0.7, aiCorneringSkill: 0.45, aiMistakeFrequency: 6, steeringAssist: 0.75, collisionPenalty: 0.35, obstacleDensity: 0.35, rewardMultiplier: 1, gateScale: 1.6 },
-  { tier: 2, name: "Speedy Starters", aiSpeedMultiplier: 0.78, aiCorneringSkill: 0.55, aiMistakeFrequency: 4.5, steeringAssist: 0.55, collisionPenalty: 0.5, obstacleDensity: 0.6, rewardMultiplier: 1.15, gateScale: 1.4 },
-  { tier: 3, name: "Turbo Racers", aiSpeedMultiplier: 0.86, aiCorneringSkill: 0.68, aiMistakeFrequency: 3, steeringAssist: 0.35, collisionPenalty: 0.7, obstacleDensity: 0.85, rewardMultiplier: 1.35, gateScale: 1.2 },
-  { tier: 4, name: "Super Speedsters", aiSpeedMultiplier: 0.93, aiCorneringSkill: 0.8, aiMistakeFrequency: 1.8, steeringAssist: 0.2, collisionPenalty: 0.85, obstacleDensity: 1, rewardMultiplier: 1.6, gateScale: 1.05 },
-  { tier: 5, name: "Fitz Champions", aiSpeedMultiplier: 1, aiCorneringSkill: 0.92, aiMistakeFrequency: 0.8, steeringAssist: 0.08, collisionPenalty: 1, obstacleDensity: 1.2, rewardMultiplier: 2, gateScale: 0.95 },
+  { tier: 1, name: "Rookie Racers", aiSpeedMultiplier: 0.94, aiCorneringSkill: 0.78, aiMistakeFrequency: 2.4, steeringAssist: 0.75, collisionPenalty: 0.35, obstacleDensity: 0.35, rewardMultiplier: 1, gateScale: 1.6 },
+  { tier: 2, name: "Speedy Starters", aiSpeedMultiplier: 0.96, aiCorneringSkill: 0.84, aiMistakeFrequency: 1.7, steeringAssist: 0.55, collisionPenalty: 0.5, obstacleDensity: 0.6, rewardMultiplier: 1.15, gateScale: 1.4 },
+  { tier: 3, name: "Turbo Racers", aiSpeedMultiplier: 0.98, aiCorneringSkill: 0.89, aiMistakeFrequency: 1.15, steeringAssist: 0.35, collisionPenalty: 0.7, obstacleDensity: 0.85, rewardMultiplier: 1.35, gateScale: 1.2 },
+  { tier: 4, name: "Super Speedsters", aiSpeedMultiplier: 0.99, aiCorneringSkill: 0.93, aiMistakeFrequency: 0.65, steeringAssist: 0.2, collisionPenalty: 0.85, obstacleDensity: 1, rewardMultiplier: 1.6, gateScale: 1.05 },
+  { tier: 5, name: "Fitz Champions", aiSpeedMultiplier: 1, aiCorneringSkill: 0.97, aiMistakeFrequency: 0.3, steeringAssist: 0.08, collisionPenalty: 1, obstacleDensity: 1.2, rewardMultiplier: 2, gateScale: 0.95 },
 ];
 
 export const MAX_TIER = DIFFICULTY_TIERS.length;

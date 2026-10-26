@@ -1,4 +1,4 @@
-import { neutralControls, type Controls } from "../types";
+import { neutralControls, type Controls, type WeaponAction } from "../types";
 import { clamp } from "./math";
 
 /** Pure mapping from the set of held keys (KeyboardEvent.code) to controls. */
@@ -26,10 +26,21 @@ export function mergeControls(a: Controls, b: Controls): Controls {
 
 const GAME_KEYS = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "ShiftLeft", "ShiftRight", "Escape", "KeyR"]);
 
+/** Q/E cycle, 1/2/3 pick a weapon, F uses it. */
+const WEAPON_KEYS: Record<string, WeaponAction> = {
+  KeyQ: "prev",
+  KeyE: "next",
+  Digit1: "gun",
+  Digit2: "mine",
+  Digit3: "oil",
+  KeyF: "fire",
+};
+
 export interface KeyboardHandlers {
   onControls: (c: Controls) => void;
   onPause: () => void;
   onReset: () => void;
+  onWeapon: (action: WeaponAction) => void;
 }
 
 /**
@@ -41,6 +52,12 @@ export function bindKeyboard(target: Window, h: KeyboardHandlers): () => void {
   const pressed = new Set<string>();
   const publish = () => h.onControls(controlsFromKeys(pressed));
   const down = (e: KeyboardEvent) => {
+    const weapon = WEAPON_KEYS[e.code];
+    if (weapon) {
+      e.preventDefault();
+      if (!e.repeat) h.onWeapon(weapon);
+      return;
+    }
     if (!GAME_KEYS.has(e.code)) return;
     e.preventDefault();
     if (e.repeat) return;

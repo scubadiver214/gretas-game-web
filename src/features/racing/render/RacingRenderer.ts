@@ -12,6 +12,7 @@ import { PROFILES } from "../world/profile";
 import { buildAnimal, type AnimalVisual } from "./meshes/animals";
 import { buildArch } from "./meshes/arch";
 import { Pickups } from "./meshes/pickups";
+import { WeaponProps } from "./meshes/weapons";
 import { buildProps } from "./meshes/props";
 import { Sky } from "./meshes/sky";
 import { buildRamps, buildRoad, buildStartLine, buildTerrain, buildWater, type Water } from "./meshes/world";
@@ -66,6 +67,7 @@ export class RacingRenderer {
     braking: false,
     boosting: false,
     grace: 0,
+    wrecked: 0,
     time: 0,
   };
   private readonly target: CameraTarget = { x: 0, y: 0, z: 0, heading: 0, speed: 0, yawRate: 0, boosting: false };
@@ -78,6 +80,7 @@ export class RacingRenderer {
   private readonly stormFog = new Color();
   private readonly fogColor = new Color();
   private pickups: Pickups | null = null;
+  private weapons: WeaponProps | null = null;
   private cameraWorld: CameraOptions["world"] | null = null;
   private engine: RaceEngine | null = null;
   private visuals: VehicleVisual[] = [];
@@ -158,6 +161,8 @@ export class RacingRenderer {
     for (const gate of track.checkpoints) this.scene.add(buildArch(gate, gate.index === 0 ? "start" : "gate", this.kit, this.textures));
     this.pickups = new Pickups(content.collectibles, this.kit, this.textures);
     this.scene.add(this.pickups.group);
+    this.weapons = new WeaponProps(content.weapons, this.kit);
+    this.scene.add(this.weapons.group);
     if (theme.snowfall) {
       this.precip = new Precipitation(this.kit, this.textures, "snow");
       this.scene.add(this.precip.points);
@@ -259,6 +264,7 @@ export class RacingRenderer {
       s.braking = v.braking;
       s.boosting = v.boosting;
       s.grace = v.grace;
+      s.wrecked = v.wrecked;
       s.time = engine.clock;
       this.visuals[i].update(s, simDt);
     }
@@ -296,6 +302,7 @@ export class RacingRenderer {
     this.water?.update(this.time);
 
     this.pickups?.update(this.time, this.camera.position.x, this.camera.position.y, this.camera.position.z);
+    if (this.weapons && engine) this.weapons.update(this.time, engine);
     this.sky?.update(simDt, this.camera.position.x, this.camera.position.z);
     this.applyWeather(engine, calm);
     this.precip?.update(simDt, this.camera.position.x, this.camera.position.y, this.camera.position.z, calm, engine.weather.intensity);
@@ -438,6 +445,7 @@ export class RacingRenderer {
         this.syncCars();
         this.particles.clear();
         this.pickups?.reset(-1);
+        this.weapons?.reset();
         this.resetCamera();
         break;
       case "coin":
@@ -450,6 +458,18 @@ export class RacingRenderer {
       case "coinsReset":
         this.pickups?.reset(this.time);
         break;
+      case "weaponPickup":
+        this.weapons?.collect(e.id);
+        break;
+      case "weaponsReset":
+        this.weapons?.reset();
+        break;
+      case "weaponHit": {
+        const v = engine.vehicles[e.target];
+        this.particles.sparkle(v.x, v.y + 1.2, v.z, e.kind === "gun" ? "#ffb020" : "#ff5a5a", 16);
+        if (e.target === engine.playerIndex) this.chase.kick(0.45);
+        break;
+      }
       case "checkpoint": {
         const g = track.checkpoints[e.index];
         this.particles.sparkle(g.x, 5, g.z, "#41c9ff", 22);
@@ -481,6 +501,13 @@ export class RacingRenderer {
       case "boostStart":
         if (e.racer === engine.playerIndex) this.chase.kick(0.2);
         break;
+      case "crash": {
+        const v = engine.vehicles[e.racer];
+        this.particles.ring(v.x, v.y, v.z, "#e7d3a1", 16);
+        this.particles.sparkle(v.x, v.y + 1.1, v.z, "#ffe08a", 20);
+        if (e.racer === engine.playerIndex) this.chase.kick(0.72);
+        break;
+      }
       case "respawn": {
         this.particles.sparkle(engine.vehicles[e.racer].x, 1.5, engine.vehicles[e.racer].z, "#ffffff", 14);
         if (e.racer === engine.playerIndex) {

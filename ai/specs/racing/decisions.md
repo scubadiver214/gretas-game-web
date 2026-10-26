@@ -28,6 +28,22 @@ flowchart TD
 
 ## Log
 
+### 2026-10-25 — Road weapons
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-35 | Three toy weapons — a blaster bolt, a pop mine, an oil puddle — sit on the road as icons. Drive over one to gain a charge (max 5) and select it. Q/E or 1/2/3 select, F fires. Touch gets SWAP and FIRE | The player asked to grab weapons off the road and switch them with keys. Rivals stay fast, so this is how you catch them | A weapon wheel, mouse aiming, realistic guns |
+| R-36 | A bolt or an armed mine wrecks the car it touches (same in-place restart as a crash). A mine cannot go off for 0.45 s, so dropping it does not blow you up. Oil only cuts grip. Rivals do not pick up or fire | The same wreck already exists, and a child should not die to their own mine the instant they drop it. Computer cars stay a driving fight | Damage numbers, rivals that shoot back, oil that wrecks |
+| R-37 | Ammo survives a crash and a new lap. The icons come back each lap, like coins. The boundary wall is still not a crash | You should keep what you grabbed. A lap should restock the road, not empty your pockets | Losing ammo on a wreck; icons that never return |
+
+### 2026-10-25 — Crashes and a closer pack
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-32 | A wreck restarts the car **where it crashed** (about 4 m back, on the road, facing forward) | The player asked to restart at the crash, and a car left inside a cactus or an animal cannot drive | Teleport to the last gate (that stays the R / stuck rescue); leaving the car embedded in the thing it hit |
+| R-33 | Only a **major** hit wrecks: animal or roadside obstacle at 9 u/s, car-to-car at 12 u/s. The boundary wall stays a bounce. Helper and Super helper need a harder hit and sit for less time | A nudge or a brush of the barrier would wreck a child every corner. A head-on or a fast hit into a hay bale, cactus, animal or another car should stop the race for a moment | Wrecking on every contact; wrecking on the corridor wall; the same sit time for a four-year-old and a pro |
+| R-34 | Rivals race near their own top speed, carry speed through bends, and defend a short lead. They ease off only after a 110 m gap | Holding the gas walked past the whole field, because tier 1 ran them at 70% and any lead made them slow down | Making a rival faster than Fitzmagic can boost past; uncapped rubber-banding; leaving the old ease-off in place |
+
 ### 2026-10-25 — Phase 3 rivals
 
 | ID | Decision | Why | Rejected |

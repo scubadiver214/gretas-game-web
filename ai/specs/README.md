@@ -1,6 +1,6 @@
 # Feature specs
 
-This folder is the coding agent's log for every game. Architecture, phases, decisions, leftover work and bugs live here so a later session does not have to reconstruct them from chat.
+This folder is the coding agent's log for every change in this workspace, games and otherwise. Architecture, phases, decisions, leftover work and bugs live here so a later session does not have to reconstruct them from chat.
 
 Workspace Cursor rule: `.cursor/rules/feature-specs.mdc` (always apply).
 
@@ -54,7 +54,9 @@ When you add a phase, give it a number, a one-line goal, a done checklist, and a
 
 ## Agent rules (short)
 
-- Read the feature folder before changing that game.
+The always-on Cursor rule is `.cursor/rules/feature-specs.mdc`. It applies to every change an agent makes, not only game features. Widened on 2026-10-25: a shared component, a bugfix, config or a rule gets the same log as a game.
+
+- Read the feature folder before changing that code. Create a slug folder if the change has no home yet.
 - Write decisions, phase progress, todos and bugs here in the same session as the code.
 - Do not leave the only copy of a decision in chat.
 - Do not invent a second spec location. If you find an old doc, point it here.

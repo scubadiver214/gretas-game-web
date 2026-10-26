@@ -86,6 +86,12 @@ export interface VehicleParams {
 
 export type RacePhase = "ready" | "countdown" | "racing" | "finished" | "paused";
 
+/** A toy weapon picked up off the road. */
+export type WeaponKind = "gun" | "mine" | "oil";
+
+/** Keyboard (and touch) weapon commands. `fire` uses the selected weapon. */
+export type WeaponAction = "prev" | "next" | WeaponKind | "fire";
+
 export type RaceEvent =
   | { type: "reset" }
   | { type: "countdownStart" }
@@ -105,6 +111,13 @@ export type RaceEvent =
   | { type: "driftStart"; racer: number }
   | { type: "driftEnd"; racer: number; charge: number }
   | { type: "respawn"; racer: number; auto: boolean }
+  | { type: "crash"; racer: number }
+  | { type: "weaponPickup"; id: number; kind: WeaponKind; ammo: number; racer: number }
+  | { type: "weaponFire"; kind: WeaponKind; ammo: number; racer: number }
+  | { type: "weaponEmpty"; kind: WeaponKind }
+  | { type: "weaponHit"; shooter: number; target: number; kind: "gun" | "mine" }
+  | { type: "oil"; racer: number }
+  | { type: "weaponsReset" }
   | { type: "coinsReset" }
   | { type: "paused" }
   | { type: "resumed" }
@@ -126,6 +139,13 @@ export interface HudSnapshot {
   boosting: boolean;
   wrongWay: boolean;
   stuck: boolean;
+  /** The player is sitting out a wreck and cannot drive yet. */
+  crashed: boolean;
+  /** Weapon currently selected. */
+  weapon: WeaponKind;
+  gun: number;
+  mine: number;
+  oil: number;
   /** Set once the player has crossed the line. */
   finishedPlace: number | null;
   /** The finish has had its moment: show the results card. */

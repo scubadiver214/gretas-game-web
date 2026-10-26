@@ -21,6 +21,8 @@ export interface VehicleVisualState {
   boosting: boolean;
   /** Seconds of respawn flicker remaining. */
   grace: number;
+  /** Seconds of wreck remaining. The body spins; the chase camera keeps the road heading. */
+  wrecked: number;
   /** Clock for flutter and flicker. */
   time: number;
 }

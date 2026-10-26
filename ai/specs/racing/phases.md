@@ -92,6 +92,35 @@ All tracks open from first launch (no unlocks; those stay in Phase 4/6).
 
 **Browser verification:** menu shows both modes and names the four rivals; Play puts five distinct cars on the desert grid (rank 5/5); gas-only Helper can take 1st; results card lists order; time trial empties the grid; alpine grid still shows all four bodies.
 
+### 3.2 Crashes and a closer pack (2026-10-25)
+
+**Goal.** A major hit wrecks a car where it happened, and the rivals are hard to pass by just holding the gas.
+
+**What shipped**
+
+- `CRASH` in `config.ts`. A closing speed of 9 u/s into an animal or a roadside obstacle, or 12 u/s into another car, wrecks the car. A slower nudge stays a bump. The boundary wall still only bounces.
+- The wrecked car is set a few metres back along the road, in its lane, facing forward, speed 0. It sits (`recoverSeconds`, shorter for Helper / Super helper, shorter still for rivals), then has to drive again. That is not a checkpoint reset. `R` still returns to the last gate.
+- HUD shows **CRASH!** while the player is sitting. The body spins; the chase camera keeps the road heading. Dust burst and the crash cue play for the player.
+- Rivals run near their cars' real pace (tier 1 AI speed 0.94, much less corner dumping, fewer mistakes). They defend a lead inside 50 m with a tidy line and a boost, and only ease off after a 110 m lead.
+- Desert, gas-only Helper: about 3rd, a second off the win, the whole field inside a few seconds. After 22 s they are still not in the lead.
+
+**Verified.** `engine/crash.test.ts` (obstacle, animal, head-on, slow nudge, wall). `engine/rivals.test.ts`: gas-only Helper finishes off the win and inside 8 s; rank is still behind after a 22 s sprint; every track's rivals finish in the corridor with no gate rescue and within 18 s of each other.
+
+**Browser (embedded Chromium, `/play/racing`).** Desert, Pro, Race rivals: still 5/5 at 35 s while the car was off in the sand (rivals not left behind). Jungle, Super helper: held ~85 MPH in 5th for the first 12 s, then **CRASH!** and speed 0; about a second later the banner was gone, lap was still 1 of 2, the clock had kept running, and speed was back over 80 MPH. Restart was at the crash, not the last gate.
+
+### 3.3 Weapons
+
+**Goal.** During a race, gun, mine and oil icons lie on the road. Drive over one to pick it up. Switch weapons and fire them with the keyboard (and with on-screen buttons).
+
+- Icons every 150 m along the road, clear of ramps. Driving over one adds a charge (max 5) and selects it. They come back on the next lap. Ammo is kept through a crash and a new lap.
+- Q / E cycle, 1 / 2 / 3 select gun / mine / oil, F fires. Touch: SWAP and FIRE. The HUD tray shows all three counts, with the selected one lit.
+- A blaster bolt wrecks the first other car it reaches. A mine dropped behind the car arms after 0.45 s, then wrecks whoever drives over it. An oil puddle only makes the car slide. Rivals can be hit. They do not pick up or fire.
+- The wreck is the same in-place restart as phase 3.2. The shooter does not crash from their own bolt.
+
+**Verified.** `engine/weapons.test.ts` (pickup, cycle, empty fire, bolt, mine arm, oil). `world/content.test.ts` includes the icons in the determinism check and keeps them on the road, off ramps. `engine/input.test.ts` covers Q, E, 1–3 and F. Full racing suite: 343 tests. `tsc --noEmit` clean.
+
+**Browser (embedded Chromium, `/play/racing`, desert, Super helper).** The tray showed GUN / MINE / OIL at 0 with "Q E switch · F fire". By 14 s the car had driven over icons and the tray read gun 1, mine 1. F dropped the mine (count went to 0 and a red mine sat on the road behind the car). 1 then F fired the gun (count went to 0). A further F flashed "Empty!". The pause card lists the weapon keys.
+
 ---
 
 ## Phase 4 — collectibles, rewards, persistence

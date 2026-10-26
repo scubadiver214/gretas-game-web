@@ -24,6 +24,11 @@ const initial: HudSnapshot = {
   boosting: false,
   wrongWay: false,
   stuck: false,
+  crashed: false,
+  weapon: "gun",
+  gun: 0,
+  mine: 0,
+  oil: 0,
   finishedPlace: null,
   resultsReady: false,
 };

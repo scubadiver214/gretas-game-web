@@ -1,6 +1,6 @@
 import { Emitter } from "@/lib/game/events";
-import { AI, BUGGY, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS } from "../config";
-import { neutralControls, type Controls, type HudSnapshot, type RaceEvent, type RacePhase, type RaceSummary, type VehicleParams } from "../types";
+import { AI, BUGGY, CRASH, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS, WEAPONS } from "../config";
+import { neutralControls, type Controls, type HudSnapshot, type RaceEvent, type RacePhase, type RaceSummary, type VehicleParams, type WeaponAction, type WeaponKind } from "../types";
 import type { AnimalSpec, Collectible, Obstacle, TrackContent } from "../world/content";
 import { SpatialGrid } from "../world/spatial";
 import type { AnimalKind, Track } from "../world/track";
@@ -73,6 +73,35 @@ export interface AnimalPose {
   running: boolean;
 }
 
+/** A blaster bolt flying in a straight line. */
+export interface Bolt {
+  owner: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vz: number;
+  life: number;
+}
+
+/** A mine waiting on the road. `arm` counts down before it can go off. */
+export interface LaidMine {
+  owner: number;
+  x: number;
+  y: number;
+  z: number;
+  arm: number;
+  life: number;
+}
+
+/** An oil puddle. Cars that drive through it slide. */
+export interface Slick {
+  x: number;
+  y: number;
+  z: number;
+  life: number;
+}
+
 export function newRenderPose(): RenderPose {
   return { x: 0, y: 0, z: 0, heading: 0, steer: 0, wheelSpin: 0 };
 }
@@ -113,6 +142,16 @@ export class RaceEngine {
   rivals: readonly RivalSetup[] = [];
   /** 1 once a collectible has been picked up this lap, indexed by Collectible.id. */
   readonly collected: Uint8Array;
+  /** Charges of each toy weapon. */
+  readonly ammo: Record<WeaponKind, number> = { gun: 0, mine: 0, oil: 0 };
+  /** The weapon F (or the fire button) will use. */
+  weapon: WeaponKind = "gun";
+  /** Blaster bolts in the air. */
+  readonly shots: Bolt[] = [];
+  /** Mines sitting on the road. */
+  readonly mines: LaidMine[] = [];
+  /** Oil puddles on the road. */
+  readonly slicks: Slick[] = [];
   readonly params: VehicleParams;
   readonly playerIndex = 0;
   /** Animals that cross the road. */
@@ -159,6 +198,8 @@ export class RaceEngine {
   private readonly nearObstacles: Obstacle[] = [];
   private readonly nearPickups: Collectible[] = [];
   private readonly nearAnimals: Obstacle[] = [];
+  /** 1 once a weapon icon has been picked up this lap. */
+  private readonly crateTaken: Uint8Array;
   private readonly vertical: VerticalResult = { takeoff: false, landed: false, impact: 0 };
   private readonly onProgress = (e: ProgressEvent) => this.handleProgress(e);
   private hudListener: ((hud: HudSnapshot) => void) | null = null;
@@ -175,6 +216,7 @@ export class RaceEngine {
     this.playerSlot = opts.playerSlot;
     this.aiView = { track, params: this.params, difficulty: this.difficulty, gap: 0, finished: false, cars: this.vehicles, radii: this.radii, self: 0 };
     this.collected = new Uint8Array(content.collectibles.length);
+    this.crateTaken = new Uint8Array(content.weapons.length);
     for (const o of content.obstacles) this.obstacleGrid.insert(o);
     for (const c of content.collectibles) this.pickupGrid.insert(c);
     for (const spec of content.animals) {
@@ -237,6 +279,7 @@ export class RaceEngine {
     this.weather = this.weatherPlan.at(0);
     this.controls = neutralControls();
     this.collected.fill(0);
+    this.clearWeapons();
     for (const d of this.drivers) d?.reset();
     this.placeAll();
     this.placeAnimals();
@@ -391,6 +434,11 @@ export class RaceEngine {
       boosting: p.boosting,
       wrongWay: this.wrongWay,
       stuck: this.stuck,
+      crashed: p.wrecked > 0,
+      weapon: this.weapon,
+      gun: this.ammo.gun,
+      mine: this.ammo.mine,
+      oil: this.ammo.oil,
       finishedPlace: r.place,
       resultsReady: this.resultsReady,
     };
@@ -405,7 +453,7 @@ export class RaceEngine {
   private pushHud(): void {
     if (!this.hudListener) return;
     const h = this.hud();
-    const key = `${h.phase}|${h.countdown}|${h.lap}|${h.rank}|${h.coins}|${h.gems}|${h.boost}|${h.boosting}|${h.wrongWay}|${h.stuck}|${h.finishedPlace}|${h.resultsReady}`;
+    const key = `${h.phase}|${h.countdown}|${h.lap}|${h.rank}|${h.coins}|${h.gems}|${h.boost}|${h.boosting}|${h.wrongWay}|${h.stuck}|${h.crashed}|${h.weapon}|${h.gun}|${h.mine}|${h.oil}|${h.finishedPlace}|${h.resultsReady}`;
     if (key === this.lastHudKey) return;
     this.lastHudKey = key;
     this.hudListener(h);
@@ -541,7 +589,7 @@ export class RaceEngine {
     if (hit > 0) {
       for (const a of this.animals) if (a.phase === "cross" && Math.hypot(a.x - v.x, a.z - v.z) < a.spec.r + radius + 0.5) a.spooked = true;
     }
-    if (hit > 1.2) this.emitHit("bump", i, hit);
+    this.noteSolid(i, hit);
   }
 
   private step(dt: number): void {
@@ -567,6 +615,7 @@ export class RaceEngine {
     this.stepAnimals(dt);
     for (let i = 0; i < this.vehicles.length; i++) this.stepVehicle(i, dt);
     if (this.vehicles.length > 1) this.resolveTraffic();
+    this.stepWeapons(dt);
     if (this.phase === "finished") {
       this.finishedFor += dt;
       if (!this.resultsReady && this.finishedFor >= RACE.resultsDelaySeconds) this.resultsReady = true;
@@ -625,6 +674,11 @@ export class RaceEngine {
     const q = v.query;
     snapshot(v);
 
+    if (v.wrecked > 0) {
+      this.tickWreck(i, dt);
+      return;
+    }
+
     const wasBoosting = v.boosting;
     const wasDrifting = v.drifting;
     const c = ai ? this.rivalControls(i, ai, prog.finished, dt) : this.playerControls(prog.finished, v);
@@ -634,7 +688,7 @@ export class RaceEngine {
       accelScale: ai ? 1 : this.tuning.accelScale,
       assistSteer: assist,
       slope,
-      gripScale: this.weather.gripScale,
+      gripScale: this.weather.gripScale * (v.oiled > 0 ? WEAPONS.oilGrip : 1),
       yawScale: this.weather.yawScale,
     }, dt);
 
@@ -661,7 +715,7 @@ export class RaceEngine {
     const near = this.obstacleGrid.queryInto(this.nearObstacles, v.x, v.z, p.radius + 5);
     if (near > 0) {
       const hit = resolveObstacles(v, this.nearObstacles, p.radius, penalty);
-      if (hit > 1.2) this.emitHit("bump", i, hit);
+      this.noteSolid(i, hit);
     }
     if (this.animals.length > 0) this.hitAnimals(v, i, p.radius, penalty);
     if (this.hitCooldown[i] > 0) this.hitCooldown[i] -= dt;
@@ -686,6 +740,7 @@ export class RaceEngine {
       this.watchRival(i, v, dt);
     } else if (!prog.finished) {
       this.collectPickups(v, i);
+      this.collectWeapons(v);
       this.watchProgress(v, c, dt);
     }
   }
@@ -696,10 +751,10 @@ export class RaceEngine {
     const playerWeight = 1 / Math.max(0.35, this.tuning.collisionPenalty);
     for (let i = 0; i < n; i++) {
       const a = this.vehicles[i];
-      if (a.grace > 0) continue;
+      if (a.grace > 0 || a.wrecked > 0) continue;
       for (let j = i + 1; j < n; j++) {
         const b = this.vehicles[j];
-        if (b.grace > 0) continue;
+        if (b.grace > 0 || b.wrecked > 0) continue;
         const ra = this.radii[i];
         const rb = this.radii[j];
         const ma = ra * ra * (i === this.playerIndex ? playerWeight : 1);
@@ -708,11 +763,89 @@ export class RaceEngine {
         if (hit <= 0) continue;
         a.speed = a.vx * Math.sin(a.heading) + a.vz * Math.cos(a.heading);
         b.speed = b.vx * Math.sin(b.heading) + b.vz * Math.cos(b.heading);
-        if (hit > 2) {
-          this.emitHit("bump", i, hit);
-          this.emitHit("bump", j, hit);
-        }
+        this.noteCars(i, j, hit);
       }
+    }
+  }
+
+  /** A hard hit on an animal or a roadside obstacle wrecks the car. Anything softer is a bump. The boundary wall is not a crash. */
+  private noteSolid(i: number, impact: number): void {
+    if (impact <= 0 || this.vehicles[i].wrecked > 0) return;
+    if (this.vehicles[i].grace <= 0 && impact >= this.crashMin(i, "solid")) {
+      this.wreck(i);
+      return;
+    }
+    if (impact > 1.2) this.emitHit("bump", i, impact);
+  }
+
+  /** A hard car-to-car hit wrecks both. A side nudge stays a bump. */
+  private noteCars(i: number, j: number, impact: number): void {
+    const wreckI = this.vehicles[i].grace <= 0 && this.vehicles[i].wrecked <= 0 && impact >= this.crashMin(i, "car");
+    const wreckJ = this.vehicles[j].grace <= 0 && this.vehicles[j].wrecked <= 0 && impact >= this.crashMin(j, "car");
+    if (wreckI) this.wreck(i);
+    else if (impact > 2) this.emitHit("bump", i, impact);
+    if (wreckJ) this.wreck(j);
+    else if (impact > 2) this.emitHit("bump", j, impact);
+  }
+
+  private crashMin(i: number, kind: "solid" | "car"): number {
+    const base = kind === "car" ? CRASH.carImpact : CRASH.obstacleImpact;
+    if (i !== this.playerIndex) return base;
+    if (this.assist === "extra") return base * CRASH.extraImpactScale;
+    if (this.assist === "helper") return base * CRASH.helperImpactScale;
+    return base;
+  }
+
+  private recoverFor(i: number): number {
+    if (i !== this.playerIndex) return CRASH.recoverSeconds * CRASH.rivalRecoverScale;
+    if (this.assist === "extra") return CRASH.recoverSeconds * CRASH.extraRecoverScale;
+    if (this.assist === "helper") return CRASH.recoverSeconds * CRASH.helperRecoverScale;
+    return CRASH.recoverSeconds;
+  }
+
+  /**
+   * Stop the car where it crashed: a few metres back along the road, still in its lane,
+   * facing the right way. It sits, then the driver has to get going again. This is not
+   * a checkpoint reset.
+   */
+  private wreck(i: number): void {
+    const v = this.vehicles[i];
+    if (v.wrecked > 0 || v.grace > 0) return;
+    const q = v.query;
+    const back = this.track.sample(q.s - CRASH.settleBack);
+    const margin = this.carParams[i].radius + 0.8;
+    const limit = Math.max(1, back.halfWidth - margin);
+    const lat = clamp(q.lateral, -limit, limit);
+    const keepBoost = v.boost;
+    placeVehicle(v, back.x - back.tz * lat, back.z + back.tx * lat, back.heading);
+    v.boost = keepBoost;
+    v.wrecked = this.recoverFor(i);
+    v.grace = 0;
+    this.track.projectGlobal(v.x, v.z, v.query);
+    v.y = this.track.heightAt(v.query.s);
+    snapshot(v);
+    this.race.teleport(i, v.query.s);
+    if (i === this.playerIndex) {
+      this.stuck = false;
+      this.wrongWay = false;
+    }
+    this.events.emit({ type: "crash", racer: i });
+  }
+
+  /** Holds a wrecked car still. When the timer ends it may drive, with a short grace so the same hit does not wreck it again. */
+  private tickWreck(i: number, dt: number): void {
+    const v = this.vehicles[i];
+    v.wrecked = Math.max(0, v.wrecked - dt);
+    v.vx = 0;
+    v.vz = 0;
+    v.vy = 0;
+    v.speed = 0;
+    v.yawRate = 0;
+    v.boosting = false;
+    if (v.wrecked === 0) {
+      v.heading = v.query.heading;
+      v.grace = CRASH.graceSeconds;
+      snapshot(v);
     }
   }
 
@@ -762,6 +895,166 @@ export class RaceEngine {
         this.events.emit({ type: "gem", id: c.id, racer, total: this.gems });
       }
     }
+  }
+
+  /** Driving over a weapon icon adds one charge and selects that weapon. */
+  private collectWeapons(v: VehicleState): void {
+    const list = this.content.weapons;
+    const r = WEAPONS.pickupRadius;
+    for (let i = 0; i < list.length; i++) {
+      if (this.crateTaken[i]) continue;
+      const c = list[i];
+      const dx = v.x - c.x;
+      const dz = v.z - c.z;
+      if (dx * dx + dz * dz > r * r) continue;
+      if (Math.abs(c.y - (v.y + 1.1)) > 3) continue;
+      this.crateTaken[i] = 1;
+      this.ammo[c.kind] = Math.min(WEAPONS.maxAmmo, this.ammo[c.kind] + 1);
+      this.weapon = c.kind;
+      this.events.emit({ type: "weaponPickup", id: i, kind: c.kind, ammo: this.ammo[c.kind], racer: this.playerIndex });
+    }
+  }
+
+  /** Q/E or 1/2/3 select a weapon. F uses the selected one. */
+  weaponAction(action: WeaponAction): void {
+    if (action === "prev" || action === "next") {
+      const kinds = WEAPONS.kinds;
+      const i = kinds.indexOf(this.weapon);
+      const step = action === "next" ? 1 : kinds.length - 1;
+      this.weapon = kinds[(i + step) % kinds.length];
+      this.pushHud();
+      return;
+    }
+    if (action === "gun" || action === "mine" || action === "oil") {
+      this.weapon = action;
+      this.pushHud();
+      return;
+    }
+    if (this.phase !== "racing" && this.phase !== "finished") return;
+    if (this.player.wrecked > 0) return;
+    const kind = this.weapon;
+    if (this.ammo[kind] <= 0) {
+      this.events.emit({ type: "weaponEmpty", kind });
+      return;
+    }
+    this.ammo[kind] -= 1;
+    this.deploy(kind, this.playerIndex);
+    this.events.emit({ type: "weaponFire", kind, ammo: this.ammo[kind], racer: this.playerIndex });
+    this.pushHud();
+  }
+
+  private deploy(kind: WeaponKind, owner: number): void {
+    const v = this.vehicles[owner];
+    const hx = Math.sin(v.heading);
+    const hz = Math.cos(v.heading);
+    if (kind === "gun") {
+      if (this.shots.length >= 8) this.shots.shift();
+      const nose = this.radii[owner] + 1.3;
+      this.shots.push({
+        owner,
+        x: v.x + hx * nose,
+        y: v.y + 0.85,
+        z: v.z + hz * nose,
+        vx: hx * WEAPONS.gunSpeed,
+        vz: hz * WEAPONS.gunSpeed,
+        life: WEAPONS.gunLife,
+      });
+      return;
+    }
+    const back = kind === "mine" ? WEAPONS.mineBehind : WEAPONS.oilBehind;
+    const x = v.x - hx * back;
+    const z = v.z - hz * back;
+    if (kind === "mine") {
+      if (this.mines.length >= 8) this.mines.shift();
+      this.mines.push({ owner, x, y: v.y, z, arm: WEAPONS.mineArm, life: WEAPONS.mineLife });
+      return;
+    }
+    if (this.slicks.length >= 8) this.slicks.shift();
+    this.slicks.push({ x, y: v.y + 0.06, z, life: WEAPONS.oilLife });
+  }
+
+  /** Bolts, mines and oil. A bolt or an armed mine wrecks the car it touches. */
+  private stepWeapons(dt: number): void {
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const s = this.shots[i];
+      s.life -= dt;
+      s.x += s.vx * dt;
+      s.z += s.vz * dt;
+      const hit = this.weaponTarget(s.owner, s.x, s.y, s.z, WEAPONS.gunRadius);
+      if (hit >= 0) {
+        this.shots.splice(i, 1);
+        this.events.emit({ type: "weaponHit", shooter: s.owner, target: hit, kind: "gun" });
+        this.wreck(hit);
+        continue;
+      }
+      if (s.life <= 0) this.shots.splice(i, 1);
+    }
+    for (let i = this.mines.length - 1; i >= 0; i--) {
+      const m = this.mines[i];
+      m.arm -= dt;
+      m.life -= dt;
+      if (m.life <= 0) {
+        this.mines.splice(i, 1);
+        continue;
+      }
+      if (m.arm > 0) continue;
+      const hit = this.weaponTarget(-1, m.x, m.y, m.z, WEAPONS.mineRadius);
+      if (hit >= 0) {
+        this.mines.splice(i, 1);
+        this.events.emit({ type: "weaponHit", shooter: m.owner, target: hit, kind: "mine" });
+        this.wreck(hit);
+      }
+    }
+    for (let i = this.slicks.length - 1; i >= 0; i--) {
+      this.slicks[i].life -= dt;
+      if (this.slicks[i].life <= 0) this.slicks.splice(i, 1);
+    }
+    const slickR = WEAPONS.oilRadius;
+    for (let c = 0; c < this.vehicles.length; c++) {
+      const v = this.vehicles[c];
+      let onSlick = false;
+      for (let i = 0; i < this.slicks.length; i++) {
+        const sl = this.slicks[i];
+        const dx = v.x - sl.x;
+        const dz = v.z - sl.z;
+        if (dx * dx + dz * dz <= slickR * slickR) {
+          onSlick = true;
+          break;
+        }
+      }
+      if (onSlick) {
+        if (v.oiled <= 0 && c === this.playerIndex) this.events.emit({ type: "oil", racer: c });
+        v.oiled = WEAPONS.oilSeconds;
+      } else if (v.oiled > 0) {
+        v.oiled = Math.max(0, v.oiled - dt);
+      }
+    }
+  }
+
+  /** The first car close to a point, skipping the owner (pass -1 to include every car) and cars that are already safe or wrecked. */
+  private weaponTarget(owner: number, x: number, y: number, z: number, extra: number): number {
+    for (let c = 0; c < this.vehicles.length; c++) {
+      if (c === owner) continue;
+      const v = this.vehicles[c];
+      if (v.grace > 0 || v.wrecked > 0) continue;
+      if (Math.abs(v.y - y) > 2.4) continue;
+      const dx = v.x - x;
+      const dz = v.z - z;
+      const rad = this.radii[c] + extra;
+      if (dx * dx + dz * dz <= rad * rad) return c;
+    }
+    return -1;
+  }
+
+  private clearWeapons(): void {
+    this.ammo.gun = 0;
+    this.ammo.mine = 0;
+    this.ammo.oil = 0;
+    this.weapon = "gun";
+    this.shots.length = 0;
+    this.mines.length = 0;
+    this.slicks.length = 0;
+    this.crateTaken.fill(0);
   }
 
   /** Stuck rescue and wrong-way warning for the player. */
@@ -817,7 +1110,9 @@ export class RaceEngine {
         // Pickups come back every lap.
         if (e.racer === this.playerIndex && e.lap < this.race.laps) {
           this.collected.fill(0);
+          this.crateTaken.fill(0);
           this.events.emit({ type: "coinsReset" });
+          this.events.emit({ type: "weaponsReset" });
         }
         break;
       case "finish":

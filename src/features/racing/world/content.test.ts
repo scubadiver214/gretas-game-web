@@ -16,6 +16,7 @@ describe.each(TRACKS)("track content: $name", (def) => {
   it("is deterministic: the same track always gets the same pickups and scenery", () => {
     const again = buildTrackContent(track);
     expect(JSON.stringify(again.collectibles)).toBe(JSON.stringify(content.collectibles));
+    expect(JSON.stringify(again.weapons)).toBe(JSON.stringify(content.weapons));
     expect(JSON.stringify(again.obstacles)).toBe(JSON.stringify(content.obstacles));
     expect(JSON.stringify(again.scatter)).toBe(JSON.stringify(content.scatter));
   });
@@ -30,6 +31,17 @@ describe.each(TRACKS)("track content: $name", (def) => {
       track.projectGlobal(g.x, g.z, q);
       expect(Math.abs(q.lateral)).toBeGreaterThan(q.halfWidth);
       expect(Math.abs(q.lateral)).toBeLessThan(q.boundary - 1);
+    }
+  });
+
+  it("puts gun, mine and oil icons on the road", () => {
+    expect(content.weapons.length).toBeGreaterThan(3);
+    const kinds = new Set(content.weapons.map((w) => w.kind));
+    expect(kinds).toEqual(new Set(["gun", "mine", "oil"]));
+    for (const w of content.weapons) {
+      track.projectGlobal(w.x, w.z, q);
+      expect(Math.abs(q.lateral)).toBeLessThan(q.halfWidth);
+      expect(track.nearRamp(w.s, 8)).toBe(false);
     }
   });
 
