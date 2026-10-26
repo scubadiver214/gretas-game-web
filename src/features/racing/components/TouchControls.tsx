@@ -74,9 +74,9 @@ function HoldButton({ id, label, onHold, size, color, children, ariaLabel }: { i
 }
 
 /**
- * On-screen driving controls for phones and tablets: steer pads on the left, pedals
- * and boost on the right. Auto-gas (from the assist level) drops the gas pedal so
- * the littlest drivers only steer.
+ * On-screen driving controls for phones and tablets. Steering and boost are on the
+ * left, so the left thumb can boost while the right thumb holds GO. Auto-gas (from
+ * the assist level) drops the gas pedal so the littlest drivers only steer.
  */
 export default function TouchControls({ onChange, onReset, onCycle, onFire, autoGas }: { onChange: (c: Controls) => void; onReset: () => void; onCycle: () => void; onFire: () => void; autoGas: boolean }) {
   const held = useRef(new Set<ButtonId>());
@@ -106,7 +106,25 @@ export default function TouchControls({ onChange, onReset, onCycle, onFire, auto
   const ready = boost >= 0.12;
   return (
     <Box sx={{ position: "absolute", inset: 0, pointerEvents: "none", "& > *": { pointerEvents: "auto" } }}>
-      <Box sx={{ position: "absolute", left: "max(14px, env(safe-area-inset-left))", bottom: "max(16px, env(safe-area-inset-bottom))", display: "flex", gap: 1.5 }}>
+      <Box
+        sx={{
+          position: "absolute",
+          left: "max(14px, env(safe-area-inset-left))",
+          bottom: "max(16px, env(safe-area-inset-bottom))",
+          display: "grid",
+          gridTemplateColumns: "92px 92px",
+          columnGap: 1.5,
+          rowGap: 2,
+          justifyItems: "center",
+          alignItems: "end",
+        }}
+      >
+        <Box sx={{ gridColumn: 2, position: "relative", opacity: ready || boosting ? 1 : 0.55, filter: boosting ? `drop-shadow(0 0 12px ${R.orange})` : undefined }}>
+          <HoldButton id="boost" label="🔥" onHold={onHold} size={74} color="#ff8a1f" ariaLabel="Boost" />
+          <Box sx={{ ...plate, position: "absolute", left: 6, right: 6, bottom: -6, height: 12, borderRadius: 999, p: "2px" }}>
+            <Box sx={{ width: `${boost * 100}%`, height: "100%", borderRadius: 999, bgcolor: R.yellow }} />
+          </Box>
+        </Box>
         <HoldButton id="left" onHold={onHold} size={92} color="#2f7dd8" ariaLabel="Steer left">
           <ArrowBackRoundedIcon sx={{ fontSize: 54 }} />
         </HoldButton>
@@ -120,15 +138,7 @@ export default function TouchControls({ onChange, onReset, onCycle, onFire, auto
           <HoldButton id="drift" label="DRIFT" onHold={onHold} size={62} color="#7c3aed" ariaLabel="Drift" />
           <HoldButton id="brake" label="STOP" onHold={onHold} size={74} color="#e53935" ariaLabel="Brake" />
         </Box>
-        <Box sx={{ display: "grid", gap: 1.2, justifyItems: "center" }}>
-          <Box sx={{ position: "relative", opacity: ready || boosting ? 1 : 0.55, filter: boosting ? `drop-shadow(0 0 12px ${R.orange})` : undefined }}>
-            <HoldButton id="boost" label="🔥" onHold={onHold} size={74} color="#ff8a1f" ariaLabel="Boost" />
-            <Box sx={{ ...plate, position: "absolute", left: 6, right: 6, bottom: -6, height: 12, borderRadius: 999, p: "2px" }}>
-              <Box sx={{ width: `${boost * 100}%`, height: "100%", borderRadius: 999, bgcolor: R.yellow }} />
-            </Box>
-          </Box>
-          {!autoGas && <HoldButton id="gas" label="GO" onHold={onHold} size={104} color="#2fb44a" ariaLabel="Accelerate" />}
-        </Box>
+        {!autoGas && <HoldButton id="gas" label="GO" onHold={onHold} size={104} color="#2fb44a" ariaLabel="Accelerate" />}
       </Box>
 
       <Box sx={{ position: "absolute", left: "50%", bottom: "max(18px, env(safe-area-inset-bottom))", transform: "translateX(-50%)", display: "flex", gap: 1.2 }}>

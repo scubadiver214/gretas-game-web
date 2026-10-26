@@ -37,6 +37,8 @@ export const fx = {
   land: () => fire("land"),
   splash: () => fire("splash", "error"),
   crash: () => fire("crash", "error", 0.2),
+  /** A toy gun, mine or oil slick caught another car. */
+  explosion: () => fire("explosion", "heavy", 0.15),
   combo: () => fire("combo", "success", 0.35),
   powerup: () => fire("powerup", "success", 0.3),
   shield: () => fire("shield", "heavy"),

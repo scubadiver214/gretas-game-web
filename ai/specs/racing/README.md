@@ -2,7 +2,7 @@
 
 Kids' arcade racer at `/play/racing`. Code: `src/features/racing/`.
 
-**Status: phases 1–3 done**, including 3.2 (in-place crashes, closer rivals) and 3.3 (gun, mine and oil picked up off the road). Five open tracks, Fitzmagic plus four rival cars, race-or-time-trial on the menu. Persistence, garage, unlocks and polish are still ahead.
+**Status: phases 1–3 done**, including 3.2 (in-place crashes, closer rivals), 3.3 (gun, mine and oil picked up off the road), 3.4 (easier first rival races, 10-second gun bursts), 3.5 (boost on the left thumb) and 3.6 (an explosion when a weapon catches another car). Five open tracks, Fitzmagic plus four rival cars, race-or-time-trial on the menu. Persistence, garage, unlocks and polish are still ahead.
 
 ## Read in this order
 

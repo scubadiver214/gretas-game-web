@@ -168,6 +168,7 @@ const WEAPON_TINT: Record<WeaponKind, string> = { gun: "#ffb020", mine: "#ff5a5a
 function WeaponTray({ touch }: { touch: boolean }) {
   const weapon = useRacingHud((s) => s.weapon);
   const gun = useRacingHud((s) => s.gun);
+  const gunSeconds = useRacingHud((s) => s.gunSeconds);
   const mine = useRacingHud((s) => s.mine);
   const oil = useRacingHud((s) => s.oil);
   const ammo: Record<WeaponKind, number> = { gun, mine, oil };
@@ -177,15 +178,15 @@ function WeaponTray({ touch }: { touch: boolean }) {
         {(Object.keys(WEAPON_LABEL) as WeaponKind[]).map((kind, i) => {
           const on = weapon === kind;
           return (
-            <Box key={kind} sx={{ ...plate, px: touch ? 0.7 : 1.1, py: 0.35, minWidth: touch ? 58 : 78, textAlign: "center", outline: on ? `3px solid ${WEAPON_TINT[kind]}` : "3px solid transparent", opacity: ammo[kind] > 0 || on ? 1 : 0.55 }}>
+            <Box key={kind} sx={{ ...plate, px: touch ? 0.7 : 1.1, py: 0.35, minWidth: touch ? 58 : 78, textAlign: "center", outline: on ? `3px solid ${WEAPON_TINT[kind]}` : "3px solid transparent", opacity: ammo[kind] > 0 || on || (kind === "gun" && gunSeconds > 0) ? 1 : 0.55 }}>
               <Typography sx={{ ...bigText, fontSize: touch ? "0.62rem" : "0.78rem", color: WEAPON_TINT[kind] }}>{WEAPON_LABEL[kind]}</Typography>
-              <Typography sx={{ ...bigText, fontSize: touch ? "0.95rem" : "1.15rem", lineHeight: 1 }}>{ammo[kind]}</Typography>
+              <Typography sx={{ ...bigText, fontSize: touch ? "0.95rem" : "1.15rem", lineHeight: 1 }}>{kind === "gun" && gunSeconds > 0 ? `${gunSeconds}s` : ammo[kind]}</Typography>
               {!touch && <Typography sx={{ ...bigText, fontSize: "0.62rem", opacity: 0.7 }}>{i + 1}</Typography>}
             </Box>
           );
         })}
       </Box>
-      {!touch && <Typography sx={{ ...bigText, fontSize: "0.72rem", opacity: 0.85 }}>Q E switch · F fire</Typography>}
+      {!touch && <Typography sx={{ ...bigText, fontSize: "0.72rem", opacity: 0.85 }}>Q E switch · F fire · gun lasts 10s</Typography>}
     </Box>
   );
 }

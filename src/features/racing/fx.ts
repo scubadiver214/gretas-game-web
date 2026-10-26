@@ -79,7 +79,8 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         flash("Empty!", "red");
         break;
       case "weaponHit":
-        if (e.shooter === engine.playerIndex || e.target === engine.playerIndex) fx.crash();
+        if (e.shooter === engine.playerIndex && e.target !== engine.playerIndex) fx.explosion();
+        else if (e.target === engine.playerIndex) fx.crash();
         break;
       case "oil":
         fx.whoosh();

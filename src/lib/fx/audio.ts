@@ -29,6 +29,7 @@ export type SoundId =
   | "land" // bike lands
   | "splash" // puddle
   | "crash" // cone / barrier
+  | "explosion" // a toy weapon connects with another car
   | "combo" // combo bonus
   | "powerup" // picked up a power-up
   | "shield" // shield absorbed a hit
@@ -337,6 +338,17 @@ const SYNTH: Record<SoundId, { variation: number; alternates: ((v: Voice) => voi
         noise(v, { duration: 0.25, gain: 0.18, type: "lowpass", frequency: 2200, to: 300, attack: 0.002 });
         tone(v, { type: "sawtooth", from: 180, to: 70, duration: 0.22, gain: 0.1, lowpass: 1000 });
         tone(v, { type: "square", from: 90, to: 45, duration: 0.18, gain: 0.08, lowpass: 600 });
+      },
+    ],
+  },
+  explosion: {
+    variation: 0.1,
+    alternates: [
+      (v) => {
+        noise(v, { duration: 0.42, gain: 0.24, type: "lowpass", frequency: 1600, to: 140, attack: 0.003 });
+        tone(v, { type: "sine", from: 180, to: 36, duration: 0.45, gain: 0.24, attack: 0.002 });
+        tone(v, { type: "triangle", from: 480, to: 80, duration: 0.16, gain: 0.08, lowpass: 900 });
+        noise(v, { duration: 0.07, gain: 0.1, type: "highpass", frequency: 2800, attack: 0.002 });
       },
     ],
   },

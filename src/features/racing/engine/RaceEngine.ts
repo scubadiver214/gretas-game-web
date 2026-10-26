@@ -1,5 +1,5 @@
 import { Emitter } from "@/lib/game/events";
-import { AI, BUGGY, CRASH, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS, WEAPONS } from "../config";
+import { AI, BUGGY, CRASH, MAX_STEPS_PER_FRAME, MPH_PER_UNIT, PICKUP, RACE, STEP_SECONDS, WEAPONS, rivalPaceScale } from "../config";
 import { neutralControls, type Controls, type HudSnapshot, type RaceEvent, type RacePhase, type RaceSummary, type VehicleParams, type WeaponAction, type WeaponKind } from "../types";
 import type { AnimalSpec, Collectible, Obstacle, TrackContent } from "../world/content";
 import { SpatialGrid } from "../world/spatial";
@@ -28,6 +28,8 @@ export interface RaceOptions {
   rivals?: readonly RivalSetup[];
   /** Grid slot of the player: 0 is the front row, left. Defaults to the back of the grid. */
   playerSlot?: number;
+  /** Rival races already started. 0 is the easy first field. Ignored when there are no rivals. */
+  racesEntered?: number;
 }
 
 /** An interpolated pose for rendering. Reused by the caller, so reading it never allocates. */
@@ -71,6 +73,11 @@ export interface AnimalPose {
   z: number;
   heading: number;
   running: boolean;
+}
+
+/** The tier's AI, slowed for the early races. Catch-up uses this same number, so a rookie field cannot sprint back to full pace. */
+function paceFor(base: DifficultyConfig, scale: number): DifficultyConfig {
+  return { ...base, aiSpeedMultiplier: base.aiSpeedMultiplier * scale };
 }
 
 /** A blaster bolt flying in a straight line. */
@@ -146,6 +153,8 @@ export class RaceEngine {
   readonly ammo: Record<WeaponKind, number> = { gun: 0, mine: 0, oil: 0 };
   /** The weapon F (or the fire button) will use. */
   weapon: WeaponKind = "gun";
+  /** Seconds of gunfire still to come. One pickup adds `WEAPONS.gunBurst`. */
+  gunBurstLeft = 0;
   /** Blaster bolts in the air. */
   readonly shots: Bolt[] = [];
   /** Mines sitting on the road. */
@@ -163,8 +172,14 @@ export class RaceEngine {
 
   tier: number;
   assist: AssistLevel;
+  /** How many rival races had been started when this one was set up. */
+  racesEntered = 0;
+  /** Fraction of tier pace the rivals actually use this race. */
+  paceScale = 1;
   tuning: PlayerTuning;
   difficulty: DifficultyConfig;
+  /** Difficulty the AI reads: the tier, with pace scaled for how many races you have started. */
+  private paceDifficulty: DifficultyConfig;
 
   /** Seconds since GO. */
   time = 0;
@@ -204,6 +219,8 @@ export class RaceEngine {
   private readonly onProgress = (e: ProgressEvent) => this.handleProgress(e);
   private hudListener: ((hud: HudSnapshot) => void) | null = null;
   private lastHudKey = "";
+  /** Counts down to the next bolt while `gunBurstLeft` is running. */
+  private gunCooldown = 0;
 
   constructor(track: Track, content: TrackContent, opts: RaceOptions = {}) {
     this.track = track;
@@ -211,8 +228,11 @@ export class RaceEngine {
     this.params = opts.params ?? BUGGY;
     this.tier = opts.tier ?? 1;
     this.assist = opts.assist ?? "helper";
+    this.racesEntered = Math.max(0, Math.floor(opts.racesEntered ?? 0));
+    this.paceScale = rivalPaceScale(this.racesEntered);
     this.tuning = playerTuning(this.tier, this.assist);
     this.difficulty = difficultyFor(this.tier);
+    this.paceDifficulty = paceFor(this.difficulty, this.paceScale);
     this.playerSlot = opts.playerSlot;
     this.aiView = { track, params: this.params, difficulty: this.difficulty, gap: 0, finished: false, cars: this.vehicles, radii: this.radii, self: 0 };
     this.collected = new Uint8Array(content.collectibles.length);
@@ -252,11 +272,14 @@ export class RaceEngine {
    * Changes difficulty, assist and (optionally) the rivals for the next race. Applied on
    * reset: call `reset()` straight after, which also tells the renderer the cars changed.
    */
-  configure(tier: number, assist: AssistLevel, rivals: readonly RivalSetup[] = this.rivals): void {
+  configure(tier: number, assist: AssistLevel, rivals: readonly RivalSetup[] = this.rivals, racesEntered = this.racesEntered): void {
     this.tier = tier;
     this.assist = assist;
+    this.racesEntered = Math.max(0, Math.floor(racesEntered));
+    this.paceScale = rivalPaceScale(this.racesEntered);
     this.tuning = playerTuning(tier, assist);
     this.difficulty = difficultyFor(tier);
+    this.paceDifficulty = paceFor(this.difficulty, this.paceScale);
     if (rivals !== this.rivals) this.race = this.buildField(rivals);
   }
 
@@ -437,6 +460,7 @@ export class RaceEngine {
       crashed: p.wrecked > 0,
       weapon: this.weapon,
       gun: this.ammo.gun,
+      gunSeconds: Math.ceil(this.gunBurstLeft),
       mine: this.ammo.mine,
       oil: this.ammo.oil,
       finishedPlace: r.place,
@@ -453,7 +477,7 @@ export class RaceEngine {
   private pushHud(): void {
     if (!this.hudListener) return;
     const h = this.hud();
-    const key = `${h.phase}|${h.countdown}|${h.lap}|${h.rank}|${h.coins}|${h.gems}|${h.boost}|${h.boosting}|${h.wrongWay}|${h.stuck}|${h.crashed}|${h.weapon}|${h.gun}|${h.mine}|${h.oil}|${h.finishedPlace}|${h.resultsReady}`;
+    const key = `${h.phase}|${h.countdown}|${h.lap}|${h.rank}|${h.coins}|${h.gems}|${h.boost}|${h.boosting}|${h.wrongWay}|${h.stuck}|${h.crashed}|${h.weapon}|${h.gun}|${h.gunSeconds}|${h.mine}|${h.oil}|${h.finishedPlace}|${h.resultsReady}`;
     if (key === this.lastHudKey) return;
     this.lastHudKey = key;
     this.hudListener(h);
@@ -659,7 +683,7 @@ export class RaceEngine {
     if (!v.boosting && !finished) v.boost = Math.min(1, v.boost + AI.boostCharge * dt);
     const view = this.aiView;
     view.params = this.carParams[i];
-    view.difficulty = this.difficulty;
+    view.difficulty = this.paceDifficulty;
     view.gap = this.raceDistance(this.playerIndex) - this.raceDistance(i);
     view.finished = finished;
     view.self = i;
@@ -933,6 +957,10 @@ export class RaceEngine {
     if (this.phase !== "racing" && this.phase !== "finished") return;
     if (this.player.wrecked > 0) return;
     const kind = this.weapon;
+    if (kind === "gun") {
+      this.startGun();
+      return;
+    }
     if (this.ammo[kind] <= 0) {
       this.events.emit({ type: "weaponEmpty", kind });
       return;
@@ -940,6 +968,19 @@ export class RaceEngine {
     this.ammo[kind] -= 1;
     this.deploy(kind, this.playerIndex);
     this.events.emit({ type: "weaponFire", kind, ammo: this.ammo[kind], racer: this.playerIndex });
+    this.pushHud();
+  }
+
+  /** One gun charge starts (or lengthens) a 10 second stream of bolts. */
+  private startGun(): void {
+    if (this.ammo.gun <= 0) {
+      if (this.gunBurstLeft <= 0) this.events.emit({ type: "weaponEmpty", kind: "gun" });
+      return;
+    }
+    this.ammo.gun -= 1;
+    if (this.gunBurstLeft <= 0) this.gunCooldown = 0;
+    this.gunBurstLeft += WEAPONS.gunBurst;
+    this.events.emit({ type: "weaponFire", kind: "gun", ammo: this.ammo.gun, racer: this.playerIndex });
     this.pushHud();
   }
 
@@ -975,6 +1016,7 @@ export class RaceEngine {
 
   /** Bolts, mines and oil. A bolt or an armed mine wrecks the car it touches. */
   private stepWeapons(dt: number): void {
+    this.tickGun(dt);
     for (let i = this.shots.length - 1; i >= 0; i--) {
       const s = this.shots[i];
       s.life -= dt;
@@ -1023,12 +1065,28 @@ export class RaceEngine {
         }
       }
       if (onSlick) {
-        if (v.oiled <= 0 && c === this.playerIndex) this.events.emit({ type: "oil", racer: c });
+        if (v.oiled <= 0) {
+          if (c === this.playerIndex) this.events.emit({ type: "oil", racer: c });
+          else this.events.emit({ type: "weaponHit", shooter: this.playerIndex, target: c, kind: "oil" });
+        }
         v.oiled = WEAPONS.oilSeconds;
       } else if (v.oiled > 0) {
         v.oiled = Math.max(0, v.oiled - dt);
       }
     }
+  }
+
+  /** Keeps a gun burst firing. A wreck pauses the clock so the crash does not eat the burst. */
+  private tickGun(dt: number): void {
+    if (this.gunBurstLeft <= 0) return;
+    if (this.player.wrecked > 0) return;
+    this.gunBurstLeft = Math.max(0, this.gunBurstLeft - dt);
+    this.gunCooldown -= dt;
+    while (this.gunCooldown <= 0 && this.gunBurstLeft > 0) {
+      this.deploy("gun", this.playerIndex);
+      this.gunCooldown += WEAPONS.gunInterval;
+    }
+    if (this.gunBurstLeft <= 0) this.gunCooldown = 0;
   }
 
   /** The first car close to a point, skipping the owner (pass -1 to include every car) and cars that are already safe or wrecked. */
@@ -1051,6 +1109,8 @@ export class RaceEngine {
     this.ammo.mine = 0;
     this.ammo.oil = 0;
     this.weapon = "gun";
+    this.gunBurstLeft = 0;
+    this.gunCooldown = 0;
     this.shots.length = 0;
     this.mines.length = 0;
     this.slicks.length = 0;

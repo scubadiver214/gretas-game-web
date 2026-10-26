@@ -137,6 +137,13 @@ export const AI = {
   stuckSeconds: 2.5,
   /** Fraction of pace after crossing the finish line (a lap of honour, out of the way). */
   cruise: 0.55,
+  /**
+   * The first rival race uses this fraction of the tier's pace. Each race you start
+   * moves the field toward full pace, so the first races are ones you can pass.
+   */
+  rookiePace: 0.7,
+  /** Rival races started before the field is at its full tier pace. */
+  paceRaces: 6,
 } as const;
 
 /**
@@ -218,10 +225,14 @@ export const WEAPONS = {
   pickupRadius: 2.8,
   /** Metres between weapon icons along the road. */
   spacing: 150,
-  /** Blaster bolt. */
+  /** Blaster bolt. One pickup is a burst, not a single shot. */
   gunSpeed: 78,
   gunLife: 1.15,
   gunRadius: 1.55,
+  /** Seconds of automatic fire one gun pickup gives you. */
+  gunBurst: 10,
+  /** Seconds between bolts while a burst is running. */
+  gunInterval: 0.25,
   /** Mine, dropped behind the car. It cannot go off until it is armed. */
   mineBehind: 4.4,
   mineArm: 0.45,
@@ -236,6 +247,25 @@ export const WEAPONS = {
   /** How long the slide lasts after you leave the puddle. */
   oilSeconds: 1.5,
 } as const;
+
+/**
+ * How fast the rivals are for someone who has already started `racesEntered` rival races.
+ * 0 is the easy first race. After `AI.paceRaces` starts they are at full tier pace.
+ */
+export function rivalPaceScale(racesEntered: number): number {
+  const n = Math.max(0, Math.floor(Number.isFinite(racesEntered) ? racesEntered : 0));
+  const t = Math.min(1, n / AI.paceRaces);
+  return AI.rookiePace + (1 - AI.rookiePace) * t;
+}
+
+/** One line for the menu, so a child can see the field getting quicker. */
+export function rivalPaceLabel(racesEntered: number): string {
+  const race = Math.max(0, Math.floor(Number.isFinite(racesEntered) ? racesEntered : 0)) + 1;
+  const scale = rivalPaceScale(racesEntered);
+  if (scale < 0.85) return `Race ${race}: the other cars are taking it easy`;
+  if (scale < 1) return `Race ${race}: the other cars are speeding up`;
+  return `Race ${race}: the other cars are at full speed`;
+}
 
 /** Pickups. */
 export const PICKUP = {

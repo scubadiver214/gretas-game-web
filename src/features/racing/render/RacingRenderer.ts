@@ -466,7 +466,7 @@ export class RacingRenderer {
         break;
       case "weaponHit": {
         const v = engine.vehicles[e.target];
-        this.particles.sparkle(v.x, v.y + 1.2, v.z, e.kind === "gun" ? "#ffb020" : "#ff5a5a", 16);
+        this.particles.sparkle(v.x, v.y + 1.2, v.z, e.kind === "gun" ? "#ffb020" : e.kind === "oil" ? "#7eb6ff" : "#ff5a5a", 16);
         if (e.target === engine.playerIndex) this.chase.kick(0.45);
         break;
       }

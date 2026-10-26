@@ -83,13 +83,35 @@ describe("weapons", () => {
     const events: RaceEvent[] = [];
     e.events.on((x) => events.push(x));
     e.weaponAction("fire");
-    expect(e.shots).toHaveLength(1);
     expect(e.ammo.gun).toBe(0);
+    expect(e.gunBurstLeft).toBe(WEAPONS.gunBurst);
+    expect(e.hud().gunSeconds).toBe(WEAPONS.gunBurst);
     e.advance(1 / 60);
     expect(events.some((x) => x.type === "weaponHit" && x.kind === "gun" && x.target === 1)).toBe(true);
     expect(e.vehicles[1].wrecked).toBeGreaterThan(0);
     expect(e.player.wrecked).toBe(0);
-    expect(e.shots).toHaveLength(0);
+    const before = e.shots.length;
+    runFor(e, WEAPONS.gunInterval + 0.05, () => neutralControls());
+    expect(e.shots.length).toBeGreaterThan(before);
+    expect(e.gunBurstLeft).toBeLessThan(WEAPONS.gunBurst);
+    expect(e.gunBurstLeft).toBeGreaterThan(WEAPONS.gunBurst - 1);
+  });
+
+  it("a second gun pickup adds another 10 seconds, and the burst stops when the time is gone", () => {
+    const e = racing();
+    e.ammo.gun = 2;
+    e.weapon = "gun";
+    e.weaponAction("fire");
+    e.weaponAction("fire");
+    expect(e.ammo.gun).toBe(0);
+    expect(e.gunBurstLeft).toBe(WEAPONS.gunBurst * 2);
+    runFor(e, WEAPONS.gunBurst * 2 + 0.1, () => neutralControls());
+    expect(e.gunBurstLeft).toBe(0);
+    const flying = e.shots.length;
+    runFor(e, WEAPONS.gunInterval + 0.05, () => neutralControls());
+    expect(e.shots.length).toBeLessThanOrEqual(flying);
+    e.weaponAction("fire");
+    expect(e.gunBurstLeft).toBe(0);
   });
 
   it("a mine stays safe until it is armed, then wrecks whoever drives over it", () => {
@@ -128,5 +150,21 @@ describe("weapons", () => {
     e.advance(1 / 60);
     expect(e.player.oiled).toBeGreaterThan(0);
     expect(e.player.wrecked).toBe(0);
+  });
+
+  it("oil on another car counts as a hit and does not wreck them", () => {
+    const e = racing([bumper]);
+    park(e, 0, 700);
+    e.ammo.oil = 1;
+    e.weapon = "oil";
+    e.weaponAction("fire");
+    const slick = e.slicks[0];
+    const events: RaceEvent[] = [];
+    e.events.on((x) => events.push(x));
+    put(e, 1, slick.x, slick.z);
+    e.advance(1 / 60);
+    expect(e.vehicles[1].oiled).toBeGreaterThan(0);
+    expect(e.vehicles[1].wrecked).toBe(0);
+    expect(events.some((x) => x.type === "weaponHit" && x.kind === "oil" && x.target === 1)).toBe(true);
   });
 });

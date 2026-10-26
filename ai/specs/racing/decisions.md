@@ -28,6 +28,25 @@ flowchart TD
 
 ## Log
 
+### 2026-10-26 — A boom when a weapon connects
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-41 | A gun bolt, an armed mine, or an oil slick plays an explosion when it first catches another car. Dropping the weapon still only whooshes. Sliding on your own oil still says "Slippery!" and does not boom. Driving into your own mine still uses the crash bump | The player should hear that the weapon worked on an opponent, and a miss or a self-slip should not sound like a hit | Playing the boom on every button press; reusing the wall-bump noise; booming when you oil yourself |
+
+### 2026-10-26 — Boost on the left thumb
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-40 | On a phone, the boost button sits above the right steer arrow. GO stays on the right with nothing stacked on it | The right thumb has to hold GO, so a boost button above it cannot be pressed. The left thumb is already on the steer buttons and can reach up | Leaving boost above GO; putting it over the minimap on the far left; making boost a tap that replaces GO |
+
+### 2026-10-26 — Easier openers, longer guns
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-38 | Rival pace starts at 70% and climbs to the full tier pace over the next 6 races you start. The count is kept in racing settings on this browser. This softens R-34 for the first races only: a later race is still the fast field | The player was finishing 5th every time. The first races should be passable, and later ones should get harder because you have raced more, not because the track changed | Leaving the field at full pace from race one; making every race easy; speeding the rivals past the cars' own top speed |
+| R-39 | One gun pickup is 10 seconds of bolts, not one shot. Pressing F again with another charge adds another 10 seconds. The tray counts the seconds down. A crash pauses the clock. Mines and oil stay one use | One bolt was too little to catch the cars ahead. A timer matches "each one you pick up fires for a while" | A single faster bullet; holding F to spray with no limit; turning mines and oil into timers too |
+
 ### 2026-10-25 — Road weapons
 
 | ID | Decision | Why | Rejected |

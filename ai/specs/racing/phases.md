@@ -121,6 +121,34 @@ All tracks open from first launch (no unlocks; those stay in Phase 4/6).
 
 **Browser (embedded Chromium, `/play/racing`, desert, Super helper).** The tray showed GUN / MINE / OIL at 0 with "Q E switch · F fire". By 14 s the car had driven over icons and the tray read gun 1, mine 1. F dropped the mine (count went to 0 and a red mine sat on the road behind the car). 1 then F fired the gun (count went to 0). A further F flashed "Empty!". The pause card lists the weapon keys.
 
+### 3.4 Easier first races, gun bursts
+
+**Goal.** The first rival races are ones you can pass. The field gets faster each time you start another. A gun pickup fires for 10 seconds, not one shot.
+
+- Rival pace starts at 70% of the tier pace and reaches full pace on the 7th rival race you start (`AI.rookiePace`, `AI.paceRaces`). The count is saved in racing settings on this browser. Time trial does not count. Start over counts as another race.
+- The menu says whether the other cars are taking it easy, speeding up, or at full speed.
+- Pressing F with a gun spends one charge and shoots bolts for 10 seconds. Another charge, pressed again, adds another 10 seconds. The tray shows the seconds left. A crash pauses that clock. Mines and oil are still one use.
+
+**Verified.** `rivalPaceScale` steps from 0.7 to 1. A gas-only Helper leads the first desert race after 22 s, and is still off the win once the field is at full pace. A gun charge sets a 10 s burst, a second charge makes it 20 s, and the burst stops when the time is gone. Racing suite: 347 tests. `tsc --noEmit` clean.
+
+**Browser (embedded Chromium, `/play/racing`, desert, Super helper).** The menu said "Race 1: the other cars are taking it easy". By 24 s the car was in 1st at 84 MPH, with two guns. F started the burst and the tray counted down (it showed 1s while still in the lead). Back on the menu it said "Race 2: the other cars are taking it easy".
+
+### 3.5 Phone boost
+
+**Goal.** A phone player can boost while holding GO.
+
+The boost button is above the right steer arrow, on the left thumb. GO, STOP and DRIFT stay on the right, with nothing stacked on GO.
+
+**Browser (embedded Chromium, phone landscape 844×390).** The flame sits above the right steer arrow (x 127). GO is on the right (x 726) with STOP and DRIFT beside it, and nothing stacked on GO. The minimap stays clear of the flame.
+
+### 3.6 Weapon hits boom
+
+**Goal.** A gun, mine or oil slick that catches another car plays an explosion, so a hit sounds different from dropping the weapon.
+
+The boom plays on the hit: a bolt that wrecks a rival, a mine that wrecks a rival, or the moment a rival first slides on your oil. Pressing F still only whooshes. Your own oil still flashes "Slippery!". Your own mine still uses the crash bump.
+
+**Verified.** `engine/weapons.test.ts`: a rival placed on a fresh slick emits `weaponHit` kind `oil`, gets slippery, and is not wrecked. Gun and mine hits already emit `weaponHit`, and the sound hook plays the explosion when the target is not the player. `tsc --noEmit` clean. The boom itself is a synthesised cue (`fx.explosion`), so the browser could not be checked by ear.
+
 ---
 
 ## Phase 4 — collectibles, rewards, persistence

@@ -27,6 +27,7 @@ const initial: HudSnapshot = {
   crashed: false,
   weapon: "gun",
   gun: 0,
+  gunSeconds: 0,
   mine: 0,
   oil: 0,
   finishedPlace: null,

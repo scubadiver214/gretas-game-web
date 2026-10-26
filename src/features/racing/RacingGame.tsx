@@ -130,9 +130,11 @@ function Inner() {
   const play = () => {
     fx.unlock();
     setBoard(null);
-    engine.configure(world.track.def.tier, assist, rivalsFor(mode));
+    const entered = mode === "rivals" ? useRacingSettings.getState().racesEntered : 0;
+    engine.configure(world.track.def.tier, assist, rivalsFor(mode), entered);
     engine.reset();
     engine.start();
+    if (mode === "rivals") useRacingSettings.getState().noteRace();
   };
   const toMenu = () => engine.reset();
   // The grid behind the menu fills up or empties straight away.

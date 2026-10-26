@@ -19,7 +19,7 @@ import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import { SettingsToggles } from "@/components/HUD";
 import { useSettingsStore } from "@/features/settings/store";
 import { fx } from "@/lib/fx";
-import { GAME_TITLE, type CameraDistance } from "../config";
+import { GAME_TITLE, rivalPaceLabel, type CameraDistance } from "../config";
 import { ASSIST_LABELS, ASSIST_LEVELS, difficultyFor, type AssistLevel } from "../engine/difficulty";
 import type { Rival } from "../rivals";
 import { useRacingSettings, type RaceMode } from "../settings";
@@ -135,6 +135,7 @@ const MODES: readonly { id: RaceMode; emoji: string; name: string; blurb: string
 
 /** Race against the rival cars or drive alone against the clock, picked just before Play. */
 function ModePicker({ mode, rivals, onPick }: { mode: RaceMode; rivals: readonly Rival[]; onPick: (m: RaceMode) => void }) {
+  const racesEntered = useRacingSettings((s) => s.racesEntered);
   return (
     <Box sx={{ width: "100%" }}>
       <Box role="radiogroup" aria-label="How do you want to race?" sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
@@ -180,6 +181,11 @@ function ModePicker({ mode, rivals, onPick }: { mode: RaceMode; rivals: readonly
       {mode === "rivals" && (
         <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: "0.85rem", mt: 0.6, textAlign: { xs: "center", md: "left" }, textShadow: "0 1px 3px rgba(0,0,0,0.6)", [SHORT]: { display: "none" } }}>
           vs {rivals.map((r) => `${r.emoji} ${r.name}`).join("  ·  ")}
+        </Typography>
+      )}
+      {mode === "rivals" && (
+        <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: "0.85rem", textAlign: { xs: "center", md: "left" }, textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
+          {rivalPaceLabel(racesEntered)}
         </Typography>
       )}
     </Box>

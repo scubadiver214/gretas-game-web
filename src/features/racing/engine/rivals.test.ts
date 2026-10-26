@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RACE } from "../config";
+import { AI, RACE, rivalPaceLabel, rivalPaceScale } from "../config";
 import { RIVALS } from "../rivals";
 import { neutralControls, type RaceEvent } from "../types";
 import { loadWorld, TRACKS } from "../world";
@@ -119,8 +119,8 @@ describe("racing the rivals", () => {
     expect(s.standings.find((x) => x.racer === 0)!.name).toBe("");
   });
 
-  it("keeps a flat-out driver in a fight on the easiest track", () => {
-    const e = newRace({ assist: "helper" });
+  it("keeps a flat-out driver in a fight once the field is up to speed", () => {
+    const e = newRace({ assist: "helper", racesEntered: AI.paceRaces });
     goRacing(e);
     raceToTheEnd(e, () => ({ ...neutralControls(), throttle: 1 }));
     const s = e.summary();
@@ -132,12 +132,28 @@ describe("racing the rivals", () => {
     expect(last - winner).toBeLessThan(12);
   });
 
-  it("does not let a flat-out driver drop the field on the opening sprint", () => {
-    const e = newRace({ assist: "helper" });
+  it("does not let a flat-out driver drop the field once the rivals are up to speed", () => {
+    const e = newRace({ assist: "helper", racesEntered: AI.paceRaces });
     goRacing(e);
     runFor(e, 22, () => ({ ...neutralControls(), throttle: 1 }));
     expect(e.player.speed).toBeGreaterThan(25);
     expect(e.hud().rank).toBeGreaterThan(1);
+  });
+
+  it("lets a flat-out driver lead the first race, and speeds the field up over later races", () => {
+    expect(rivalPaceScale(0)).toBe(AI.rookiePace);
+    expect(rivalPaceScale(AI.paceRaces)).toBe(1);
+    expect(rivalPaceScale(2)).toBeGreaterThan(rivalPaceScale(0));
+    expect(rivalPaceScale(2)).toBeLessThan(rivalPaceScale(AI.paceRaces));
+    expect(rivalPaceLabel(0)).toContain("taking it easy");
+    expect(rivalPaceLabel(AI.paceRaces)).toContain("full speed");
+
+    const e = newRace({ assist: "helper", racesEntered: 0 });
+    expect(e.paceScale).toBe(AI.rookiePace);
+    goRacing(e);
+    runFor(e, 22, () => ({ ...neutralControls(), throttle: 1 }));
+    expect(e.player.speed).toBeGreaterThan(25);
+    expect(e.hud().rank).toBe(1);
   });
 });
 

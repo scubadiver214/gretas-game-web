@@ -18,11 +18,15 @@ interface RacingSettings {
   /** Which track the menu has picked. Anything unknown falls back to the first (see `trackById`). */
   trackId: string;
   mode: RaceMode;
+  /** Rival races started on this browser. The field gets faster as this grows. */
+  racesEntered: number;
   setAssist: (a: AssistLevel) => void;
   setCameraDistance: (d: CameraDistance) => void;
   setSimpleHud: (v: boolean) => void;
   setTrackId: (id: string) => void;
   setMode: (m: RaceMode) => void;
+  /** Count one rival race the player has started. */
+  noteRace: () => void;
 }
 
 const ASSISTS: readonly AssistLevel[] = ["off", "helper", "extra"];
@@ -37,15 +41,17 @@ export const useRacingSettings = create<RacingSettings>()(
       simpleHud: false,
       trackId: TRACKS[0].id,
       mode: "rivals",
+      racesEntered: 0,
       setAssist: (assist) => set({ assist }),
       setCameraDistance: (cameraDistance) => set({ cameraDistance }),
       setSimpleHud: (simpleHud) => set({ simpleHud }),
       setTrackId: (trackId) => set({ trackId }),
       setMode: (mode) => set({ mode }),
+      noteRace: () => set((s) => ({ racesEntered: s.racesEntered + 1 })),
     }),
     {
       name: "gretas-game:racing-settings",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() =>
         typeof window === "undefined" ? { getItem: () => null, setItem: () => undefined, removeItem: () => undefined } : window.localStorage,
       ),
@@ -58,6 +64,7 @@ export const useRacingSettings = create<RacingSettings>()(
           simpleHud: p.simpleHud === true,
           trackId: TRACKS.some((t) => t.id === p.trackId) ? (p.trackId as string) : TRACKS[0].id,
           mode: MODES.includes(p.mode as RaceMode) ? (p.mode as RaceMode) : "rivals",
+          racesEntered: typeof p.racesEntered === "number" && p.racesEntered >= 0 && Number.isFinite(p.racesEntered) ? Math.floor(p.racesEntered) : 0,
         } as RacingSettings;
       },
     },

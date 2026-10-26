@@ -115,7 +115,7 @@ export type RaceEvent =
   | { type: "weaponPickup"; id: number; kind: WeaponKind; ammo: number; racer: number }
   | { type: "weaponFire"; kind: WeaponKind; ammo: number; racer: number }
   | { type: "weaponEmpty"; kind: WeaponKind }
-  | { type: "weaponHit"; shooter: number; target: number; kind: "gun" | "mine" }
+  | { type: "weaponHit"; shooter: number; target: number; kind: "gun" | "mine" | "oil" }
   | { type: "oil"; racer: number }
   | { type: "weaponsReset" }
   | { type: "coinsReset" }
@@ -143,7 +143,10 @@ export interface HudSnapshot {
   crashed: boolean;
   /** Weapon currently selected. */
   weapon: WeaponKind;
+  /** Gun bursts still in your pocket. Each one is ten seconds of fire. */
   gun: number;
+  /** Seconds left on the gun that is firing now. 0 when it is quiet. */
+  gunSeconds: number;
   mine: number;
   oil: number;
   /** Set once the player has crossed the line. */
