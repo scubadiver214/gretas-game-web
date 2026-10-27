@@ -2,7 +2,7 @@
 
 Ordered. Phase in brackets.
 
-1. **Ship the API before (or with) the web change.** Until `gretas-game-api` `feature/hunting-scores` is merged and deployed, the web "Hunting" scoreboard tab gets a 400 and finished levels fail to post (the game itself works). Merging to `main` auto-deploys. [1]
+1. **Push `gretas-game-api` `main` when a deploy is wanted.** Hunting scores are committed locally (`a3b3268`) and not on `origin/main`. Until that push, the web "Quack" scoreboard tab gets a 400 and finished levels fail to post. Pushing `main` auto-deploys. [1]
 2. Hub hero art for the hunting card (`public/characters/…-neon.jpg`, same style as the others) if the user wants generated art. [1]
 3. Test on real phones/tablets: frame rate with the reflection at 0.35 scale, thumb reach of the buttons, iOS audio unlock. [6]
 4. Scoped rifle, binoculars, deer AI and Deep Mountain Woods. [2]

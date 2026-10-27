@@ -9,6 +9,6 @@ First-person, kid-friendly hunting and wildlife-photography game (ages 5–14).
 - Todos: [todos.md](todos.md)
 - Bugs: [bugs.md](bugs.md)
 
-Code: `gretas-game-web/src/features/hunting/`, route `/play/hunting`. API: `gretas-game-api` branch `feature/hunting-scores`.
+Code: `gretas-game-web/src/features/hunting/`, route `/play/hunting`. API: `gretas-game-api` `main` (local commit `a3b3268`, not pushed).
 
-Status: Phase 1 done 2026-10-26 (Peaceful Lakeside, levels 1–5, Wildlife Explorer, Field Journal). API change waits on branch `feature/hunting-scores`. Phases 2–6 not started.
+Status: Phase 1 done 2026-10-26 (Peaceful Lakeside, levels 1–5, Wildlife Explorer, Field Journal). API hunting scores are committed on local `main` and are not deployed until that branch is pushed. Phases 2–6 not started.

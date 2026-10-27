@@ -71,6 +71,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){var d=false;function hide(){if(d)return;d=true;var e=document.getElementById("boot-splash");if(!e)return;e.style.display="none";e.setAttribute("hidden","");e.setAttribute("aria-busy","false")}window.addEventListener("gretas-app-ready",hide);requestAnimationFrame(function(){setTimeout(hide,15000)})})();`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var key="gretas-chunk-reload";function recover(message){if(!message||!/ChunkLoadError|Loading chunk/.test(message))return;try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,"1")}catch(e){return}location.reload()}window.addEventListener("error",function(event){var err=event&&event.error;recover((event&&event.message)||(err&&(err.message||err.name))||"")});window.addEventListener("unhandledrejection",function(event){var reason=event&&event.reason;var message=typeof reason==="string"?reason:(reason&&(reason.message||reason.name))||"";recover(message)});window.addEventListener("load",function(){try{sessionStorage.removeItem(key)}catch(e){}})})();`,
+          }}
+        />
         <Providers>{children}</Providers>
         <ServiceWorker />
       </body>

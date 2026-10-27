@@ -16,14 +16,14 @@ Goal: a polished, playable World 1 that sets the quality bar for the rest.
 - [x] Ambient wildlife: swans, heron (stand / stalk / strike / fly), painted turtle, frog (hops between pads), loon (dives), kingfisher (arrive / perch / hover / dive), swimming mallards and wood ducks in Explorer mode
 - [x] Screenshot-style HUD (shell column, slate score plate with star markers and goal counter, timer, streak chip, reticle that turns gold on target), menus, pause with "How to play", touch controls, rotate prompt
 - [x] Synthesised audio: shotgun with lake echo, pump, shell eject, aim, quacks, wing flutter, splashes, shutter, chimes, lake ambience, and a calm suspenseful underscore on the music bus (D-21)
-- [x] Hub card, `hunting` leaderboard mode in the web app; API rules + migration on branch `feature/hunting-scores`
+- [x] Hub card, `hunting` leaderboard mode in the web app; API rules + migration committed on `gretas-game-api` `main` (`a3b3268`, not pushed)
 - [x] Tests for engine, flight, shooting, scoring/balance, photos, levels, progress, badges
 
 ### What exists
 
 - `src/features/hunting/` — `engine/` (pure TS), `render/` (R3F + `systems/` classes), `components/` (MUI), `levels.ts`, `species.ts`, `badges.ts`, `progress.ts`, `audio.ts`, `fx.ts`, `HuntingGame.tsx`; route `src/app/play/hunting/page.tsx`.
 - Shared: `GameMode` gains `hunting` (player store v10 migration, scoreboard accent, share card, My Scores, hub card, neon tokens).
-- API (uncommitted, branch `feature/hunting-scores`): `ScoreRules` modes + max 30,000; migration `M202610260001_AddHuntingScores`; unit + integration tests.
+- API (committed on local `main`, not pushed): `ScoreRules` modes + max 30,000; migration `M202610260001_AddHuntingScores`; unit + integration tests.
 
 ### How it was verified
 

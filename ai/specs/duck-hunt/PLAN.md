@@ -11,7 +11,7 @@ Feature slug: `duck-hunt`. Code: `src/features/hunting/`. Route: `/play/hunting`
 | React + TS + three + R3F + drei + zustand | All present (Next 16 App Router, React 19.2, three 0.186, R3F 9, drei 10, zustand 5, MUI 9 for UI, vitest 5) | Reuse. **R3F for the whole game scene** (user's call, see D-01). No new dependencies. |
 | Tailwind for menus/HUD | Repo uses MUI `sx` everywhere, no Tailwind | MUI `sx` + a game-local palette (`components/hudStyle.ts`). |
 | Player profiles + auth | No auth. One nickname identity per device (`features/player/store.ts`), mirrored server-side | Same identity. Game progress is a device-local zustand store (`progress.ts`). |
-| .NET Aspire + Postgres backend | `gretas-game-api`: .NET 10 minimal API + Dapper + FluentMigrator; per-mode score rules | Finished levels post to `POST /api/scores` as mode `hunting` (direct submit, like racing). API change lives on branch `feature/hunting-scores`. |
+| .NET Aspire + Postgres backend | `gretas-game-api`: .NET 10 minimal API + Dapper + FluentMigrator; per-mode score rules | Finished levels post to `POST /api/scores` as mode `hunting` (direct submit, like racing). API change is committed on `gretas-game-api` `main`. |
 | GLTF assets | None for this game | Procedural models behind small builder functions (`render/models/*`). A GLB loader can replace any builder later. |
 | Physics engine | None in repo | Hitscan rays against forgiving spheres, pure TS. |
 

@@ -2,6 +2,18 @@
 
 Newest first. IDs are stable; refer to them from code reviews and later sessions.
 
+## 2026-10-26 — User commits and pushes
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-26 | Agents do not commit or push. API work stays on `gretas-game-api` `main` with no feature branch, and the user commits and pushes that branch themselves. | The user commits and pushes `main` manually. A push of API `main` also deploys. | Agents committing or pushing when a task finishes. |
+
+## 2026-10-26 — API commits on main
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-25 | `gretas-game-api` hunting score changes stay on `main`. The local `feature/hunting-scores` branch was removed after fast-forwarding `main` to `a3b3268`. That commit is local only. | The user wants API work committed on `main`, not a feature branch. Pushing `main` still auto-deploys, so it was not pushed. | Leaving the work on `feature/hunting-scores`. |
+
 ## 2026-10-26 — Expert Ranger accuracy
 
 | ID | Decision | Why | Rejected |
