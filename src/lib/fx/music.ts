@@ -6,10 +6,12 @@
  * still apply.
  *
  * Menus and the kitchen shift play music. Delivery, frogger, and wordle stay
- * silent during a round. A new visit (after the music has been stopped)
- * shuffles again and avoids opening with the track that just played.
+ * silent during a round. Racing and hunting bring their own synthesised
+ * scores. A new visit (after the music has been stopped) shuffles again and
+ * avoids opening with the track that just played.
  */
 
+import { isHuntPlaying, startHunt, stopHunt } from "./hunt/player";
 import { isMetalPlaying, startMetal, stopMetal } from "./metal/player";
 import { getAudioContext, getMusicBus } from "./mixer";
 import { KITCHEN_BED, SHOP_TRACKS, shuffleShopTracks, type ShopTrack } from "./shopTracks";
@@ -17,8 +19,8 @@ import { KITCHEN_BED, SHOP_TRACKS, shuffleShopTracks, type ShopTrack } from "./s
 /** Kitchen bed sits under SFX at about a third of menu loudness. */
 const KITCHEN_BED_GAIN = 0.32;
 
-/** "racing" is synthesized (see ./metal); the rest stream from public/music. */
-export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger" | "racing";
+/** "racing" and "hunting" are synthesized; the rest stream from public/music. */
+export type MusicTrackId = "menu" | "kitchen" | "delivery" | "frogger" | "racing" | "hunting";
 
 let audioEl: HTMLAudioElement | null = null;
 let mediaNode: MediaElementAudioSourceNode | null = null;
@@ -128,9 +130,26 @@ function fadeIn(ac: AudioContext, target = 1): void {
   gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, target), t + 0.8);
 }
 
+function parkPlaylist(ac: AudioContext): void {
+  if (!audioEl || !gainNode) return;
+  const t = ac.currentTime;
+  gainNode.gain.cancelScheduledValues(t);
+  gainNode.gain.setValueAtTime(Math.max(0.0001, gainNode.gain.value), t);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  const parked = audioEl;
+  fadeTimer = setTimeout(() => parked.pause(), 350);
+}
+
+function synthAlready(id: MusicTrackId): boolean {
+  if (currentTrack !== id) return false;
+  if (id === "racing") return isMetalPlaying();
+  if (id === "hunting") return isHuntPlaying();
+  return !!audioEl && !audioEl.paused;
+}
+
 /** Start a track, or keep playing if that same track is already going. */
 export function startMusic(id: MusicTrackId): void {
-  if (id === "racing" ? currentTrack === id && isMetalPlaying() : currentTrack === id && audioEl && !audioEl.paused) return;
+  if (synthAlready(id)) return;
 
   const ac = getAudioContext();
   const bus = getMusicBus();
@@ -138,23 +157,20 @@ export function startMusic(id: MusicTrackId): void {
 
   cancelFade();
 
-  if (id === "racing") {
-    // The band replaces the playlist: park the file stream and bring the amps up.
-    if (audioEl && gainNode) {
-      const t = ac.currentTime;
-      gainNode.gain.cancelScheduledValues(t);
-      gainNode.gain.setValueAtTime(Math.max(0.0001, gainNode.gain.value), t);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-      const parked = audioEl;
-      fadeTimer = setTimeout(() => parked.pause(), 350);
-    }
+  if (id === "racing" || id === "hunting") {
+    // The score replaces the playlist: park the file stream and bring the amps up.
+    parkPlaylist(ac);
+    if (id !== "racing" && isMetalPlaying()) stopMetal(0.3);
+    if (id !== "hunting" && isHuntPlaying()) stopHunt(0.3);
     currentTrack = id;
     if (ac.state === "suspended") void ac.resume();
-    startMetal(ac, bus);
+    if (id === "racing") startMetal(ac, bus);
+    else startHunt(ac, bus);
     return;
   }
 
   if (isMetalPlaying()) stopMetal(0.3);
+  if (isHuntPlaying()) stopHunt(0.3);
   ensureNodes(ac, bus);
   currentTrack = id;
 
@@ -182,6 +198,11 @@ export function stopMusic(fadeSeconds = 0.5, keepQueue = false): void {
   if (currentTrack === "racing") {
     currentTrack = null;
     stopMetal(fadeSeconds);
+    return;
+  }
+  if (currentTrack === "hunting") {
+    currentTrack = null;
+    stopHunt(fadeSeconds);
     return;
   }
   if (!audioEl || !gainNode || !currentTrack) {

@@ -20,6 +20,11 @@ export default function MusicDirector() {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Hunting plays its own underscore for the whole screen, including the
+    // menu. This effect runs after the page's, so a menu play here would
+    // replace it. The page starts the underscore and restores the playlist
+    // when you leave.
+    if (pathname === "/play/hunting") return;
     music.play("menu");
     return listenForPlayback();
   }, [pathname]);

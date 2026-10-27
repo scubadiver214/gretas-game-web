@@ -38,6 +38,8 @@ export const N = {
   clawDeep: "#D13A9A",
   racing: "#FFB020",
   racingDeep: "#D98400",
+  hunting: "#2FD8B0",
+  huntingDeep: "#13997C",
 
   /** Stars, coins, streaks. */
   sun: "#FFD54D",

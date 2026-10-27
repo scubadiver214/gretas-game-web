@@ -112,6 +112,7 @@ const MODE_ACCENT: Record<GameMode, string> = {
   frogger: N.frogger,
   claw: N.claw,
   racing: N.racing,
+  hunting: N.hunting,
 };
 
 export function formatWhen(iso: string): string {

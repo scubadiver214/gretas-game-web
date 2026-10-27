@@ -1,12 +1,12 @@
 export type CharacterId = "boy" | "girl";
 
-export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger" | "claw" | "racing";
+export type GameMode = "kitchen" | "delivery" | "wordle" | "frogger" | "claw" | "racing" | "hunting";
 
 /** Every playable game, in hub/scoreboard order. */
-export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger", "claw", "racing"] as const;
+export const GAME_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger", "claw", "racing", "hunting"] as const;
 
 /** Games that post a finished round straight to POST /api/scores. Frogger and claw use their own attempt APIs. */
-export const DIRECT_SUBMIT_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "racing"] as const;
+export const DIRECT_SUBMIT_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "racing", "hunting"] as const;
 
 /** Games that have a daily-challenge board. */
 export const DAILY_MODES: readonly GameMode[] = ["kitchen", "delivery", "wordle", "frogger"] as const;
@@ -22,6 +22,7 @@ export const MODE_LABELS: Record<GameMode, string> = {
   frogger: "Frogger Adventure",
   claw: "Bea's Claw-some Adventure",
   racing: "The Fitz and Furious",
+  hunting: "Elijah's Quack Attack",
 };
 
 /** One-word labels for tabs and small buttons. */
@@ -32,6 +33,7 @@ export const MODE_SHORT_LABELS: Record<GameMode, string> = {
   frogger: "Frogger",
   claw: "Claw",
   racing: "Racing",
+  hunting: "Quack",
 };
 
 export const MODE_EMOJI: Record<GameMode, string> = {
@@ -41,6 +43,7 @@ export const MODE_EMOJI: Record<GameMode, string> = {
   frogger: "🐸",
   claw: "🧸",
   racing: "🏎️",
+  hunting: "🦆",
 };
 
 export const CHARACTER_LABELS: Record<CharacterId, string> = {

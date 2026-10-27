@@ -30,6 +30,7 @@ Create the whole set the first time you touch a feature that has no folder. Copy
 | [frogger](frogger/) | Frogger Adventure | `src/features/frogger/` | stub |
 | [delivery](delivery/) | Bike Delivery | `src/features/delivery/` | stub |
 | [wordle](wordle/) | Word Quest | `src/features/wordle/` | filled (lint fix logged) |
+| [duck-hunt](duck-hunt/) | Elijah's Quack Attack | `src/features/hunting/` | filled (phase 1 done) |
 
 Older notes that pre-date this folder:
 

@@ -17,6 +17,7 @@ import { CLIP, N, neonGlow, panelGlow, textGlow } from "@/design/neon";
 import AvatarBadge from "@/features/claw/components/AvatarBadge";
 import { GAME_TITLE as CLAW_TITLE } from "@/features/claw/config";
 import { GAME_TITLE as RACING_TITLE } from "@/features/racing/config";
+import { GAME_TITLE as HUNTING_TITLE } from "@/features/hunting/config";
 import { useClawProfile } from "@/features/claw/hooks";
 import { usePlayerStore } from "@/features/player/store";
 import { usePersonalBests } from "@/features/scores/hooks";
@@ -97,6 +98,18 @@ const ADVENTURES: {
     arcade: true,
     to: "/play/racing",
     status: "5 tracks · New!",
+    daily: false,
+  },
+  {
+    mode: "hunting",
+    title: HUNTING_TITLE,
+    blurb: "Duck hunts and wildlife photos at a mountain lake",
+    emoji: "🦆",
+    art: { src: "/characters/hunting-quack-neon.jpg", alt: "A cheerful mallard flying over a glowing mountain lake" },
+    accent: N.hunting,
+    arcade: true,
+    to: "/play/hunting",
+    status: "Lakeside · New!",
     daily: false,
   },
 ];

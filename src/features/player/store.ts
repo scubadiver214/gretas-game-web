@@ -22,7 +22,7 @@ import {
 } from "./types";
 
 const HISTORY_LIMIT = 200;
-const STORE_VERSION = 9;
+const STORE_VERSION = 10;
 
 interface PlayerState {
   nickname: string;
@@ -253,6 +253,14 @@ export function migratePlayerState(persisted: unknown, version: number): Partial
   }
   if (version < 9) {
     // New "racing" mode: give existing players zeroed racing counters.
+    p = {
+      ...p,
+      roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
+      stars: { ...EMPTY_STARS, ...p.stars },
+    };
+  }
+  if (version < 10) {
+    // New "hunting" mode: give existing players zeroed hunting counters.
     p = {
       ...p,
       roundsPlayed: { ...EMPTY_ROUNDS, ...p.roundsPlayed },
