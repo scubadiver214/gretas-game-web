@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-10-27 — Production shop file lives in tmp
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-16 | The shop file is `SCOOPS_DATA_DIR`, or `/tmp/gretas-scoops/scoops-db.json`. If that cannot be created, the process keeps a seeded shop in memory and the route still returns JSON. | `www.gretagames.com/api/scoops/recipes` returned an empty 500. The container runs as `nextjs` and cannot create `.data` under `/app`, and that throw happened before the handler could answer. | Writing `.data` next to `server.js`. Letting the route crash with an empty 500. |
+
 ## 2026-10-27 — Plans stay in ai/specs
 
 | ID | Decision | Why | Rejected |

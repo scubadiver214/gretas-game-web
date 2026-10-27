@@ -30,14 +30,19 @@ async function dispatch(req: NextRequest, ctx: RouteContext): Promise<Response> 
   req.nextUrl.searchParams.forEach((value, key) => {
     query[key] = value;
   });
-  const result = handleScoops(getScoopsRepository(), {
-    method: req.method,
-    path,
-    player: req.headers.get("x-scoops-player"),
-    body,
-    query,
-  });
-  return Response.json(result.body, { status: result.status });
+  try {
+    const result = handleScoops(getScoopsRepository(), {
+      method: req.method,
+      path,
+      player: req.headers.get("x-scoops-player"),
+      body,
+      query,
+    });
+    return Response.json(result.body, { status: result.status });
+  } catch (err) {
+    console.error("[scoops]", err);
+    return Response.json({ message: DROPPED_SCOOP }, { status: 500 });
+  }
 }
 
 export { dispatch as GET, dispatch as POST, dispatch as PUT, dispatch as DELETE };

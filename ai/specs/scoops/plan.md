@@ -36,7 +36,7 @@ src/app/play/scoops/  page, loading, error
 src/app/api/scoops/   route handler (not the .NET proxy)
 ```
 
-Visual components never import the repository. They call the scoops client, which calls `/api/scoops`. The handler calls `ScoopsRepository`. Tests use an in-memory repository. The dev server uses a JSON file at `gretas-game-web/.data/scoops-db.json` (gitignored).
+Visual components never import the repository. They call the scoops client, which calls `/api/scoops`. The handler calls `ScoopsRepository`. Tests use an in-memory repository. The server stores the shop at `SCOOPS_DATA_DIR`, or `/tmp/gretas-scoops/scoops-db.json`, because the production image cannot create a folder next to `server.js`. If that file cannot be created, the process serves the seeded shop from memory instead of returning a 500.
 
 The file is a normalized database: users, profiles, recipes, recipe flavors/toppings/sauces/extras, favorites, achievements, unlocks, makes, discoveries, daily events. Catalog rows (the 15 flavors and the rest) stay in `game-data` so a new flavor is a data row, not a UI edit.
 

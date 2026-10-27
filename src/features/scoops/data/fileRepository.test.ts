@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { FileScoopsRepository } from "./fileRepository";
+import { createScoopsRepository } from "./serverRepository";
 
 const dirs: string[] = [];
 
@@ -30,5 +31,14 @@ describe("scoops file store", () => {
     });
     const second = new FileScoopsRepository(file);
     expect(second.getRecipe("Greta", saved.recipe.id).name).toBe("Saved Cone");
+  });
+
+  it("still serves the community list when the shop file cannot be created", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scoops-"));
+    dirs.push(dir);
+    const blocker = path.join(dir, "not-a-directory");
+    fs.writeFileSync(blocker, "x");
+    const repo = createScoopsRepository(path.join(blocker, "scoops-db.json"));
+    expect(repo.listRecipes("Shelby", "community", "newest").length).toBeGreaterThan(0);
   });
 });
