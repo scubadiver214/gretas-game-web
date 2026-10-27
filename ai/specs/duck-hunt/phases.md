@@ -32,6 +32,28 @@ Goal: a polished, playable World 1 that sets the quality bar for the rest.
 - In the browser (Cursor's browser, desktop 1553×1284 and 844×390 touch emulation): menu over the live lake, level select, intro, countdown, shooting a duck (sparkles, +150 popup, gold star, shell spent, pump), results screen with stars and badge, Wildlife Explorer photos of heron, turtle, frog and swan (polaroid card with thumbnail and fact, journal entries saved), Field Journal, pause menu, touch controls. ~200 fps on the desktop GPU.
 - `gretas-game-api`: `dotnet test` 120/120 (with Docker), including a `hunting` submit through the real migration.
 
+## Phase 1b — Busier duck flights (done 2026-10-27)
+
+Goal: more kinds of ducks to shoot, richer flying formations, and more birds in the air at once on the lakeside levels.
+
+- [x] Six shootable ducks (mallard, wood duck, pintail, teal, canvasback, shoveler), drake and hen
+- [x] Formations beyond the V: echelon, line, string, diamond, stack, chevron
+- [x] Flight patterns: low pass, overhead, hook back, peel apart, two groups crossing
+- [x] Levels 2–5 keep the next flock coming while the last is still up; level 1 stays one flock at a time
+- [x] Score cap still holds; ducks left in the air when the round ends count as escaped
+- [x] A shot aimed at a duck or a flock scatters every survivor and speeds them up for a few seconds
+
+### What exists
+
+Flying targets are mallard, wood duck, northern pintail, green-winged teal, canvasback and northern shoveler. Swimming wood ducks stay protected. A hit popup names the duck. New species are in the Field Journal (12 animals) once photographed. Flocks use a V, echelon, line, string, diamond, stack or chevron, and may skim low, fly high, hook back, peel apart, or cross from both sides. Level 1 is still one flock at a time (10 ducks). Levels 2–4 overlap (21, 24 and 28 ducks). Level 5 keeps up to 8 in the air, 36 per round.
+
+### How it was verified
+
+- `pnpm exec vitest run src/features/hunting` — 6 files, 56 tests. A bot still clears every level on every difficulty, and hits + escaped equals ducks spawned. Score ceilings stay under 30,000.
+- `pnpm exec tsc --noEmit` clean.
+- In the browser on Duck Patrol: several ducks in the air at once (a pair on the right, another bird off to the left). Letting the round finish with no shots reported 0/21, so every flock had spawned.
+- Scatter-on-miss: `HuntEngine.test.ts` aims just above a pair, misses, and both birds leave the formation and speed up. A shot into the sky leaves the flock together. In the browser, a shot past the first duck of First Flight scored 0 and spent a shell.
+
 ## Phase 2 — Core gameplay: rifle, scope, deer, skeet, trap (not started)
 
 Scoped rifle (2×/4×/6×), binoculars, deer AI (graze, walk, run, cover), Deep Mountain Woods as first deer world, skeet and trap ranges with clay physics and break particles.

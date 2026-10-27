@@ -2,6 +2,18 @@
 
 Newest first. IDs are stable; refer to them from code reviews and later sessions.
 
+## 2026-10-27 — Misses spook the flock
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-28 | A shot aimed within 18° of any duck spooks that whole flock. Every bird that was not hit peels onto its own path, weaves harder, and flies at 1.7× speed for 2.6 seconds. A second shot at them refreshes the spook. A shot pointed away from them does nothing. | A miss used to bother only a duck the pellets passed within 5 m of, so the rest of the flock stayed in line and the follow-up was easy. The ask was that a shot in their direction makes the group scatter and speed up. | Spooking every duck in the sky. Keeping the 5 m near-miss, which ignored a flock you were clearly aiming at. Leaving them fast for the rest of the round (levels would stop being finishable, especially for younger players). |
+
+## 2026-10-27 — Busier skies
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-27 | Six ducks can be shot in the air: mallard, wood duck, northern pintail, green-winged teal, canvasback and northern shoveler, each as a drake or a hen. Swimming wood ducks stay protected. Flocks use a V, echelon, line, string, diamond, stack or chevron, and may skim low, fly overhead, hook back, peel apart, or cross from both sides. Level 1 still waits for a clear sky. Levels 2–5 launch the next flock while the last is up (champion: up to 8 at once, 36 a round). Points per duck are unchanged. Star thresholds moved up. A duck still flying when the round ends counts as escaped. | The ask was more kinds of ducks, richer formations, and more to shoot. Waiting for an empty sky made the lake feel empty. Same points keep every level under the 30,000 API cap. | Shooting the ducks that are swimming. Shrinking teal until an Expert center-shot misses. Raising the hit goal on every level. Clay targets (phase 2). |
+
 ## 2026-10-26 — User commits and pushes
 
 | ID | Decision | Why | Rejected |

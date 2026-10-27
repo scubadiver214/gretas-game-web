@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Group, Vector3 } from "three";
 import type { HuntEngine } from "../engine/HuntEngine";
 import type { Animal } from "../types";
-import { createBirdKit, foldWings, openWings, poseWings, type BirdKind, type BirdRig } from "./models/birds";
+import { createBirdKit, flyingKind, foldWings, openWings, poseWings, type BirdKind, type BirdRig } from "./models/birds";
 import { createCritterKit, type CritterRig } from "./models/critters";
 
 const _target = new Vector3();
@@ -48,7 +48,7 @@ export function Animals({ engine }: { engine: HuntEngine }) {
   );
 
   const duckRigs = useRef(new Map<number, BirdRig>());
-  const freeDucks = useRef<Record<string, BirdRig[]>>({ mallardDrake: [], mallardHen: [] });
+  const freeDucks = useRef<Partial<Record<BirdKind, BirdRig[]>>>({});
   const wildRigs = useRef(new Map<number, WildRig>());
   const wildSource = useRef<Animal[] | null>(null);
 
@@ -63,8 +63,9 @@ export function Animals({ engine }: { engine: HuntEngine }) {
       seen.add(d.id);
       let rig = duckRigs.current.get(d.id);
       if (!rig) {
-        const kind: BirdKind = d.hen ? "mallardHen" : "mallardDrake";
-        rig = freeDucks.current[kind].pop() ?? birds.create(kind);
+        const kind = flyingKind(d.species, d.hen);
+        const bucket = freeDucks.current[kind] ?? (freeDucks.current[kind] = []);
+        rig = bucket.pop() ?? birds.create(kind);
         if (!rig.root.parent) dg.add(rig.root);
         rig.root.visible = true;
         openWings(rig);
@@ -86,7 +87,7 @@ export function Animals({ engine }: { engine: HuntEngine }) {
     for (const [id, rig] of duckRigs.current) {
       if (seen.has(id)) continue;
       rig.root.visible = false;
-      freeDucks.current[rig.kind]?.push(rig);
+      (freeDucks.current[rig.kind] ?? (freeDucks.current[rig.kind] = [])).push(rig);
       duckRigs.current.delete(id);
     }
 

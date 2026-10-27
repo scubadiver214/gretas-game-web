@@ -6,7 +6,7 @@ import { huntSfx } from "./audio";
 import { EYE } from "./config";
 import type { HuntEngine } from "./engine/HuntEngine";
 import { clamp, dist, wrapAngle } from "./engine/vec";
-import { protectedMessage } from "./species";
+import { protectedMessage, SPECIES_BY_ID } from "./species";
 import type { Vec3 } from "./types";
 import { useHuntHud } from "./useHuntHud";
 
@@ -74,14 +74,16 @@ export function bindHuntFx(engine: HuntEngine, project: Project): () => void {
         duckMusic(0.45, 0.2, 0.55);
         haptic("success");
         const at = project(e.pos);
-        if (at) hud.popup({ x: at.x, y: at.y, text: `+${e.points}`, sub: e.multiplier > 1 ? `×${e.multiplier}` : e.long ? "LONG SHOT" : undefined, tone: e.long ? "pink" : "gold" });
+        const name = SPECIES_BY_ID[e.species].name;
+        const sub = e.multiplier > 1 ? `${name}  ×${e.multiplier}` : e.long ? `${name}  ·  long shot` : name;
+        if (at) hud.popup({ x: at.x, y: at.y, text: `+${e.points}`, sub, tone: e.long ? "pink" : "gold" });
         const call = STREAK_CALLS[e.streak];
         if (call) hud.flash(call, "gold");
         break;
       }
       case "multi": {
         huntSfx.multi();
-        hud.flash(e.count >= 3 ? `🎉 TRIPLE! +${e.points}` : `✌️ DOUBLE! +${e.points}`, "pink");
+        hud.flash(e.count >= 4 ? `🎉 ${e.count} AT ONCE! +${e.points}` : e.count >= 3 ? `🎉 TRIPLE! +${e.points}` : `✌️ DOUBLE! +${e.points}`, "pink");
         break;
       }
       case "takeoff": {

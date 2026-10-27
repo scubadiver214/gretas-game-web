@@ -1,4 +1,4 @@
-import type { Activity } from "./types";
+import type { Activity, FlightPattern, FormationId, GameDuckId } from "./types";
 
 export type WorldId = "lakeside" | "woods" | "jungle" | "safari" | "mountains" | "range";
 
@@ -24,11 +24,23 @@ export const WORLDS: readonly WorldDef[] = [
 
 export type SpawnFrom = "reeds" | "side" | "any";
 
+export interface WaveDef {
+  size: number;
+  /** Seconds before this wave. Without `overlap`, the clock starts once the previous flock has left. */
+  delay: number;
+  from: SpawnFrom;
+  formation?: FormationId;
+  pattern?: FlightPattern;
+  /** Species of the leader. A few followers may be a different duck. */
+  species?: GameDuckId;
+}
+
 export type FlightPlan =
   | {
       kind: "waves";
-      /** `delay` = seconds after the previous wave has cleared (first wave: after GO). */
-      waves: readonly { size: number; delay: number; from: SpawnFrom }[];
+      /** When true, the next flock launches on its delay even if the last one is still in the air. */
+      overlap?: boolean;
+      waves: readonly WaveDef[];
     }
   | {
       kind: "continuous";
@@ -73,7 +85,7 @@ export interface LevelDef {
   starScores: readonly [number, number];
 }
 
-const wave = (size: number, delay: number, from: SpawnFrom = "any") => ({ size, delay, from });
+const wave = (size: number, delay: number, from: SpawnFrom = "any", formation?: FormationId, pattern?: FlightPattern, species?: GameDuckId): WaveDef => ({ size, delay, from, formation, pattern, species });
 
 export const LEVELS: readonly LevelDef[] = [
   {
@@ -81,75 +93,122 @@ export const LEVELS: readonly LevelDef[] = [
     number: 1,
     world: "lakeside",
     name: "First Flight",
-    blurb: "Hit 3 slow ducks as they lift off the reeds.",
-    tip: "Ducks burst out of the reeds. Wait for them to climb, then aim and click.",
+    blurb: "Hit 3 ducks. Mallards, teal and wood ducks take turns lifting off.",
+    tip: "Ducks burst out of the reeds. Wait for them to climb, then aim and click. A line of pintails comes later.",
     activity: "ducks",
     objective: { kind: "hits", count: 3 },
     timeLimit: 120,
     reserve: null,
-    flights: { kind: "waves", waves: [wave(1, 1.2, "reeds"), wave(1, 2.5, "reeds"), wave(1, 2.5, "reeds"), wave(1, 2.5, "reeds"), wave(1, 2.5, "reeds")] },
+    flights: {
+      kind: "waves",
+      waves: [
+        wave(1, 1, "reeds", "v", "patrol", "mallard"),
+        wave(1, 1.3, "reeds", "v", "patrol", "teal"),
+        wave(2, 1.3, "reeds", "line", "patrol", "mallard"),
+        wave(1, 1.3, "reeds", "v", "patrol", "woodDuck"),
+        wave(3, 1.4, "side", "echelon", "patrol", "pintail"),
+        wave(2, 1.3, "side", "line", "low", "teal"),
+      ],
+    },
     duck: { speed: 5.2, size: 1.25, jink: 0.15, waypoints: [2, 3], airTime: 10, altitude: [6, 13], distance: [20, 36] },
-    starScores: [800, 1400],
+    starScores: [1000, 1800],
   },
   {
     id: "lakeside-2",
     number: 2,
     world: "lakeside",
     name: "Duck Patrol",
-    blurb: "Hit 5 ducks. Some fly in pairs.",
-    tip: "Hit ducks in a row to build your streak and multiply your points.",
+    blurb: "Hit 5 ducks. Flocks of mallards, pintails and teal stay up together.",
+    tip: "A new flock arrives while the last one is still flying. Swing from one duck to the next to build your streak.",
     activity: "ducks",
     objective: { kind: "hits", count: 5 },
     timeLimit: 120,
     reserve: null,
-    flights: { kind: "waves", waves: [wave(1, 1.2, "reeds"), wave(2, 2.2), wave(1, 2), wave(2, 2.2), wave(2, 2)] },
-    duck: { speed: 6.3, size: 1.15, jink: 0.3, waypoints: [2, 4], airTime: 10, altitude: [6, 17], distance: [22, 46] },
-    starScores: [1300, 2200],
+    flights: {
+      kind: "waves",
+      overlap: true,
+      waves: [
+        wave(2, 0.8, "reeds", "v", "patrol", "mallard"),
+        wave(3, 3.2, "side", "echelon", "patrol", "pintail"),
+        wave(2, 3.4, "side", "line", "low", "teal"),
+        wave(4, 3.8, "any", "chevron", "patrol", "woodDuck"),
+        wave(3, 3.6, "side", "string", "hook", "mallard"),
+        wave(4, 4, "side", "diamond", "peel", "shoveler"),
+        wave(3, 3.6, "side", "line", "cross", "canvasback"),
+      ],
+    },
+    duck: { speed: 6.3, size: 1.15, jink: 0.3, waypoints: [2, 4], airTime: 11, altitude: [6, 17], distance: [22, 46] },
+    starScores: [1800, 3200],
   },
   {
     id: "lakeside-3",
     number: 3,
     world: "lakeside",
     name: "Double Trouble",
-    blurb: "Ducks fly in pairs. Hit both ducks of one pair.",
-    tip: "Hit the first duck, then swing to its partner before it gets away.",
+    blurb: "Hit both ducks of a pair. Flocks cross, hook back, and peel apart.",
+    tip: "Hit the first duck, then swing to its partner. Crossing flocks meet in front of you.",
     activity: "ducks",
     objective: { kind: "doubles", count: 1 },
     timeLimit: 130,
     reserve: null,
-    flights: { kind: "waves", waves: [wave(2, 1.2, "reeds"), wave(2, 2.2, "reeds"), wave(2, 2.2), wave(2, 2.2, "reeds"), wave(2, 2.2), wave(2, 2.2)] },
+    flights: {
+      kind: "waves",
+      overlap: true,
+      waves: [
+        wave(2, 0.7, "reeds", "line", "patrol"),
+        wave(2, 2.6, "side", "line", "cross"),
+        wave(4, 3.2, "side", "diamond", "peel"),
+        wave(2, 3, "side", "string", "hook"),
+        wave(3, 3.1, "side", "echelon", "low"),
+        wave(4, 3.3, "side", "chevron", "high"),
+        wave(2, 2.8, "reeds", "v", "patrol"),
+        wave(5, 3.4, "side", "stack", "patrol"),
+      ],
+    },
     duck: { speed: 6.6, size: 1.12, jink: 0.35, waypoints: [2, 4], airTime: 10, altitude: [6, 18], distance: [22, 48] },
-    starScores: [1700, 2900],
+    starScores: [2200, 3800],
   },
   {
     id: "lakeside-4",
     number: 4,
     world: "lakeside",
     name: "Lakeside Challenge",
-    blurb: "Hit 8 ducks with a limited box of shells.",
-    tip: "Shells are limited, so wait for a clear shot. Saved shells give bonus points.",
+    blurb: "Hit 8 ducks. Big flocks at every height, and shells are limited.",
+    tip: "Low skimmers, a high chevron and a stacked flock. Wait for a clear shot. Saved shells give bonus points.",
     activity: "ducks",
     objective: { kind: "hits", count: 8 },
     timeLimit: 150,
     reserve: 10,
-    flights: { kind: "waves", waves: [wave(2, 1.2, "reeds"), wave(2, 2), wave(3, 2.2), wave(2, 2), wave(3, 2.2), wave(2, 2)] },
+    flights: {
+      kind: "waves",
+      overlap: true,
+      waves: [
+        wave(3, 0.7, "reeds", "v", "patrol"),
+        wave(4, 3.1, "side", "line", "low"),
+        wave(5, 3.3, "side", "chevron", "high"),
+        wave(4, 3.5, "side", "diamond", "peel"),
+        wave(3, 3.2, "side", "string", "hook"),
+        wave(5, 3.4, "side", "stack", "cross"),
+        wave(4, 3.3, "any", "echelon", "patrol"),
+      ],
+    },
     duck: { speed: 7.4, size: 1.05, jink: 0.5, waypoints: [2, 4], airTime: 9, altitude: [6, 20], distance: [24, 54] },
-    starScores: [2200, 3600],
+    starScores: [2800, 4400],
   },
   {
     id: "lakeside-5",
     number: 5,
     world: "lakeside",
     name: "Lakeside Champion",
-    blurb: "Beat the clock: hit 10 ducks before time runs out.",
-    tip: "Ducks keep coming from every side. Keep your streak going for big points.",
+    blurb: "Beat the clock: hit 10 ducks. The sky stays full.",
+    tip: "Lines, stacks and crossing flocks keep coming. Don't wait for an empty sky.",
     activity: "ducks",
     objective: { kind: "hits", count: 10 },
     timeLimit: 75,
     reserve: null,
-    flights: { kind: "continuous", interval: [2.2, 3.6], size: [1, 3], maxAirborne: 5, maxDucks: 30, from: "any" },
-    duck: { speed: 8.4, size: 1, jink: 0.6, waypoints: [2, 4], airTime: 8, altitude: [6, 24], distance: [24, 60] },
-    starScores: [3000, 5200],
+    flights: { kind: "continuous", interval: [1.15, 2.05], size: [2, 5], maxAirborne: 8, maxDucks: 36, from: "any" },
+    duck: { speed: 8.4, size: 1, jink: 0.6, waypoints: [2, 4], airTime: 8, altitude: [6, 22], distance: [22, 56] },
+    starScores: [3400, 6000],
   },
 ];
 
@@ -165,7 +224,7 @@ export const EXPLORE_LEVEL: LevelDef = {
   objective: { kind: "none", count: 0 },
   timeLimit: null,
   reserve: null,
-  flights: { kind: "continuous", interval: [12, 20], size: [2, 4], maxAirborne: 4, maxDucks: 100000, from: "any" },
+  flights: { kind: "continuous", interval: [7, 12], size: [3, 6], maxAirborne: 6, maxDucks: 100000, from: "any" },
   duck: { speed: 6, size: 1.15, jink: 0.25, waypoints: [2, 3], airTime: 11, altitude: [7, 16], distance: [24, 50] },
   starScores: [0, 0],
 };

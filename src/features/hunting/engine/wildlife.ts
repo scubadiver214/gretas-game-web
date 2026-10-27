@@ -20,6 +20,11 @@ const BODY: Record<SpeciesId, Body> = {
   frog: { radius: 0.16, centerY: 0.06, speed: 0 },
   kingfisher: { radius: 0.26, centerY: 0, speed: 9 },
   loon: { radius: 0.55, centerY: 0.1, speed: 0.45 },
+  // Flying-only game ducks. They are never placed on the water; the record stays complete for the species id.
+  pintail: { radius: 0.4, centerY: 0.12, speed: 0.6 },
+  teal: { radius: 0.28, centerY: 0.1, speed: 0.7 },
+  canvasback: { radius: 0.5, centerY: 0.14, speed: 0.4 },
+  shoveler: { radius: 0.42, centerY: 0.12, speed: 0.48 },
 };
 
 export const SWIMMERS: ReadonlySet<SpeciesId> = new Set(["mallard", "woodDuck", "swan", "loon"]);

@@ -17,13 +17,11 @@ const BED_LEVEL = 0.8;
 const A2 = 110;
 const E3 = 164.81;
 const A3 = 220;
-const C4 = 261.63;
 const D4 = 293.66;
 const E4 = 329.63;
 const G4 = 392;
 const A4 = 440;
 const C5 = 523.25;
-const D5 = 587.33;
 
 interface Bell {
   step: number;

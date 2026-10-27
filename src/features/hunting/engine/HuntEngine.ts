@@ -1,16 +1,16 @@
 import { Emitter } from "@/lib/game/events";
 import { seededRng, type Rng } from "@/lib/rng";
 import { AIM, CAMERA_ZOOMS, COUNTDOWN_SECONDS, EYE, FLIGHT, SCORE, SHOTGUN, STEP } from "../config";
-import { EXPLORE_LEVEL, type LevelDef, type SpawnFrom } from "../levels";
-import type { Animal, Duck, HudSnapshot, HuntEvent, HuntSummary, Phase, Tool, WeaponState } from "../types";
+import { EXPLORE_LEVEL, type LevelDef, type SpawnFrom, type WaveDef } from "../levels";
+import type { Animal, Duck, FlightPattern, FormationId, GameDuckId, HudSnapshot, HuntEvent, HuntSummary, Phase, Tool, WeaponState } from "../types";
 import { clampAim, dirFromAim, aimFromDir, fovFor, type Aim } from "./aim";
 import { NO_BOOST, type AdaptiveBoost, type DifficultyPreset } from "./difficulty";
-import { isAirborne, spawnDuck, spawnOrigin, startle, stepDuck, type FlightTuning } from "./flight";
+import { isAirborne, rollFormation, rollPattern, rollSpecies, spawnDuck, spawnOrigin, startle, stepDuck, type FlightTuning } from "./flight";
 import { evaluatePhoto, type PhotoSubject } from "./photo";
 import { comboMultiplier, endBonuses, hitPoints, multiBonus, starsFor } from "./scoring";
-import { assistTarget, pelletDirections, raySphere, rayPointDistance, resolveShot } from "./shooting";
+import { assistTarget, pelletDirections, raySphere, resolveShot } from "./shooting";
 import { animalCenter, createWildlife, startleNear, stepWildlife } from "./wildlife";
-import { clamp, dist, wrapAngle } from "./vec";
+import { angleBetween, clamp, dist, dot, norm, sub, wrapAngle } from "./vec";
 
 export interface EngineOptions {
   level: LevelDef;
@@ -362,9 +362,7 @@ export class HuntEngine {
       this.streak = 0;
       if (!this.checkProtected(pellets)) this.events.emit({ type: "miss" });
     }
-    for (const d of live) {
-      if (!this.hitDucks.has(d.id) && rayPointDistance(EYE, dir, d.pos) < FLIGHT.startleDistance) startle(d, this.rng, this.tuning);
-    }
+    this.spookAimedFlock(dir, live);
     startleNear(this.wildlife, EYE, dir, this.rng, (e) => this.events.emit(e));
     this.checkAmmo();
     this.pushHud();
@@ -393,7 +391,7 @@ export class HuntEngine {
         this.doubledFlights.add(duck.flight);
         this.doubles++;
       }
-      this.events.emit({ type: "hit", duckId: id, pos: { ...duck.pos }, points, streak: this.streak, multiplier: comboMultiplier(this.streak), long: distance >= SCORE.longDistance });
+      this.events.emit({ type: "hit", duckId: id, species: duck.species, pos: { ...duck.pos }, points, streak: this.streak, multiplier: comboMultiplier(this.streak), long: distance >= SCORE.longDistance });
     }
     if (ids.length >= 2) {
       const bonus = multiBonus(ids.length);
@@ -403,6 +401,23 @@ export class HuntEngine {
     }
     this.score += total;
     this.checkObjective();
+  }
+
+  /**
+   * A shot pointed at a duck spooks that whole flock, hit or miss.
+   * Survivors peel apart and speed up so the next shot is harder.
+   */
+  private spookAimedFlock(dir: { x: number; y: number; z: number }, live: readonly Duck[]): void {
+    const spooked = new Set<number>();
+    for (const d of live) {
+      const to = sub(d.pos, EYE);
+      if (dot(to, dir) <= 0) continue;
+      if (angleBetween(dir, norm(to)) <= FLIGHT.startleCone) spooked.add(d.flight);
+    }
+    for (const d of live) {
+      if (this.hitDucks.has(d.id) || !spooked.has(d.flight)) continue;
+      startle(d, this.rng, this.tuning);
+    }
   }
 
   /** A pellet that found protected wildlife (and no duck) gets a gentle telling-off. */
@@ -455,7 +470,7 @@ export class HuntEngine {
       if (a.visible) out.push({ species: a.species, center: animalCenter(a), radius: a.radius, action: ACTION_POSES.has(a.action) });
     }
     for (const d of this.ducks) {
-      if (isAirborne(d)) out.push({ species: "mallard", center: d.pos, radius: 0.45 * d.size, action: true });
+      if (isAirborne(d)) out.push({ species: d.species, center: d.pos, radius: 0.45 * d.size * (d.species === "teal" ? 0.75 : d.species === "canvasback" ? 1.15 : 1), action: true });
     }
     return out;
   }
@@ -476,21 +491,38 @@ export class HuntEngine {
     this.finish();
   }
 
-  private spawnFlight(size: number, from: SpawnFrom, target: boolean): void {
-    const tuning = target ? this.tuning : this.ambient;
-    const kind = from === "any" ? (this.rng() < 0.5 ? "reeds" : "side") : from;
-    const side = this.rng() < 0.5 ? 1 : -1;
-    const origin = spawnOrigin(kind, this.rng, side);
+  private spawnFlight(size: number, from: SpawnFrom, target: boolean, spec?: Pick<WaveDef, "formation" | "pattern" | "species">): void {
+    const levelNumber = target ? this.level.number : 5;
+    const pattern = spec?.pattern ?? rollPattern(this.rng, size);
+    const formation = spec?.formation ?? rollFormation(this.rng, size);
+    const species = spec?.species ?? rollSpecies(this.rng, levelNumber);
     const flight = this.nextFlight++;
-    const size0 = target ? tuning.size : this.ambient.size;
-    const leader = spawnDuck({ id: this.nextDuckId++, flight, from: kind, rng: this.rng, tuning, target, origin, side, size: size0 });
-    this.ducks.push(leader);
-    for (let i = 1; i < size; i++) {
-      this.ducks.push(spawnDuck({ id: this.nextDuckId++, flight, from: kind, rng: this.rng, tuning, target, origin, side, leader, slot: i, size: size0 }));
+    if (pattern === "cross" && size >= 2) {
+      const side = this.rng() < 0.5 ? 1 : -1;
+      const left = Math.ceil(size / 2);
+      this.addGroup(left, "side", side, flight, target, formation, pattern, species, levelNumber);
+      this.addGroup(size - left, "side", -side, flight, target, formation, pattern, species, levelNumber);
+    } else {
+      const kind = from === "any" ? (this.rng() < 0.42 ? "reeds" : "side") : from;
+      const useFrom = pattern === "hook" || pattern === "low" || pattern === "cross" ? "side" : kind;
+      const side = this.rng() < 0.5 ? 1 : -1;
+      this.addGroup(size, useFrom, side, flight, target, formation, pattern, species, levelNumber);
     }
     this.flightSize.set(flight, size);
     if (target) this.spawned += size;
-    if (kind === "reeds") this.events.emit({ type: "takeoff", pos: { x: origin.x, y: 0, z: origin.z } });
+  }
+
+  private addGroup(size: number, from: "reeds" | "side", side: number, flight: number, target: boolean, formation: FormationId, pattern: FlightPattern, species: GameDuckId, levelNumber: number): void {
+    const tuning = target ? this.tuning : this.ambient;
+    const origin = spawnOrigin(from, this.rng, side);
+    const visual = tuning.size;
+    const mix = () => (this.rng() < 0.62 ? species : rollSpecies(this.rng, levelNumber));
+    const leader = spawnDuck({ id: this.nextDuckId++, flight, from, rng: this.rng, tuning, target, origin, side, size: visual, formation, pattern, species });
+    this.ducks.push(leader);
+    for (let i = 1; i < size; i++) {
+      this.ducks.push(spawnDuck({ id: this.nextDuckId++, flight, from, rng: this.rng, tuning, target, origin, side, leader, slot: i, size: visual, formation, pattern, species: mix() }));
+    }
+    if (from === "reeds") this.events.emit({ type: "takeoff", pos: { x: origin.x, y: 0, z: origin.z } });
   }
 
   private stepSpawns(h: number): void {
@@ -508,15 +540,18 @@ export class HuntEngine {
     const target = !this.explore;
     if (plan.kind === "waves") {
       const active = this.ducks.some((d) => d.target && d.phase !== "gone");
-      if (active) return;
       if (this.waveIndex < plan.waves.length) {
+        // A clear-sky level waits out the flock that is already up. Overlap keeps launching.
+        if (!plan.overlap && active) return;
         this.waveDelay -= h;
         if (this.waveDelay <= 0) {
           const w = plan.waves[this.waveIndex++];
-          this.spawnFlight(w.size, w.from, target);
+          this.spawnFlight(w.size, w.from, target, w);
           this.waveDelay = plan.waves[this.waveIndex]?.delay ?? 0;
         }
-      } else if (this.endTimer < 0) this.endTimer = 1.1;
+        return;
+      }
+      if (!active && this.endTimer < 0) this.endTimer = 1.1;
       return;
     }
     this.spawnTimer -= h;
@@ -689,10 +724,13 @@ export class HuntEngine {
     this.ads = false;
     this.stick = { x: 0, y: 0 };
     for (const d of this.ducks) {
-      if (isAirborne(d)) {
-        d.target = false;
-        if (d.phase !== "exit") startle(d, this.rng, this.tuning);
+      if (!isAirborne(d) || !d.target) continue;
+      if (!this.hitDucks.has(d.id)) {
+        this.escaped++;
+        this.events.emit({ type: "escaped", duckId: d.id });
       }
+      d.target = false;
+      if (d.phase !== "exit") startle(d, this.rng, this.tuning);
     }
     const accuracy = this.shots > 0 ? this.hitShots / this.shots : 0;
     const met = this.objectiveMet;

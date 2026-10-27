@@ -12,7 +12,7 @@ export interface BadgeDef {
 }
 
 const has = (p: ProgressData, id: SpeciesId) => !!p.journal[id];
-const WATERFOWL: readonly SpeciesId[] = ["mallard", "woodDuck", "swan", "loon"];
+const WATERFOWL: readonly SpeciesId[] = ["mallard", "woodDuck", "pintail", "teal", "canvasback", "shoveler", "swan", "loon"];
 const LAKESIDE_LEVELS = LEVELS.filter((l) => l.world === "lakeside");
 
 export const BADGES: readonly BadgeDef[] = [

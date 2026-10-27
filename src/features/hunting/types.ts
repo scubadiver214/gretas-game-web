@@ -6,7 +6,13 @@ export interface Vec3 {
 
 export type Tool = "shotgun" | "camera";
 export type DifficultyId = "junior" | "adventure" | "expert";
-export type SpeciesId = "mallard" | "woodDuck" | "swan" | "heron" | "turtle" | "frog" | "kingfisher" | "loon";
+/** Ducks the player can shoot while they are in the air. */
+export type GameDuckId = "mallard" | "woodDuck" | "pintail" | "teal" | "canvasback" | "shoveler";
+export type SpeciesId = GameDuckId | "swan" | "heron" | "turtle" | "frog" | "kingfisher" | "loon";
+/** How a flock is arranged behind its leader. */
+export type FormationId = "v" | "echelon" | "line" | "string" | "diamond" | "stack" | "chevron";
+/** What the flock does after it is in the air. */
+export type FlightPattern = "patrol" | "low" | "high" | "hook" | "peel" | "cross";
 export type Rarity = "common" | "uncommon" | "rare";
 
 /** ready = menu backdrop, countdown before ducks, playing, paused, done = results. */
@@ -20,7 +26,10 @@ export type DuckPhase = "takeoff" | "fly" | "startled" | "exit" | "hit" | "gone"
 export interface Duck {
   id: number;
   flight: number;
+  species: GameDuckId;
   hen: boolean;
+  /** How this flock is flying. Followers copy the leader until they peel away. */
+  pattern: FlightPattern;
   target: boolean;
   pos: Vec3;
   vel: Vec3;
@@ -47,6 +56,10 @@ export interface Duck {
   leader: number | null;
   /** Formation slot offset in the leader's frame (x right, z back). */
   slot: Vec3;
+  /** Seconds of flight before this duck leaves the formation. 0 = stay with the leader. */
+  peelAt: number;
+  /** Waypoint altitude band for this flight. */
+  alt: readonly [number, number];
   quackIn: number;
 }
 
@@ -161,7 +174,7 @@ export type HuntEvent =
   | { type: "reloadStart" }
   | { type: "reloadDone" }
   | { type: "dryFire" }
-  | { type: "hit"; duckId: number; pos: Vec3; points: number; streak: number; multiplier: number; long: boolean }
+  | { type: "hit"; duckId: number; species: GameDuckId; pos: Vec3; points: number; streak: number; multiplier: number; long: boolean }
   | { type: "multi"; count: number; points: number; pos: Vec3 }
   | { type: "miss" }
   | { type: "takeoff"; pos: Vec3 }

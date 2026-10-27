@@ -42,11 +42,29 @@ function collect(e: HuntEngine): HuntEvent[] {
   return out;
 }
 
-/** A tidy bot: when a duck is up and the gun is ready, aim straight at it and fire. */
+/** Closest duck still inside shotgun range. Busy skies leave older ducks heading for the exit. */
+function nearestDuck(e: HuntEngine) {
+  let best: (typeof e.ducks)[number] | null = null;
+  let bestD: number = SHOTGUN.range;
+  for (const d of e.ducks) {
+    if (!d.target || !isAirborne(d) || d.phase === "takeoff") continue;
+    const away = Math.hypot(d.pos.x - EYE.x, d.pos.y - EYE.y, d.pos.z - EYE.z);
+    if (away < bestD) {
+      best = d;
+      bestD = away;
+    }
+  }
+  return best;
+}
+
+/** A tidy bot: when a duck is up and the gun is ready, aim straight at the nearest one and fire. */
 function bot(e: HuntEngine) {
   return () => {
     if (e.phase !== "playing" || e.weapon !== "ready") return;
-    if (aimAtFirstDuck(e)) e.fire();
+    const d = nearestDuck(e);
+    if (!d) return;
+    e.aim = aimFromDir(sub(d.pos, EYE));
+    e.fire();
   };
 }
 
@@ -74,6 +92,38 @@ describe("HuntEngine", () => {
     expect(events.some((x) => x.type === "hit")).toBe(true);
     expect(e.mag).toBe(SHOTGUN.magazine - 1);
     expect(e.weapon).toBe("pumping");
+  });
+
+  it("a miss aimed at a flock scatters every bird and speeds them up", () => {
+    const e = engineFor(1, junior, "scatter");
+    playToGo(e);
+    run(e, 3);
+    const up = e.ducks.filter((d) => d.target && isAirborne(d));
+    const flight = up[0]?.flight;
+    const mates = up.filter((d) => d.flight === flight);
+    expect(mates.length).toBeGreaterThanOrEqual(2);
+    const aim = aimFromDir(sub(mates[0].pos, EYE));
+    e.aim = { yaw: aim.yaw, pitch: aim.pitch + (10 * Math.PI) / 180 };
+    e.fire();
+    expect(e.hits).toBe(0);
+    const spooked = e.ducks.filter((d) => d.flight === flight && d.phase !== "gone");
+    expect(spooked.length).toBe(mates.length);
+    expect(spooked.every((d) => d.phase === "startled" && d.leader === null)).toBe(true);
+    run(e, 0.7);
+    expect(spooked.every((d) => d.cur > d.speed * 1.25)).toBe(true);
+  });
+
+  it("a shot pointed away from the ducks leaves the flock together", () => {
+    const e = engineFor(1, junior, "scatter-away");
+    playToGo(e);
+    run(e, 3);
+    const up = e.ducks.filter((d) => d.target && isAirborne(d));
+    expect(up.length).toBeGreaterThanOrEqual(2);
+    e.aim = { yaw: 0, pitch: 0.9 };
+    e.fire();
+    expect(e.hits).toBe(0);
+    expect(up.every((d) => d.phase !== "startled")).toBe(true);
+    expect(up.some((d) => d.leader !== null)).toBe(true);
   });
 
   it("pumps between shots, reloads one shell at a time, and lets a shot interrupt the reload", () => {
@@ -209,6 +259,29 @@ describe("HuntEngine", () => {
     expect(e.phase).toBe("playing");
     e.finishExplore();
     expect(e.summary()?.activity).toBe("explore");
+  });
+
+  it("keeps several flocks, and more than one kind of duck, in the air on Duck Patrol", () => {
+    const e = engineFor(1, junior, "patrol");
+    playToGo(e);
+    run(e, 8);
+    const up = e.ducks.filter((d) => d.target && isAirborne(d));
+    expect(up.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(up.map((d) => d.species)).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it("fills the champion sky", () => {
+    const e = engineFor(4, junior, "crowd");
+    playToGo(e);
+    let peak = 0;
+    const species = new Set<string>();
+    run(e, 20, () => {
+      const up = e.ducks.filter((d) => d.target && isAirborne(d));
+      peak = Math.max(peak, up.length);
+      for (const d of up) species.add(d.species);
+    });
+    expect(peak).toBeGreaterThanOrEqual(6);
+    expect(species.size).toBeGreaterThanOrEqual(3);
   });
 
   it("keeps the menu backdrop alive with non-target flocks", () => {

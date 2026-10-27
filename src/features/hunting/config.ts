@@ -70,8 +70,12 @@ export const FLIGHT = {
   arriveDistance: 3.5,
   exitDistance: 150,
   minAltitude: 2.5,
-  startleDistance: 5,
-  startleTime: 1.3,
+  /** A shot aimed within this cone of a duck spooks that whole flock. */
+  startleCone: deg(18),
+  /** How long the flock stays fast and split up after a miss. */
+  startleTime: 2.6,
+  /** Speed multiplier while startled. */
+  startleSpeed: 1.7,
   /** Passing flocks in the menu and in Explorer mode. */
   ambientInterval: [10, 16] as const,
 } as const;

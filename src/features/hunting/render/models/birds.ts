@@ -17,8 +17,23 @@ import {
   type Material,
 } from "three";
 import { mergeColored, paint, place, solid, taperedTube, type Painter } from "../geo";
+import type { GameDuckId } from "../../types";
 
-export type BirdKind = "mallardDrake" | "mallardHen" | "woodDrake" | "woodHen" | "swan" | "loon" | "heron" | "kingfisher";
+export type BirdKind = "mallardDrake" | "mallardHen" | "woodDrake" | "woodHen" | "pintailDrake" | "pintailHen" | "tealDrake" | "tealHen" | "canvasbackDrake" | "canvasbackHen" | "shovelerDrake" | "shovelerHen" | "swan" | "loon" | "heron" | "kingfisher";
+
+const FLYING_PAIR: Record<GameDuckId, { drake: BirdKind; hen: BirdKind }> = {
+  mallard: { drake: "mallardDrake", hen: "mallardHen" },
+  woodDuck: { drake: "woodDrake", hen: "woodHen" },
+  pintail: { drake: "pintailDrake", hen: "pintailHen" },
+  teal: { drake: "tealDrake", hen: "tealHen" },
+  canvasback: { drake: "canvasbackDrake", hen: "canvasbackHen" },
+  shoveler: { drake: "shovelerDrake", hen: "shovelerHen" },
+};
+
+export function flyingKind(species: GameDuckId, hen: boolean): BirdKind {
+  const pair = FLYING_PAIR[species];
+  return hen ? pair.hen : pair.drake;
+}
 
 export interface BirdRig {
   kind: BirdKind;
@@ -145,6 +160,41 @@ function speculumWing(coverts: string, speculum: string, edge: string) {
   };
 }
 const primaries = (base: string, tip: string) => (u: number, v: number) => (v < 0.35 ? mix(base, "#8a8070", 0.25) : mix(base, tip, Math.max(0, (v - 0.55) * 2) + u * 0.25));
+
+const NECK_PTS: [number, number, number][] = [
+  [0, 0.05, 0.16],
+  [0, 0.1, 0.21],
+  [0, 0.145, 0.25],
+];
+
+/** Mottled hen that keeps a species' size, bill and tail. */
+function henSpec(o: { scale: number; body: string; belly: string; bill: string; tail: string; tailLen: number; tailWidth: number; speculum: string; billLen?: number; billTip?: number; billBase?: number; billFlat?: number }): BirdSpec {
+  return {
+    scale: o.scale,
+    profile: MALLARD_PROFILE,
+    flat: 0.82,
+    bodyPaint: (p, _n, out) => {
+      const m = hashNoise(p.x, p.y, p.z);
+      out.copy(p.y < -0.05 ? C(o.belly) : mix(o.body, "#4a3828", m > 0.62 ? 0.75 : 0.15));
+    },
+    neck: { pts: NECK_PTS, radii: [0.056, 0.044, 0.04], paint: (_p, _n, out) => out.copy(mix(o.body, "#6a543c", 0.35)) },
+    head: {
+      pos: [0, 0.155, 0.26],
+      r: 0.06,
+      scale: [0.88, 0.94, 1.16],
+      paint: (p, _n, out) => out.copy(mix(o.body, "#3a2a1c", p.y > 0.02 ? 0.35 : 0)),
+    },
+    bill: { len: o.billLen ?? 0.08, base: o.billBase ?? 0.03, tip: o.billTip ?? 0.02, flat: o.billFlat ?? 0.42, color: o.bill, pitch: 0.16 },
+    eye: { r: 0.012, at: [0.044, 0.012, 0.03], color: "#0b0b0d" },
+    tail: { len: o.tailLen, width: o.tailWidth, color: o.tail, at: [0, 0.02, -0.32] },
+    shoulder: [0.072, 0.07, 0.08],
+    inner: DUCK_INNER,
+    outer: DUCK_OUTER,
+    innerTop: speculumWing(o.body, o.speculum, "#f1efe8"),
+    outerTop: primaries("#5c4a38", "#3a2e24"),
+    under: o.belly,
+  };
+}
 
 const SPECS: Record<BirdKind, BirdSpec> = {
   mallardDrake: {
@@ -298,6 +348,115 @@ const SPECS: Record<BirdKind, BirdSpec> = {
     outerTop: primaries("#4a423b", "#2c2723"),
     under: "#d6d2cc",
   },
+  pintailDrake: {
+    scale: 0.94,
+    profile: MALLARD_PROFILE,
+    flat: 0.72,
+    bodyPaint: (p, _n, out) => {
+      if (p.z < -0.18) out.copy(C("#1a1c20"));
+      else if (p.z > 0.04 && p.y > -0.06) out.copy(C("#f4f1ea"));
+      else out.copy(mix("#b7b3aa", "#8d8880", hashNoise(p.x, p.y, p.z) * 0.45));
+    },
+    neck: { pts: NECK_PTS, radii: [0.05, 0.04, 0.036], paint: (p, _n, out) => out.copy(p.y > 0.09 ? C("#f7f4ee") : C("#6b3418")) },
+    head: {
+      pos: [0, 0.158, 0.27],
+      r: 0.058,
+      scale: [0.82, 0.9, 1.28],
+      paint: (p, _n, out) => out.copy(p.y < -0.028 ? C("#f7f4ee") : C("#6a3016")),
+    },
+    bill: { len: 0.09, base: 0.02, tip: 0.012, flat: 0.48, color: "#8aa0b0", nail: "#2a2e32", pitch: 0.08 },
+    eye: { r: 0.011, at: [0.042, 0.012, 0.034], color: "#0b0b0d" },
+    tail: { len: 0.24, width: 0.016, color: "#14161a", at: [0, 0.03, -0.36] },
+    shoulder: [0.068, 0.068, 0.08],
+    inner: DUCK_INNER,
+    outer: DUCK_OUTER,
+    innerTop: speculumWing("#c5bfb4", "#2f6a45", "#f4f1ea"),
+    outerTop: primaries("#9a948a", "#5c574f"),
+    under: "#f3f0e8",
+  },
+  pintailHen: henSpec({ scale: 0.9, body: "#a08058", belly: "#e6d3b0", bill: "#8d9498", tail: "#4a3a28", tailLen: 0.18, tailWidth: 0.028, speculum: "#2f6a45", billLen: 0.086, billTip: 0.014, billBase: 0.02 }),
+  tealDrake: {
+    scale: 0.68,
+    profile: MALLARD_PROFILE,
+    flat: 0.84,
+    bodyPaint: (p, _n, out) => {
+      if (Math.abs(p.z - 0.02) < 0.014 && p.y > -0.04) out.copy(C("#f3e6c4"));
+      else if (p.y < -0.05) out.copy(C("#d9d3c6"));
+      else out.copy(C("#8e9290"));
+      if (p.z < -0.2) out.copy(C("#2a2c2e"));
+    },
+    neck: { pts: NECK_PTS, radii: [0.058, 0.046, 0.042], paint: (p, _n, out) => out.copy(p.y > 0.1 ? C("#8a3d22") : C("#c9a06a")) },
+    head: {
+      pos: [0, 0.155, 0.255],
+      r: 0.062,
+      scale: [0.9, 0.92, 1.12],
+      paint: (p, _n, out) => {
+        const mask = p.z > -0.01 && p.y > -0.02 && p.y < 0.04;
+        out.copy(mask ? C("#1c6b42") : C("#8a3b20"));
+        if (p.y < -0.03) out.copy(C("#f3e6c4"));
+      },
+    },
+    bill: { len: 0.062, base: 0.022, tip: 0.014, flat: 0.45, color: "#1c1c1e", pitch: 0.16 },
+    eye: { r: 0.012, at: [0.046, 0.012, 0.03], color: "#0b0b0d" },
+    tail: { len: 0.08, width: 0.04, color: "#3a342c", at: [0, 0.02, -0.3] },
+    shoulder: [0.074, 0.07, 0.08],
+    inner: DUCK_INNER,
+    outer: DUCK_OUTER,
+    innerTop: speculumWing("#8a8478", "#1fa35a", "#f3e6c4"),
+    outerTop: primaries("#6a645c", "#3a342e"),
+    under: "#e4ddd0",
+  },
+  tealHen: henSpec({ scale: 0.66, body: "#8d7352", belly: "#e4d5ba", bill: "#3a342e", tail: "#5a4634", tailLen: 0.08, tailWidth: 0.04, speculum: "#1fa35a", billLen: 0.06 }),
+  canvasbackDrake: {
+    scale: 1.14,
+    profile: MALLARD_PROFILE,
+    flat: 0.78,
+    bodyPaint: (p, _n, out) => {
+      if (p.z > 0.02 && p.z < 0.16 && p.y > -0.08) out.copy(C("#1a1c1e"));
+      else if (p.z < -0.18) out.copy(C("#1a1c1e"));
+      else out.copy(C("#f4f2ec"));
+    },
+    neck: { pts: NECK_PTS, radii: [0.055, 0.046, 0.04], paint: (p, _n, out) => out.copy(p.y < 0.08 ? C("#1a1c1e") : C("#9a3b24")) },
+    head: {
+      pos: [0, 0.16, 0.28],
+      r: 0.06,
+      scale: [0.78, 0.82, 1.42],
+      paint: (_p, _n, out) => out.copy(C("#9a3b24")),
+    },
+    bill: { len: 0.11, base: 0.02, tip: 0.012, flat: 0.55, color: "#1a1a1c", pitch: 0.02 },
+    eye: { r: 0.011, at: [0.04, 0.01, 0.04], color: "#c02020" },
+    tail: { len: 0.08, width: 0.045, color: "#1a1c1e", at: [0, 0.02, -0.32] },
+    shoulder: [0.072, 0.07, 0.08],
+    inner: DUCK_INNER,
+    outer: DUCK_OUTER,
+    innerTop: speculumWing("#f2f0ea", "#8a8680", "#f7f5f0"),
+    outerTop: primaries("#d9d4cc", "#6e6a64"),
+    under: "#f7f5f0",
+  },
+  canvasbackHen: henSpec({ scale: 1.08, body: "#b9a48a", belly: "#efe6d8", bill: "#2a2622", tail: "#4a4038", tailLen: 0.09, tailWidth: 0.045, speculum: "#8a8680", billLen: 0.1, billTip: 0.014, billBase: 0.02, billFlat: 0.5 }),
+  shovelerDrake: {
+    scale: 1.02,
+    profile: MALLARD_PROFILE,
+    flat: 0.8,
+    bodyPaint: (p, _n, out) => {
+      if (p.z < -0.16) out.copy(C("#1c1e22"));
+      else if (p.z > 0.05) out.copy(C("#f6f4ef"));
+      else if (p.y < 0.02) out.copy(C("#b85a28"));
+      else out.copy(C("#f3f1eb"));
+    },
+    neck: { pts: NECK_PTS, radii: [0.058, 0.048, 0.042], paint: (p, _n, out) => out.copy(p.y < 0.085 ? C("#f6f4ef") : C("#0d5a2b")) },
+    head: { pos: [0, 0.16, 0.26], r: 0.064, scale: [0.9, 0.94, 1.16], material: "drake" },
+    bill: { len: 0.11, base: 0.016, tip: 0.05, flat: 0.28, color: "#1a1a1c", pitch: 0.12 },
+    eye: { r: 0.012, at: [0.046, 0.014, 0.03], color: "#f2c230" },
+    tail: { len: 0.09, width: 0.04, color: "#1c1e22", at: [0, 0.02, -0.32] },
+    shoulder: [0.072, 0.07, 0.08],
+    inner: DUCK_INNER,
+    outer: DUCK_OUTER,
+    innerTop: speculumWing("#4a6ea8", "#1f8a4a", "#f4f2ec"),
+    outerTop: primaries("#3d5c90", "#24344e"),
+    under: "#e7d2c4",
+  },
+  shovelerHen: henSpec({ scale: 0.98, body: "#9a784c", belly: "#e6d2b4", bill: "#c46a32", tail: "#5a4030", tailLen: 0.09, tailWidth: 0.04, speculum: "#1f8a4a", billLen: 0.1, billTip: 0.046, billBase: 0.016, billFlat: 0.3 }),
   swan: {
     scale: 2.3,
     profile: MALLARD_PROFILE,

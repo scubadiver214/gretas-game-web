@@ -26,6 +26,8 @@ export function PauseOverlay({ explore, touch, onResume, onRestart, onSettings, 
           {[
             touch ? "👆 Drag anywhere to look around." : "🖱️ Move the mouse to look around. Click the game first if it doesn't turn.",
             explore ? "📸 Tap SNAP (or click) to take a photo." : "💥 Put the circle on a flying duck and shoot. It turns gold when you're on target!",
+            "🦆 Mallards, teal, pintails, wood ducks, shovelers and canvasbacks all count. They fly in lines, Vs, stacks and crossing flocks.",
+            "💨 A shot aimed at a duck or a flock makes them scatter and fly faster if you miss. Swing with them.",
             "🔴 The shotgun holds 5 shells. It reloads by itself when empty, or press R / RELOAD.",
             "🎯 Hold AIM (right-click) to zoom in a little and tighten your shot.",
             "📷 Switch to the camera (Q) to photograph protected animals for your Field Journal.",

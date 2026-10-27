@@ -9,7 +9,7 @@ export interface SpeciesDef {
   hint: string;
   /** A kid-sized fact, revealed with the first photo. */
   fact: string;
-  /** Only flying mallards are game targets; everything else is protected. */
+  /** Swimming birds and other wildlife are protected. Ducks in the air are targets. */
   protected: boolean;
 }
 
@@ -19,7 +19,7 @@ export const SPECIES: readonly SpeciesDef[] = [
     name: "Mallard",
     emoji: "🦆",
     rarity: "common",
-    hint: "Flies over the lake and swims by the reeds.",
+    hint: "The green-headed duck. Flocks fly over the lake and a few swim by the reeds.",
     fact: "Only female mallards make the loud “quack!” The green-headed males make a soft, raspy sound.",
     protected: false,
   },
@@ -28,9 +28,45 @@ export const SPECIES: readonly SpeciesDef[] = [
     name: "Wood Duck",
     emoji: "🦆",
     rarity: "uncommon",
-    hint: "A very colourful duck that hides near the left reeds.",
+    hint: "A very colourful duck. Some hide near the left reeds, and some fly past.",
     fact: "Wood ducks nest in tree holes. Their fluffy ducklings jump out and bounce safely to the ground!",
     protected: true,
+  },
+  {
+    id: "pintail",
+    name: "Northern Pintail",
+    emoji: "🦆",
+    rarity: "uncommon",
+    hint: "A slim duck with a long pointed tail. Look for a line or an echelon.",
+    fact: "A pintail drake's tail is long and thin, like a pin. Pintails are among the fastest ducks.",
+    protected: false,
+  },
+  {
+    id: "teal",
+    name: "Green-winged Teal",
+    emoji: "🦆",
+    rarity: "common",
+    hint: "The smallest duck. Watch for a fast flock skimming low over the water.",
+    fact: "Green-winged teal are tiny, and a whole flock can twist and turn together like a school of fish.",
+    protected: false,
+  },
+  {
+    id: "canvasback",
+    name: "Canvasback",
+    emoji: "🦆",
+    rarity: "rare",
+    hint: "A big duck with a chestnut head and a white body. Often the highest bird in a stack.",
+    fact: "Canvasbacks dive for plants on the lake bottom. Their forehead slopes in a straight line into a long bill.",
+    protected: false,
+  },
+  {
+    id: "shoveler",
+    name: "Northern Shoveler",
+    emoji: "🦆",
+    rarity: "uncommon",
+    hint: "A duck with a huge spoon-shaped bill. Its flock sometimes splits apart mid-flight.",
+    fact: "A shoveler's bill is shaped like a spoon. It swings that bill side to side to strain tiny animals from the water.",
+    protected: false,
   },
   {
     id: "swan",
