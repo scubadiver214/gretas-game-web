@@ -5,7 +5,7 @@
 Goal: inspect the app and write the plan before the maker exists.
 
 - [x] Repository inspection recorded
-- [x] `docs/shelbys-scoops-plan.md` and this folder
+- [x] Plan written in this folder (`plan.md`)
 
 ### What exists
 

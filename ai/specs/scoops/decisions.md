@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-10-27 — Plans stay in ai/specs
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-14 | The Scoops plan is only `ai/specs/scoops/plan.md`. `shelbys-scoops-plan.md` points at it. The always-on specs rule now forbids a plan in `docs/` or at the workspace root. | The first write-up was also linked from `docs/shelbys-scoops-plan.md`, so the record was split. | Keeping a second full copy outside the feature folder. |
+
 ## 2026-10-27 — Avatars are prizes for saved scoops
 
 | ID | Decision | Why | Rejected |

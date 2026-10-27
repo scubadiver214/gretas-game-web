@@ -2,7 +2,7 @@
 
 Ice-cream shop, recipe book, and community cookbook for ages 4–12.
 
-- Plan: [plan.md](plan.md) and [../../../../docs/shelbys-scoops-plan.md](../../../../docs/shelbys-scoops-plan.md)
+- Plan: [plan.md](plan.md)
 - Phases: [phases.md](phases.md)
 - Decisions: [decisions.md](decisions.md)
 - Todos: [todos.md](todos.md)

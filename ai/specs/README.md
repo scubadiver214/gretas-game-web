@@ -1,6 +1,6 @@
 # Feature specs
 
-This folder is the coding agent's log for every change in this workspace, games and otherwise. Architecture, phases, decisions, leftover work and bugs live here so a later session does not have to reconstruct them from chat.
+This folder is the coding agent's log for every change in this workspace, games and otherwise. Plans, architecture, phases, decisions, leftover work, and bugs live here so a later session does not have to reconstruct them from chat. Do not keep a copy of a plan outside this folder.
 
 Workspace Cursor rule: `.cursor/rules/feature-specs.mdc` (always apply).
 
