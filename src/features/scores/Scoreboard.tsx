@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -208,7 +209,7 @@ function ScoreTable({ mode, board, me }: { mode: GameMode; board: Board; me: str
 }
 
 export default function Scoreboard() {
-  const router = useRouter();
+  const { push, back } = usePendingRouter();
   // The scoreboard is public (no RequirePlayer), so only read the persisted
   // nickname after hydration to keep the server and first client render equal.
   const hydrated = usePlayerHydrated();
@@ -237,7 +238,7 @@ export default function Scoreboard() {
     <PageContainer maxWidth={560}>
       <Stack spacing={2} sx={{ py: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton aria-label="Back" onClick={() => router.back()}>
+          <IconButton aria-label="Back" onClick={() => back()}>
             <ArrowBackRoundedIcon />
           </IconButton>
           <Typography
@@ -316,11 +317,11 @@ export default function Scoreboard() {
         </Paper>
 
         <Stack spacing={1}>
-          <Button variant="contained" size="large" onClick={() => router.push(nickname ? "/adventure" : "/")}>
+          <Button variant="contained" size="large" onClick={() => push(nickname ? "/adventure" : "/")}>
             {nickname ? "Play" : "Start playing"}
           </Button>
           {nickname && (
-            <Button variant="text" onClick={() => router.push("/my-scores")}>
+            <Button variant="text" onClick={() => push("/my-scores")}>
               My scores on this device
             </Button>
           )}

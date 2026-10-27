@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -79,7 +79,7 @@ function WorldCard({ w, onPlay, onMystery }: { w: WorldProgress; onPlay: () => v
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -93,10 +93,10 @@ function Inner() {
     <PageContainer maxWidth={1080}>
       <Stack spacing={{ xs: 1.75, md: 2.5 }} sx={{ flex: 1, py: { xs: 1.5, md: 3 } }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => router.push("/adventure")}>
+          <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => push("/adventure")}>
             Games
           </Button>
-          <ButtonBase onClick={() => router.push("/claw/avatars")} aria-label="My avatars" sx={{ display: "flex", alignItems: "center", gap: 0.75, height: 46, pl: 0.5, pr: 1.5, clipPath: CLIP.button, bgcolor: N.panel, border: `1px solid ${N.panelEdge}` }}>
+          <ButtonBase onClick={() => push("/claw/avatars")} aria-label="My avatars" sx={{ display: "flex", alignItems: "center", gap: 0.75, height: 46, pl: 0.5, pr: 1.5, clipPath: CLIP.button, bgcolor: N.panel, border: `1px solid ${N.panelEdge}` }}>
             <AvatarBadge avatarId={profile.selectedAvatar} nickname={nickname} character={character} color={color} size={34} />
             <Typography sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, color: N.text }}>{nickname}</Typography>
           </ButtonBase>
@@ -115,13 +115,13 @@ function Inner() {
         </Box>
 
         {/* Big "continue" button for the youngest players: one tap into the newest level. */}
-        <Button size="large" variant="contained" color="success" startIcon={<PlayArrowRoundedIcon />} onClick={() => router.push(`/play/claw?level=${profile.currentLevel}`)} sx={{ alignSelf: "center", minWidth: 260, fontSize: "1.25rem" }}>
+        <Button size="large" variant="contained" color="success" startIcon={<PlayArrowRoundedIcon />} onClick={() => push(`/play/claw?level=${profile.currentLevel}`)} sx={{ alignSelf: "center", minWidth: 260, fontSize: "1.25rem" }}>
           Play level {profile.currentLevel}
         </Button>
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: { xs: 1.25, md: 2 } }}>
           {worlds.map((w) => (
-            <WorldCard key={w.world.id} w={w} onPlay={() => router.push(`/play/claw?level=${w.playLevel}`)} onMystery={() => router.push(`/play/claw?mystery=${w.world.id}`)} />
+            <WorldCard key={w.world.id} w={w} onPlay={() => push(`/play/claw?level=${w.playLevel}`)} onMystery={() => push(`/play/claw?mystery=${w.world.id}`)} />
           ))}
         </Box>
 
@@ -135,7 +135,7 @@ function Inner() {
           ).map(({ label, to, accent }) => (
             <ButtonBase
               key={to}
-              onClick={() => router.push(to)}
+              onClick={() => push(to)}
               sx={{ flex: 1, minHeight: 52, clipPath: CLIP.button, color: accent, border: `1px solid ${accent}59`, fontFamily: "var(--font-arcade)", fontWeight: 600, fontSize: "0.95rem", letterSpacing: "0.05em", textTransform: "uppercase", "&:hover": { bgcolor: `${accent}14`, boxShadow: `0 0 12px ${accent}40` } }}
             >
               {label}

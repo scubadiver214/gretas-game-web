@@ -14,6 +14,7 @@ export function useTopScores(mode: GameMode, limit = 20, date?: string) {
   return useQuery({
     queryKey: scoreKeys.top(mode, limit, date),
     queryFn: () => getTopScores(mode, limit, date),
+    meta: { background: true },
   });
 }
 
@@ -22,6 +23,7 @@ export function usePersonalBests(nickname: string) {
     queryKey: scoreKeys.best(nickname),
     queryFn: () => getPersonalBests(nickname),
     enabled: nickname.length > 0,
+    meta: { background: true },
   });
 }
 

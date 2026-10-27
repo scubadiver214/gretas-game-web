@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
@@ -37,7 +37,7 @@ const CAR_COLORS = [R.pink, ...RIVALS.map((r) => r.color)];
 const RIVAL_LOOKS = rivalLooks(RIVALS);
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -149,7 +149,7 @@ function Inner() {
     setFailed(false);
     setTrackId(id);
   };
-  const quit = () => router.push("/adventure");
+  const quit = () => push("/adventure");
 
   const summary = useMemo(() => (resultsReady ? engine.summary() : null), [resultsReady, engine]);
   const hudVisible = racing && ready;
@@ -229,7 +229,7 @@ function Inner() {
           personalBest={board?.personalBest}
           onAgain={play}
           onMenu={toMenu}
-          onRanks={() => router.push("/scoreboard?mode=racing")}
+          onRanks={() => push("/scoreboard?mode=racing")}
         />
       )}
 

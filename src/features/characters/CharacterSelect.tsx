@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -62,7 +62,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const saved = usePlayerStore((s) => s.character);
   const savedColor = usePlayerStore((s) => s.color);
@@ -338,12 +338,12 @@ function Inner() {
               setHairColor(previewHairColor(selected));
               setSkinColor(previewSkinColor(selected));
               setBikeSkin(pickedSkin);
-              router.push("/adventure");
+              push("/adventure");
             }}
           >
             {selected ? `Play as ${CHARACTER_LABELS[selected]}` : "Pick a character"}
           </Button>
-          <Button variant="text" onClick={() => router.push("/")}>
+          <Button variant="text" onClick={() => push("/")}>
             Change name
           </Button>
         </Stack>

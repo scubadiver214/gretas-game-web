@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
@@ -65,7 +66,7 @@ function isWorldId(value: string | null): value is WorldId {
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const params = useSearchParams();
   const qc = useQueryClient();
   const nickname = usePlayerStore((s) => s.nickname);
@@ -294,9 +295,9 @@ function Inner() {
   };
   const quit = () => {
     closeOpenAttempt();
-    router.push("/claw");
+    push("/claw");
   };
-  const toMystery = (w: WorldId) => router.push(`/play/claw?mystery=${w}`);
+  const toMystery = (w: WorldId) => push(`/play/claw?mystery=${w}`);
 
   const playing = ui === "playing";
   const paused = playing && hud.phase === "paused";

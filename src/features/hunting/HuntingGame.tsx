@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRoundMusic } from "@/components/MusicDirector";
@@ -34,7 +34,7 @@ function optionsFor(level: LevelDef) {
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -386,7 +386,7 @@ function Inner() {
             setSettingsFrom("menu");
             setView("settings");
           }}
-          onQuit={() => router.push("/adventure")}
+          onQuit={() => push("/adventure")}
         />
       )}
       {ready && view === "levels" && <LevelSelect onPick={pickLevel} onBack={() => setView("menu")} />}
@@ -458,7 +458,7 @@ function Inner() {
       )}
 
       {needsRotate && ready && <RotatePrompt />}
-      {(!ready || failed) && <LoadingScreen failed={failed} onBack={() => router.push("/adventure")} />}
+      {(!ready || failed) && <LoadingScreen failed={failed} onBack={() => push("/adventure")} />}
     </Box>
   );
 }

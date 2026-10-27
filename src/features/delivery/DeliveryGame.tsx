@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
@@ -83,7 +83,7 @@ function PowerUpChip({ kind, until, now }: { kind: PowerUpKind; until: number; n
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push, replace } = usePendingRouter();
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
   const hairColor = usePlayerStore((s) => s.hairColor);
@@ -133,8 +133,8 @@ function Inner() {
         ...(powerUpsCollected > 0 ? [{ label: "Power-ups", value: String(powerUpsCollected) }] : []),
       ],
     });
-    router.replace("/results");
-  }, [phase, score, deliveries, bestCombo, hits, jumps, powerUpsCollected, startedAt, config, finishRound, router]);
+    replace("/results");
+  }, [phase, score, deliveries, bestCombo, hits, jumps, powerUpsCollected, startedAt, config, finishRound, replace]);
 
   const onCountdownDone = useCallback(() => startRide(), [startRide]);
   const onStart = useCallback(
@@ -196,7 +196,7 @@ function Inner() {
         <Stack spacing={1}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <QuitButton onQuit={() => router.push("/adventure")} />
+              <QuitButton onQuit={() => push("/adventure")} />
               <SettingsToggles size="small" />
             </Stack>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -234,7 +234,7 @@ function Inner() {
               ]}
               cta="Start riding"
               onStart={onStart}
-              onClose={() => router.push("/adventure")}
+              onClose={() => push("/adventure")}
             />
           )}
           {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

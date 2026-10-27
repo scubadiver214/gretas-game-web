@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import BootSplash from "@/components/BootSplash";
 import { usePlayerHydrated, usePlayerStore } from "@/features/player/store";
 
@@ -16,7 +16,7 @@ export default function RequirePlayer({
   children: ReactNode;
   needCharacter?: boolean;
 }) {
-  const router = useRouter();
+  const { replace } = usePendingRouter();
   const hydrated = usePlayerHydrated();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character);
@@ -25,9 +25,9 @@ export default function RequirePlayer({
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!nickname) router.replace("/");
-    else if (needCharacter && !character) router.replace("/character");
-  }, [hydrated, nickname, character, needCharacter, router]);
+    if (!nickname) replace("/");
+    else if (needCharacter && !character) replace("/character");
+  }, [hydrated, nickname, character, needCharacter, replace]);
 
   if (!ready) return <BootSplash />;
   // Suspense so children may use useSearchParams() (daily-challenge routes).

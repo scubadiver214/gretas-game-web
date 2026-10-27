@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -31,7 +31,7 @@ import { useWordleGame } from "./useWordleGame";
 import WordGrid from "./WordGrid";
 
 function Inner() {
-  const router = useRouter();
+  const { push, replace } = usePendingRouter();
   const finishRound = usePlayerStore((s) => s.finishRound);
   const setup = useRoundSetup("wordle");
 
@@ -84,8 +84,8 @@ function Inner() {
         { label: "Max possible", value: String(maxScore(answers)) },
       ],
     });
-    router.replace("/results");
-  }, [phase, score, stats, startedAt, puzzles, config, finishRound, router]);
+    replace("/results");
+  }, [phase, score, stats, startedAt, puzzles, config, finishRound, replace]);
 
   // Physical keyboard support, in addition to the on-screen one.
   useEffect(() => {
@@ -137,7 +137,7 @@ function Inner() {
       }}
     >
       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", p: 1.5, pt: "max(12px, env(safe-area-inset-top))" }}>
-        <QuitButton onQuit={() => router.push("/adventure")} />
+        <QuitButton onQuit={() => push("/adventure")} />
         <SettingsToggles size="small" />
         <Box sx={{ flex: 1 }} />
         <ScorePill score={score} />
@@ -287,7 +287,7 @@ function Inner() {
           ]}
           cta="Start guessing"
           onStart={onStart}
-          onClose={() => router.push("/adventure")}
+          onClose={() => push("/adventure")}
         />
       )}
       {phase === "countdown" && <CountdownOverlay onDone={onCountdownDone} />}

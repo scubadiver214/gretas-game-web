@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -11,11 +11,11 @@ import type { ReactNode } from "react";
 
 /** Shared header for the claw screens: back button, glowing title, optional stat pill on the right. */
 export default function ClawPageHeader({ title, subtitle, accent = N.claw, backTo = "/claw", right }: { title: string; subtitle?: string; accent?: string; backTo?: string; right?: ReactNode }) {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   return (
     <Stack spacing={1.5}>
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-        <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => router.push(backTo)}>
+        <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => push(backTo)}>
           Back
         </Button>
         <Box sx={{ flex: 1 }} />

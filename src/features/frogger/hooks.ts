@@ -15,6 +15,7 @@ export function useFroggerStats(nickname: string) {
     queryKey: froggerKeys.stats(nickname),
     queryFn: () => getStats(nickname),
     enabled: nickname.length > 0,
+    meta: { background: true },
   });
 }
 
@@ -23,6 +24,7 @@ export function useFroggerHistory(nickname: string, limit = 20) {
     queryKey: froggerKeys.history(nickname, limit),
     queryFn: () => getHistory(nickname, limit),
     enabled: nickname.length > 0,
+    meta: { background: true },
   });
 }
 

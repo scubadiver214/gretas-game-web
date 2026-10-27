@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -87,7 +87,7 @@ const columns = helper.columns([
 ]);
 
 function Inner() {
-  const router = useRouter();
+  const { push, back } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -115,7 +115,7 @@ function Inner() {
     <PageContainer maxWidth={560}>
       <Stack spacing={2} sx={{ py: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton aria-label="Back" onClick={() => router.back()}>
+          <IconButton aria-label="Back" onClick={() => back()}>
             <ArrowBackRoundedIcon />
           </IconButton>
           <Typography
@@ -230,7 +230,7 @@ function Inner() {
         </Paper>
 
         <Stack spacing={1}>
-          <Button variant="contained" size="large" onClick={() => router.push(`/play/${mode}`)}>
+          <Button variant="contained" size="large" onClick={() => push(`/play/${mode}`)}>
             Play {MODE_LABELS[mode]}
           </Button>
           {history.length > 0 && (

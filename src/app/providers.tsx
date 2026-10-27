@@ -7,6 +7,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BootstrapGate from "@/components/BootstrapGate";
 import MusicDirector from "@/components/MusicDirector";
+import { PendingNavigation } from "@/components/PendingNavigation";
 import theme from "@/theme";
 
 export default function Providers({ children }: { children: ReactNode }) {
@@ -25,10 +26,12 @@ export default function Providers({ children }: { children: ReactNode }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <QueryClientProvider client={queryClient}>
-          <Suspense fallback={null}>
-            <MusicDirector />
-          </Suspense>
-          <BootstrapGate>{children}</BootstrapGate>
+          <PendingNavigation>
+            <Suspense fallback={null}>
+              <MusicDirector />
+            </Suspense>
+            <BootstrapGate>{children}</BootstrapGate>
+          </PendingNavigation>
         </QueryClientProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>

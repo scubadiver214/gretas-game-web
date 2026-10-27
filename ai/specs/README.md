@@ -26,17 +26,15 @@ Create the whole set the first time you touch a feature that has no folder. Copy
 | --- | --- | --- | --- |
 | [racing](racing/) | The Fitz and Furious | `src/features/racing/` | filled (phases 1–3 done) |
 | [claw](claw/) | Bea's Claw-some Adventure | `src/features/claw/` | plan moved here; fill the rest on the next claw change |
-| [kitchen](kitchen/) | Pizza Kitchen: Lunch Rush | `src/features/kitchen/` | stub |
+| [kitchen](kitchen/) | Pizza Kitchen: Lunch Rush | `src/features/kitchen/` | stub; original brief in README |
 | [frogger](frogger/) | Frogger Adventure | `src/features/frogger/` | stub |
 | [delivery](delivery/) | Bike Delivery | `src/features/delivery/` | stub |
 | [wordle](wordle/) | Word Quest | `src/features/wordle/` | filled (lint fix logged) |
 | [duck-hunt](duck-hunt/) | Elijah's Quack Attack | `src/features/hunting/` | filled (phase 1 done) |
 | [site-cache](site-cache/) | — | `public/sw.js` | v3: pages wait for the network |
+| [pending-ui](pending-ui/) | — | `src/components/PendingNavigation.tsx` | loading screen while a route or blocking read is in flight |
 
-Older notes that pre-date this folder:
-
-- `Game Dev/specs/the-fitz-and-furious.md` → pointer to [racing](racing/)
-- `Game Dev/specs/pizza-kitchen.md` → original kitchen brief; kitchen spec should absorb it when that game is next touched
+There is no spec folder at the workspace root. Early briefs that used to live in `Game Dev/specs/` were removed on 2026-10-27: the racing file was already a pointer, and the kitchen brief is in [kitchen/README.md](kitchen/README.md).
 
 ## What "phase" means
 

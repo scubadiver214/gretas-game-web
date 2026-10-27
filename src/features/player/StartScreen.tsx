@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Image from "next/image";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -17,7 +17,7 @@ import { usePlayerHydrated, usePlayerStore } from "./store";
 import { NICKNAME_MAX, normalizeNickname, validateNickname } from "./types";
 
 export default function StartScreen() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const hydrated = usePlayerHydrated();
   const savedNickname = usePlayerStore((s) => s.nickname);
   const setNickname = usePlayerStore((s) => s.setNickname);
@@ -40,7 +40,7 @@ export default function StartScreen() {
     // character so games are playable right away. Players can still pick a
     // different look later by tapping their avatar in the dashboard.
     if (!character) setCharacter("girl");
-    router.push("/adventure");
+    push("/adventure");
   };
 
   return (
@@ -209,7 +209,7 @@ export default function StartScreen() {
                 <PlayArrowRoundedIcon sx={{ mr: 0.75 }} /> Let&apos;s play!
               </ButtonBase>
               <ButtonBase
-                onClick={() => router.push("/scoreboard")}
+                onClick={() => push("/scoreboard")}
                 sx={{
                   height: 44,
                   clipPath: CLIP.button,

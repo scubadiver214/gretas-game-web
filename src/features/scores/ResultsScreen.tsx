@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -61,7 +61,7 @@ function StarRow({ stars }: { stars: number }) {
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push, replace } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character);
   const color = usePlayerStore((s) => s.color);
@@ -77,7 +77,7 @@ function Inner() {
 
   useEffect(() => {
     if (!result) {
-      router.replace("/adventure");
+      replace("/adventure");
       return;
     }
     if (!character) return;
@@ -289,7 +289,7 @@ function Inner() {
                   key={s.id}
                   label={`New bike: ${s.label}`}
                   sx={{ bgcolor: s.frame, color: "#fff", alignSelf: "flex-start" }}
-                  onClick={() => router.push("/character")}
+                  onClick={() => push("/character")}
                 />
               ))}
             </Stack>
@@ -308,12 +308,12 @@ function Inner() {
             variant="contained"
             color="success"
             startIcon={<ReplayRoundedIcon />}
-            onClick={() => router.push(result.challengeDate ? `/play/${result.mode}?daily=1` : `/play/${result.mode}`)}
+            onClick={() => push(result.challengeDate ? `/play/${result.mode}?daily=1` : `/play/${result.mode}`)}
           >
             Play again
           </Button>
           <Stack direction="row" spacing={1}>
-            <Button fullWidth variant="outlined" color="primary" onClick={() => router.push("/adventure")}>
+            <Button fullWidth variant="outlined" color="primary" onClick={() => push("/adventure")}>
               Back to shop
             </Button>
             <Button
@@ -328,13 +328,13 @@ function Inner() {
             </Button>
           </Stack>
           <Stack direction="row" spacing={1} sx={{ justifyContent: "center" }}>
-            <Button variant="text" startIcon={<EmojiEventsRoundedIcon />} onClick={() => router.push("/scoreboard")}>
+            <Button variant="text" startIcon={<EmojiEventsRoundedIcon />} onClick={() => push("/scoreboard")}>
               Ranks
             </Button>
-            <Button variant="text" onClick={() => router.push("/my-scores")}>
+            <Button variant="text" onClick={() => push("/my-scores")}>
               My runs
             </Button>
-            <Button variant="text" onClick={() => router.push("/trophies")}>
+            <Button variant="text" onClick={() => push("/trophies")}>
               Trophies
             </Button>
           </Stack>

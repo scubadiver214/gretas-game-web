@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
@@ -36,7 +36,7 @@ import { useFroggerHud } from "./useFroggerHud";
 type UiPhase = "menu" | "loading" | "playing" | "gameOver";
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -184,8 +184,8 @@ function Inner() {
     setUi("playing");
   }, [engine]);
 
-  const quit = () => router.push("/adventure");
-  const ranks = () => router.push("/scoreboard?mode=frogger");
+  const quit = () => push("/adventure");
+  const ranks = () => push("/scoreboard?mode=frogger");
   const playing = ui === "playing";
   const paused = playing && enginePhase === "paused";
 

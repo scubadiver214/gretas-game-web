@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Image from "next/image";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -172,7 +172,7 @@ const pillSx = {
 } as const;
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const nickname = usePlayerStore((s) => s.nickname);
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
@@ -197,7 +197,7 @@ function Inner() {
       <Stack spacing={{ xs: 1.75, md: 2.5 }} sx={{ flex: 1, py: { xs: 1.5, md: 3 } }}>
         {/* Player bar: name badge on the left, stars + settings on the right. */}
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <ButtonBase onClick={() => router.push("/character")} sx={{ ...pillSx, pl: 0.5, pr: 1.5, cursor: "pointer" }}>
+          <ButtonBase onClick={() => push("/character")} sx={{ ...pillSx, pl: 0.5, pr: 1.5, cursor: "pointer" }}>
             <AvatarBadge avatarId={claw.selectedAvatar} nickname={nickname} character={character} color={color} size={34} />
             <Typography sx={{ fontFamily: "var(--font-arcade)", fontWeight: 700, fontSize: "1rem", color: N.text }}>
               {nickname}
@@ -247,7 +247,7 @@ function Inner() {
             return (
               <ButtonBase
                 key={mode}
-                onClick={() => router.push(to ?? `/play/${mode}`)}
+                onClick={() => push(to ?? `/play/${mode}`)}
                 aria-label={`Play ${MODE_LABELS[mode]}`}
                 sx={{
                   textAlign: "left",
@@ -422,7 +422,7 @@ function Inner() {
                 return (
                   <ButtonBase
                     key={mode}
-                    onClick={() => router.push(`/play/${mode}?daily=1`)}
+                    onClick={() => push(`/play/${mode}?daily=1`)}
                     aria-label={`Play today's ${MODE_LABELS[mode]} challenge`}
                     sx={{
                       flex: 1,
@@ -473,7 +473,7 @@ function Inner() {
             ).map(({ label, to, ...rest }) => (
               <ButtonBase
                 key={to}
-                onClick={() => router.push(to)}
+                onClick={() => push(to)}
                 sx={{
                   flex: 1,
                   minHeight: 40,

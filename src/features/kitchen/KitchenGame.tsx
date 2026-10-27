@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
@@ -93,7 +93,7 @@ function ShiftOverCard({ summary, onResults }: { summary: ShiftSummary; onResult
 }
 
 function Inner() {
-  const router = useRouter();
+  const { push, replace } = usePendingRouter();
   const character = usePlayerStore((s) => s.character)!;
   const color = usePlayerStore((s) => s.color);
   const hairColor = usePlayerStore((s) => s.hairColor);
@@ -300,8 +300,8 @@ function Inner() {
     startCountdown();
   };
 
-  const quit = () => router.push("/adventure");
-  const toResults = useCallback(() => router.replace("/results"), [router]);
+  const quit = () => push("/adventure");
+  const toResults = useCallback(() => replace("/results"), [replace]);
 
   useEffect(() => {
     if (ui !== "closed") return;

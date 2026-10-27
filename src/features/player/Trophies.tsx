@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePendingRouter } from "@/components/PendingNavigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -23,7 +23,7 @@ const TIER: Record<AchievementDef["tier"], string> = {
 };
 
 function Inner() {
-  const router = useRouter();
+  const { push } = usePendingRouter();
   const achievements = usePlayerStore((s) => s.achievements);
   const unlockedCount = ACHIEVEMENTS.filter((a) => achievements[a.id]).length;
   const sorted = [...ACHIEVEMENTS].sort((a, b) => Number(!!achievements[b.id]) - Number(!!achievements[a.id]));
@@ -32,7 +32,7 @@ function Inner() {
     <PageContainer maxWidth={560}>
       <Stack spacing={2} sx={{ flex: 1, py: 2 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => router.push("/adventure")}>
+          <Button variant="outlined" size="small" startIcon={<ArrowBackRoundedIcon />} onClick={() => push("/adventure")}>
             Back
           </Button>
           <Box sx={{ flex: 1 }} />

@@ -26,6 +26,7 @@ export function useClawProfile(nickname: string): { profile: ClawProfile; loadin
     queryFn: () => getProfile(nickname),
     enabled: nickname.length > 0,
     staleTime: 10_000,
+    meta: { background: true },
   });
   useEffect(() => {
     if (query.data) applyProfile(nickname, query.data);
