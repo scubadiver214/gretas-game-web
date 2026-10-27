@@ -36,6 +36,8 @@ export const N = {
   froggerDeep: "#6FC21A",
   claw: "#FF8AD0",
   clawDeep: "#D13A9A",
+  scoops: "#FF6FA5",
+  scoopsDeep: "#E8437A",
   racing: "#FFB020",
   racingDeep: "#D98400",
   hunting: "#2FD8B0",

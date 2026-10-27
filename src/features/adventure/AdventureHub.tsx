@@ -27,13 +27,13 @@ import { MODE_LABELS, MODE_SHORT_LABELS, type GameMode } from "@/features/player
 import { dailyKey } from "@/lib/rng";
 
 const ADVENTURES: {
-  mode: GameMode;
+  mode?: GameMode;
   title: string;
   blurb: string;
   emoji: string;
   accent: string;
-  /** Hero art shown on the card; wordle gets a glowing emoji tile instead. */
-  art?: { src: string; alt: string };
+  /** Full-bleed neon portrait. Required. Same crop as Bea's Claw tile. */
+  art: { src: string; alt: string };
   /** Arcade games always start at level 1, so the card shows no star level. */
   arcade?: boolean;
   /** Where the card goes; defaults to /play/<mode>. */
@@ -112,9 +112,20 @@ const ADVENTURES: {
     status: "Lakeside · New!",
     daily: false,
   },
+  {
+    title: "Shelby's Scoops!",
+    blurb: "Build cones, invent recipes",
+    emoji: "🍦",
+    accent: N.scoops,
+    art: { src: "/characters/scoops-sister-neon.jpg", alt: "A girl with brown braids and a blue hoodie reaching for a glowing triple-scoop cone" },
+    arcade: true,
+    to: "/play/scoops",
+    status: "Shop · New!",
+    daily: false,
+  },
 ];
 
-const DAILY_ADVENTURES = ADVENTURES.filter((a) => a.daily !== false);
+const DAILY_ADVENTURES = ADVENTURES.filter((a): a is typeof a & { mode: GameMode } => a.daily !== false && a.mode !== undefined);
 
 /** Star pips showing progress inside the current level. */
 function StarPips({ stars }: { stars: number }) {
@@ -239,16 +250,16 @@ function Inner() {
             gap: { xs: 1.25, md: 2 },
           }}
         >
-          {ADVENTURES.map(({ mode, title, blurb, emoji, accent, art, arcade, to, status }) => {
-            const modeStars = stars[mode] ?? 0;
+          {ADVENTURES.map(({ mode, title, blurb, accent, art, arcade, to, status }) => {
+            const modeStars = mode ? (stars[mode] ?? 0) : 0;
             const level = levelForStars(modeStars);
-            const best = bestFor(mode);
-            const chip = status ?? (arcade ? "Arcade · 3 lives" : `Lv ${level} · ${LEVEL_NAMES[level]}`);
+            const best = mode ? bestFor(mode) : undefined;
+            const chip = status ?? (arcade || !mode ? "Arcade · 3 lives" : `Lv ${level} · ${LEVEL_NAMES[level]}`);
             return (
               <ButtonBase
-                key={mode}
-                onClick={() => push(to ?? `/play/${mode}`)}
-                aria-label={`Play ${MODE_LABELS[mode]}`}
+                key={mode ?? title}
+                onClick={() => push(to ?? (mode ? `/play/${mode}` : "/adventure"))}
+                aria-label={`Play ${title}`}
                 sx={{
                   textAlign: "left",
                   display: "flex",
@@ -312,10 +323,10 @@ function Inner() {
                         <EmojiEventsRoundedIcon sx={{ fontSize: 15, color: N.sun }} /> {best}
                       </StatChip>
                     )}
-                    {!arcade && <StarPips stars={modeStars} />}
+                    {mode && !arcade && <StarPips stars={modeStars} />}
                   </Stack>
                 </Box>
-                {/* Art column: hero render, or a glowing emoji tile for wordle. */}
+                {/* Art column: full-bleed portrait, same crop on every card. */}
                 <Box
                   aria-hidden
                   sx={{
@@ -328,25 +339,13 @@ function Inner() {
                     placeItems: "center",
                   }}
                 >
-                  {art ? (
-                    <Image
-                      src={art.src}
-                      alt=""
-                      fill
-                      sizes="(min-width: 900px) 340px, 104px"
-                      style={{ objectFit: "cover", objectPosition: "center 22%" }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        fontSize: { xs: 44, md: 96 },
-                        lineHeight: 1,
-                        filter: `drop-shadow(0 0 16px ${accent})`,
-                      }}
-                    >
-                      {emoji}
-                    </Box>
-                  )}
+                  <Image
+                    src={art.src}
+                    alt=""
+                    fill
+                    sizes="(min-width: 900px) 340px, 104px"
+                    style={{ objectFit: "cover", objectPosition: "center 22%" }}
+                  />
                   {/* Fade the art into the panel so it never fights the text. */}
                   <Box
                     aria-hidden

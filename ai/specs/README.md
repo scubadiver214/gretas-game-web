@@ -31,6 +31,7 @@ Create the whole set the first time you touch a feature that has no folder. Copy
 | [delivery](delivery/) | Bike Delivery | `src/features/delivery/` | stub |
 | [wordle](wordle/) | Word Quest | `src/features/wordle/` | filled (lint fix logged) |
 | [duck-hunt](duck-hunt/) | Elijah's Quack Attack | `src/features/hunting/` | filled (phase 1 done) |
+| [scoops](scoops/) | Shelby's Scoops! | `src/features/scoops/` | filled (phases 1–8 done) |
 | [site-cache](site-cache/) | — | `public/sw.js` | v3: pages wait for the network |
 | [pending-ui](pending-ui/) | — | `src/components/PendingNavigation.tsx` | loading screen while a route or blocking read is in flight |
 
