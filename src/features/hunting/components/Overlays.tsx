@@ -10,58 +10,62 @@ import { BADGE_BY_ID } from "../badges";
 import type { LevelDef } from "../levels";
 import { SPECIES_BY_ID } from "../species";
 import type { HuntSummary, SpeciesId } from "../types";
-import { H, bigButton, bigText } from "./hudStyle";
+import { H, SHORT, bigButton, bigText } from "./hudStyle";
 import { Screen } from "./Menus";
 
 export function PauseOverlay({ explore, touch, onResume, onRestart, onSettings, onFinishExplore, onMenu }: { explore: boolean; touch: boolean; onResume: () => void; onRestart: () => void; onSettings: () => void; onFinishExplore: () => void; onMenu: () => void }) {
   const [help, setHelp] = useState(false);
   return (
     <Screen align="center">
-      <Typography component="h2" sx={{ ...bigText, fontSize: 36, textAlign: "center", mb: 2 }}>
+      <Typography component="h2" sx={{ ...bigText, fontSize: 36, textAlign: "center", mb: 2, [SHORT]: { fontSize: 26, mb: 0.75, flexShrink: 0 } }}>
         Paused
       </Typography>
-      {help ? (
-        <Box sx={{ mb: 2 }}>
-          <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: H.gold, mb: 1 }}>How to play</Typography>
-          {[
-            touch ? "👆 Drag anywhere to look around." : "🖱️ Move the mouse to look around. Click the game first if it doesn't turn.",
-            explore ? "📸 Tap SNAP (or click) to take a photo." : "💥 Put the circle on a flying duck and shoot. It turns gold when you're on target!",
-            "🦆 Mallards, teal, pintails, wood ducks, shovelers and canvasbacks all count. They fly in lines, Vs, stacks and crossing flocks.",
-            "💨 A shot aimed at a duck or a flock makes them scatter and fly faster if you miss. Swing with them.",
-            "🔴 The shotgun holds 5 shells. It reloads by itself when empty, or press R / RELOAD.",
-            "🎯 Hold AIM (right-click) to zoom in a little and tighten your shot.",
-            "📷 Switch to the camera (Q) to photograph protected animals for your Field Journal.",
-            "🔍 Small animals like the frog need zooming in. Keep the animal in the middle for 3 stars.",
-            "🔥 Hitting ducks in a row builds your multiplier.",
-          ].map((t) => (
-            <Typography key={t} sx={{ fontSize: 14, mb: 0.7 }}>
-              {t}
-            </Typography>
-          ))}
+      <Box sx={{ [SHORT]: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: help ? "flex-start" : "center" } }}>
+        {help ? (
+          <Box sx={{ mb: 2, [SHORT]: { mb: 0.5, flex: 1, minHeight: 0, overflowY: "auto" } }}>
+            <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: H.gold, mb: 1, [SHORT]: { mb: 0.25, fontSize: 13 } }}>How to play</Typography>
+            <Box sx={{ [SHORT]: { display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5 } }}>
+              {[
+                touch ? "👆 Drag anywhere to look around." : "🖱️ Move the mouse to look around. Click the game first if it doesn't turn.",
+                explore ? "📸 Tap SNAP (or click) to take a photo." : "💥 Put the circle on a flying duck and shoot. It turns gold when you're on target!",
+                "🦆 Mallards, teal, pintails, wood ducks, shovelers and canvasbacks all count. They fly in lines, Vs, stacks and crossing flocks.",
+                "💨 A shot aimed at a duck or a flock makes them scatter and fly faster if you miss. Swing with them.",
+                "🔴 The shotgun holds 5 shells. It reloads by itself when empty, or press R / RELOAD.",
+                "🎯 Hold AIM (right-click) to zoom in a little and tighten your shot.",
+                "📷 Switch to the camera (Q) to photograph protected animals for your Field Journal.",
+                "🔍 Small animals like the frog need zooming in. Keep the animal in the middle for 3 stars.",
+                "🔥 Hitting ducks in a row builds your multiplier.",
+              ].map((t) => (
+                <Typography key={t} sx={{ fontSize: 14, mb: 0.7, [SHORT]: { fontSize: 12, mb: 0.25, lineHeight: 1.2 } }}>
+                  {t}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        ) : null}
+        <Box sx={{ display: "grid", gap: 1.2, [SHORT]: { gap: 0.6, flexShrink: 0, gridTemplateColumns: "1fr 1fr", "& > :last-child": { gridColumn: help ? "auto" : "1 / -1" } } }}>
+          <Button onClick={onResume} sx={{ ...bigButton(H.orange, H.orangeDeep), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+            ▶ Resume
+          </Button>
+          {explore ? (
+            <Button onClick={onFinishExplore} sx={{ ...bigButton(H.teal, H.tealDeep), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem", ...(help ? { display: "none" } : {}) } }}>
+              📖 Finish exploring
+            </Button>
+          ) : (
+            <Button onClick={onRestart} sx={{ ...bigButton("#4f8fe8", "#2a5fb3"), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem", ...(help ? { display: "none" } : {}) } }}>
+              🔁 Restart level
+            </Button>
+          )}
+          <Button onClick={() => setHelp((h) => !h)} sx={{ ...bigButton("#6b7b8f", "#454f5d"), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+            ❓ {help ? "Hide help" : "How to play"}
+          </Button>
+          <Button onClick={onSettings} sx={{ ...bigButton("#6b7b8f", "#454f5d"), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem", ...(help ? { display: "none" } : {}) } }}>
+            ⚙️ Settings
+          </Button>
+          <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700, [SHORT]: { minHeight: 32, py: 0, ...(help ? { display: "none" } : {}) } }}>
+            Main menu
+          </Button>
         </Box>
-      ) : null}
-      <Box sx={{ display: "grid", gap: 1.2 }}>
-        <Button onClick={onResume} sx={{ ...bigButton(H.orange, H.orangeDeep), justifyContent: "center" }}>
-          ▶ Resume
-        </Button>
-        {explore ? (
-          <Button onClick={onFinishExplore} sx={{ ...bigButton(H.teal, H.tealDeep), justifyContent: "center" }}>
-            📖 Finish exploring
-          </Button>
-        ) : (
-          <Button onClick={onRestart} sx={{ ...bigButton("#4f8fe8", "#2a5fb3"), justifyContent: "center" }}>
-            🔁 Restart level
-          </Button>
-        )}
-        <Button onClick={() => setHelp((h) => !h)} sx={{ ...bigButton("#6b7b8f", "#454f5d"), justifyContent: "center" }}>
-          ❓ {help ? "Hide help" : "How to play"}
-        </Button>
-        <Button onClick={onSettings} sx={{ ...bigButton("#6b7b8f", "#454f5d"), justifyContent: "center" }}>
-          ⚙️ Settings
-        </Button>
-        <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700 }}>
-          Main menu
-        </Button>
       </Box>
     </Screen>
   );
@@ -119,82 +123,100 @@ export function ResultsCard({
   const win = summary.success;
   return (
     <Screen align="center">
-      <Typography component="h2" sx={{ ...bigText, fontSize: 34, textAlign: "center", color: win ? H.gold : H.cream }}>
-        {win ? "Level complete!" : summary.outOfAmmo ? "Out of shells!" : "So close!"}
-      </Typography>
-      <Typography sx={{ textAlign: "center", opacity: 0.85, mb: 1 }}>
-        Level {level.number} · {level.name}
-      </Typography>
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5, mb: 1 }} aria-label={`${summary.stars} of 3 stars`}>
-        {[1, 2, 3].map((i) => (
-          <StarRoundedIcon
-            key={i}
-            sx={{
-              fontSize: i === 2 ? 74 : 60,
-              mt: i === 2 ? 0 : 1.2,
-              color: i <= summary.stars ? H.gold : "rgba(255,255,255,0.18)",
-              filter: i <= summary.stars ? `drop-shadow(0 0 10px ${H.gold})` : undefined,
-              animation: i <= summary.stars ? `huntStar 420ms ${0.25 + i * 0.25}s cubic-bezier(.2,1.6,.4,1) both` : undefined,
-              "@keyframes huntStar": { from: { transform: "scale(0) rotate(-40deg)" }, to: { transform: "scale(1) rotate(0)" } },
-            }}
-          />
-        ))}
-      </Box>
-      <Typography sx={{ ...bigText, fontSize: 46, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{score.toLocaleString()}</Typography>
-      {(rank || personalBest) && (
-        <Typography sx={{ textAlign: "center", color: H.gold, fontWeight: 800, mb: 1 }}>
-          {personalBest ? "🏆 New personal best! " : ""}
-          {rank ? `Rank #${rank} on the leaderboard` : ""}
-        </Typography>
-      )}
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, my: 1.5 }}>
-        <Stat label="Ducks hit" value={`${summary.hits}/${summary.ducks}`} />
-        <Stat label="Accuracy" value={summary.shots ? `${Math.round(summary.accuracy * 100)}%` : "–"} />
-        <Stat label="Best streak" value={String(summary.bestStreak)} />
-        {level.objective.kind === "doubles" && <Stat label="Pairs" value={String(summary.doubles)} />}
-        {summary.multiShots > 0 && <Stat label="Two-for-one" value={String(summary.multiShots)} />}
-        {summary.photos > 0 && <Stat label="Photos" value={String(summary.photos)} />}
-      </Box>
-      {summary.bonuses.length > 0 && (
-        <Box sx={{ mb: 1.5 }}>
-          {summary.bonuses.map((b) => (
-            <Box key={b.label} sx={{ display: "flex", justifyContent: "space-between", fontSize: 14, py: 0.2 }}>
-              <span>{b.label}</span>
-              <Box component="span" sx={{ color: H.gold, fontWeight: 800 }}>
-                +{b.points}
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      )}
-      {badges.length > 0 && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, mb: 1.5 }}>
-          {badges.map((id) => (
-            <Typography key={id} sx={{ fontSize: 13, px: 1.2, py: 0.5, borderRadius: 999, border: `1px solid ${H.gold}`, bgcolor: "rgba(245,197,66,0.15)" }}>
-              {BADGE_BY_ID[id]?.emoji} {BADGE_BY_ID[id]?.title}
+      <Box
+        sx={{
+          [SHORT]: {
+            flex: 1,
+            minHeight: 0,
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.05fr) minmax(0, 0.95fr)",
+            columnGap: 1.5,
+            alignItems: "center",
+          },
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography component="h2" sx={{ ...bigText, fontSize: 34, textAlign: "center", color: win ? H.gold : H.cream, [SHORT]: { fontSize: 24 } }}>
+            {win ? "Level complete!" : summary.outOfAmmo ? "Out of shells!" : "So close!"}
+          </Typography>
+          <Typography sx={{ textAlign: "center", opacity: 0.85, mb: 1, [SHORT]: { mb: 0.4, fontSize: 13 } }}>
+            Level {level.number} · {level.name}
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5, mb: 1, [SHORT]: { mb: 0.25 } }} aria-label={`${summary.stars} of 3 stars`}>
+            {[1, 2, 3].map((i) => (
+              <StarRoundedIcon
+                key={i}
+                sx={{
+                  fontSize: i === 2 ? 74 : 60,
+                  mt: i === 2 ? 0 : 1.2,
+                  color: i <= summary.stars ? H.gold : "rgba(255,255,255,0.18)",
+                  filter: i <= summary.stars ? `drop-shadow(0 0 10px ${H.gold})` : undefined,
+                  animation: i <= summary.stars ? `huntStar 420ms ${0.25 + i * 0.25}s cubic-bezier(.2,1.6,.4,1) both` : undefined,
+                  "@keyframes huntStar": { from: { transform: "scale(0) rotate(-40deg)" }, to: { transform: "scale(1) rotate(0)" } },
+                  [SHORT]: { fontSize: i === 2 ? 40 : 32, mt: i === 2 ? 0 : 0.4 },
+                }}
+              />
+            ))}
+          </Box>
+          <Typography sx={{ ...bigText, fontSize: 46, textAlign: "center", fontVariantNumeric: "tabular-nums", [SHORT]: { fontSize: 30 } }}>{score.toLocaleString()}</Typography>
+          {(rank || personalBest) && (
+            <Typography sx={{ textAlign: "center", color: H.gold, fontWeight: 800, mb: 1, [SHORT]: { fontSize: 13, mb: 0.4 } }}>
+              {personalBest ? "🏆 New personal best! " : ""}
+              {rank ? `Rank #${rank} on the leaderboard` : ""}
             </Typography>
-          ))}
+          )}
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, my: 1.5, [SHORT]: { my: 0.75, gap: 0.6 } }}>
+            <Stat label="Ducks hit" value={`${summary.hits}/${summary.ducks}`} />
+            <Stat label="Accuracy" value={summary.shots ? `${Math.round(summary.accuracy * 100)}%` : "–"} />
+            <Stat label="Best streak" value={String(summary.bestStreak)} />
+            {level.objective.kind === "doubles" && <Stat label="Pairs" value={String(summary.doubles)} />}
+            {summary.multiShots > 0 && <Stat label="Two-for-one" value={String(summary.multiShots)} />}
+            {summary.photos > 0 && <Stat label="Photos" value={String(summary.photos)} />}
+          </Box>
         </Box>
-      )}
-      {!win && (
-        <Typography sx={{ fontSize: 14, p: 1.2, borderRadius: 2, bgcolor: "rgba(0,0,0,0.25)", mb: 1.5 }}>
-          💡 {level.tip}
-          {helpNext ? ` ${helpNext}` : ""}
-        </Typography>
-      )}
-      {summary.protectedHits > 0 && <Typography sx={{ fontSize: 13, opacity: 0.85, mb: 1.5 }}>🦢 Remember: swans, herons and other lake animals are protected. Photograph them instead!</Typography>}
-      <Box sx={{ display: "grid", gap: 1.2 }}>
-        {win && hasNext && (
-          <Button onClick={onNext} sx={{ ...bigButton(H.orange, H.orangeDeep), justifyContent: "center" }}>
-            Next level ▶
-          </Button>
-        )}
-        <Button onClick={onReplay} sx={{ ...bigButton(win && hasNext ? "#4f8fe8" : H.orange, win && hasNext ? "#2a5fb3" : H.orangeDeep), justifyContent: "center" }}>
-          {win ? "🔁 Play again" : "🔁 Try again"}
-        </Button>
-        <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700 }}>
-          Main menu
-        </Button>
+        <Box sx={{ minWidth: 0, [SHORT]: { display: "flex", flexDirection: "column", justifyContent: "center" } }}>
+          {summary.bonuses.length > 0 && (
+            <Box sx={{ mb: 1.5, [SHORT]: { mb: 0.75 } }}>
+              {summary.bonuses.map((b) => (
+                <Box key={b.label} sx={{ display: "flex", justifyContent: "space-between", fontSize: 14, py: 0.2, [SHORT]: { fontSize: 12 } }}>
+                  <span>{b.label}</span>
+                  <Box component="span" sx={{ color: H.gold, fontWeight: 800 }}>
+                    +{b.points}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+          {badges.length > 0 && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, mb: 1.5, [SHORT]: { mb: 0.75, gap: 0.5 } }}>
+              {badges.map((id) => (
+                <Typography key={id} sx={{ fontSize: 13, px: 1.2, py: 0.5, borderRadius: 999, border: `1px solid ${H.gold}`, bgcolor: "rgba(245,197,66,0.15)", [SHORT]: { fontSize: 11, px: 0.8, py: 0.25 } }}>
+                  {BADGE_BY_ID[id]?.emoji} {BADGE_BY_ID[id]?.title}
+                </Typography>
+              ))}
+            </Box>
+          )}
+          {!win && (
+            <Typography sx={{ fontSize: 14, p: 1.2, borderRadius: 2, bgcolor: "rgba(0,0,0,0.25)", mb: 1.5, [SHORT]: { fontSize: 12, p: 0.8, mb: 0.75 } }}>
+              💡 {level.tip}
+              {helpNext ? ` ${helpNext}` : ""}
+            </Typography>
+          )}
+          {summary.protectedHits > 0 && <Typography sx={{ fontSize: 13, opacity: 0.85, mb: 1.5, [SHORT]: { fontSize: 12, mb: 0.75 } }}>🦢 Remember: swans, herons and other lake animals are protected. Photograph them instead!</Typography>}
+          <Box sx={{ display: "grid", gap: 1.2, [SHORT]: { gap: 0.6 } }}>
+            {win && hasNext && (
+              <Button onClick={onNext} sx={{ ...bigButton(H.orange, H.orangeDeep), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+                Next level ▶
+              </Button>
+            )}
+            <Button onClick={onReplay} sx={{ ...bigButton(win && hasNext ? "#4f8fe8" : H.orange, win && hasNext ? "#2a5fb3" : H.orangeDeep), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+              {win ? "🔁 Play again" : "🔁 Try again"}
+            </Button>
+            <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700, [SHORT]: { minHeight: 32, py: 0 } }}>
+              Main menu
+            </Button>
+          </Box>
+        </Box>
       </Box>
     </Screen>
   );
@@ -203,10 +225,23 @@ export function ResultsCard({
 export function ExploreSummary({ summary, discovered, badges, journalCount, onKeepExploring, onJournal, onMenu }: { summary: HuntSummary; discovered: SpeciesId[]; badges: string[]; journalCount: number; onKeepExploring: () => void; onJournal: () => void; onMenu: () => void }) {
   return (
     <Screen align="center">
-      <Typography component="h2" sx={{ ...bigText, fontSize: 32, textAlign: "center", color: H.gold }}>
+      <Box
+        sx={{
+          [SHORT]: {
+            flex: 1,
+            minHeight: 0,
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+            columnGap: 1.5,
+            alignItems: "center",
+          },
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+      <Typography component="h2" sx={{ ...bigText, fontSize: 32, textAlign: "center", color: H.gold, [SHORT]: { fontSize: 24 } }}>
         Great exploring!
       </Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, my: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, my: 2, [SHORT]: { my: 1 } }}>
         <Stat label="Photos taken" value={String(summary.photos)} />
         <Stat label="Field Journal" value={`${journalCount}/8`} />
       </Box>
@@ -233,16 +268,18 @@ export function ExploreSummary({ summary, discovered, badges, journalCount, onKe
           ))}
         </Box>
       )}
-      <Box sx={{ display: "grid", gap: 1.2 }}>
-        <Button onClick={onKeepExploring} sx={{ ...bigButton(H.teal, H.tealDeep), justifyContent: "center" }}>
-          📷 Keep exploring
-        </Button>
-        <Button onClick={onJournal} sx={{ ...bigButton("#4f8fe8", "#2a5fb3"), justifyContent: "center" }}>
-          📖 Field Journal
-        </Button>
-        <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700 }}>
-          Main menu
-        </Button>
+        </Box>
+        <Box sx={{ display: "grid", gap: 1.2, [SHORT]: { gap: 0.6, alignContent: "center" } }}>
+          <Button onClick={onKeepExploring} sx={{ ...bigButton(H.teal, H.tealDeep), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+            📷 Keep exploring
+          </Button>
+          <Button onClick={onJournal} sx={{ ...bigButton("#4f8fe8", "#2a5fb3"), justifyContent: "center", [SHORT]: { minHeight: 42, fontSize: "1rem" } }}>
+            📖 Field Journal
+          </Button>
+          <Button onClick={onMenu} sx={{ color: H.cream, textTransform: "none", fontWeight: 700, [SHORT]: { minHeight: 32, py: 0 } }}>
+            Main menu
+          </Button>
+        </Box>
       </Box>
     </Screen>
   );

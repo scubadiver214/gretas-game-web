@@ -7,6 +7,8 @@
 
 ## Closed
 
+- **Selection menus scrolled inside the card on a short landscape phone** (2026-10-27). At 568×320 the main menu hid Journal and Settings, level select hid the levels (1072px of content in a 290px card), and the level intro's Start button was off screen. Menus under 500px of height now fill the width so those choices sit on screen. Checked in the browser at 568×320 (menu, levels, intro, settings, journal, pause) and at 1280×800 / 1280×1000 so the desktop card is unchanged.
+
 - **Shooting while aiming did nothing** (2026-10-26). Right-click aim then left-click fire never called `fire`: `pointerdown` only fires for the first button held, so the shot was dropped while aim was held. Mouse buttons now use `mousedown`/`mouseup`, which fire per button. Touch still uses pointer events for looking. Checked in the browser: crosshair shrinks to the aimed size while the right button is down, a left click during that shrinks the magazine from 5 to 4, and releasing the right button returns the crosshair to hip size.
 
 - **Last wave ended the level early** (2026-10-26). In wave levels the "anything still flying?" check ran before the final wave spawned, so the level finished 1.1 s later with that duck still taking off: it was never hit and never counted as escaped. Fixed in `HuntEngine.stepSpawns`; `HuntEngine.test.ts` now asserts hits + escaped = ducks on every level and difficulty.

@@ -361,7 +361,7 @@ function Inner() {
       onMouseUp={onMouseUp}
       onWheel={onWheel}
       onContextMenu={(e) => e.preventDefault()}
-      sx={{ position: "fixed", inset: 0, overflow: "hidden", bgcolor: "#8cc7f2", userSelect: "none", touchAction: "none", cursor: inGame && phase === "playing" ? "none" : "default" }}
+      sx={{ position: "fixed", top: 0, left: 0, right: 0, height: "100dvh", overflow: "hidden", bgcolor: "#8cc7f2", userSelect: "none", touchAction: "none", cursor: inGame && phase === "playing" ? "none" : "default" }}
     >
       <HuntCanvas engine={engine} lowPower={touch} skin={skin} sleeve={color} reducedMotion={reducedMotion} bridge={bridge} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
 

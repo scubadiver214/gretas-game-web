@@ -2,6 +2,12 @@
 
 Newest first. IDs are stable; refer to them from code reviews and later sessions.
 
+## 2026-10-27 — Short-screen menus
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-29 | Under 500px of height, selection menus fill the screen and use the width so every choice and the main button are visible. The playfield uses `100dvh`. On a short screen, How to play keeps Resume and Hide help and hides the other pause actions until help closes. Taller screens keep the stacked card, which can still scroll. | The game asks for landscape. A phone in landscape is only about 320–450px tall, and the old card hid Start, the levels, and Settings behind a scroll inside the panel. | A scroll hint or a sticky footer inside the same tall card. A portrait layout (the rotate prompt already covers portrait). |
+
 ## 2026-10-27 — Misses spook the flock
 
 | ID | Decision | Why | Rejected |

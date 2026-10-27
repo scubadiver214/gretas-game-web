@@ -54,6 +54,22 @@ Flying targets are mallard, wood duck, northern pintail, green-winged teal, canv
 - In the browser on Duck Patrol: several ducks in the air at once (a pair on the right, another bird off to the left). Letting the round finish with no shots reported 0/21, so every flock had spawned.
 - Scatter-on-miss: `HuntEngine.test.ts` aims just above a pair, misses, and both birds leave the formation and speed up. A shot into the sky leaves the flock together. In the browser, a shot past the first duck of First Flight scored 0 and spent a shell.
 
+## Phase 1c — Short-screen selection menus (done 2026-10-27)
+
+Goal: on a phone in landscape, every choice and the main action sit on screen. Players do not have to discover a scroll inside the menu card.
+
+- [x] Below 500px of height, menus fill the screen and lay choices out across the width
+- [x] Main menu, level select, level intro, settings, journal, pause, and results keep their actions in view
+- [x] Taller screens keep the original stacked card
+
+### What exists
+
+`Screen` in `components/Menus.tsx` uses a `max-height: 500px` layout (`SHORT` in `hudStyle.ts`). The playfield is `100dvh` so the card matches the visible phone screen. Level select is one row of worlds and one row of levels. The level intro puts the briefing on the left and Start on the right. Settings puts the three difficulties in a row and the toggles in two columns. While How to play is open on a short screen, Resume and Hide help stay put and the other pause actions return when help closes.
+
+### How it was verified
+
+In the browser at 568×320 (a small phone in landscape): main menu, level select, level intro, settings, Field Journal, and pause had no nested scroll, and Start, Done, and Resume were fully on screen. Opening How to play showed every tip with Resume and Hide help still visible. At 1280×800 the main menu was the original stacked card. At 1280×1000, settings showed Done with no scroll.
+
 ## Phase 2 — Core gameplay: rifle, scope, deer, skeet, trap (not started)
 
 Scoped rifle (2×/4×/6×), binoculars, deer AI (graze, walk, run, cover), Deep Mountain Woods as first deer world, skeet and trap ranges with clay physics and break particles.

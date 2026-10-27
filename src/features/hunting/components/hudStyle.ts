@@ -83,3 +83,9 @@ export function bigButton(top: string, bottom: string) {
 }
 
 export const formatClock = (s: number) => `${Math.floor(s / 60)}:${String(Math.max(0, Math.floor(s % 60))).padStart(2, "0")}`;
+
+/**
+ * Phone landscape is short (about 320–450px). Selection menus use this to
+ * spread choices across the width so they fit without a nested scroll.
+ */
+export const SHORT = "@media (max-height: 500px)";
