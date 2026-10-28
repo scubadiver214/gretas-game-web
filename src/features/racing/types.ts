@@ -89,6 +89,9 @@ export type RacePhase = "ready" | "countdown" | "racing" | "finished" | "paused"
 /** A toy weapon picked up off the road. */
 export type WeaponKind = "gun" | "mine" | "oil";
 
+/** What blew up. `oil` is a crash while sliding, not the puddle itself. */
+export type ExplosionKind = "oil" | "collision" | "mine" | "gun";
+
 /** Keyboard (and touch) weapon commands. `fire` uses the selected weapon. */
 export type WeaponAction = "prev" | "next" | WeaponKind | "fire";
 
@@ -111,7 +114,8 @@ export type RaceEvent =
   | { type: "driftStart"; racer: number }
   | { type: "driftEnd"; racer: number; charge: number }
   | { type: "respawn"; racer: number; auto: boolean }
-  | { type: "crash"; racer: number }
+  | { type: "crash"; racer: number; boom: boolean }
+  | { type: "explosion"; kind: ExplosionKind; x: number; y: number; z: number; racer: number }
   | { type: "weaponPickup"; id: number; kind: WeaponKind; ammo: number; racer: number }
   | { type: "weaponFire"; kind: WeaponKind; ammo: number; racer: number }
   | { type: "weaponEmpty"; kind: WeaponKind }

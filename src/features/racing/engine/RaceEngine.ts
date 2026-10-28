@@ -7,6 +7,7 @@ import type { AnimalKind, Track } from "../world/track";
 import { AiDriver, type AiPersonality, type AiView } from "./ai";
 import { resolveBoundary, resolveCars, resolveObstacles } from "./collision";
 import { difficultyFor, playerTuning, type AssistLevel, type DifficultyConfig, type PlayerTuning } from "./difficulty";
+import { explosionKind, type WreckCause } from "./explosion";
 import { angleDiff, clamp, headingOf, lerp, lerpAngle } from "./math";
 import { RaceManager, type ProgressEvent } from "./race";
 import { createVehicle, integrateDrive, integrateVertical, placeVehicle, snapshot, type VehicleState, type VerticalResult } from "./vehicle";
@@ -796,7 +797,7 @@ export class RaceEngine {
   private noteSolid(i: number, impact: number): void {
     if (impact <= 0 || this.vehicles[i].wrecked > 0) return;
     if (this.vehicles[i].grace <= 0 && impact >= this.crashMin(i, "solid")) {
-      this.wreck(i);
+      this.wreck(i, "obstacle");
       return;
     }
     if (impact > 1.2) this.emitHit("bump", i, impact);
@@ -806,9 +807,9 @@ export class RaceEngine {
   private noteCars(i: number, j: number, impact: number): void {
     const wreckI = this.vehicles[i].grace <= 0 && this.vehicles[i].wrecked <= 0 && impact >= this.crashMin(i, "car");
     const wreckJ = this.vehicles[j].grace <= 0 && this.vehicles[j].wrecked <= 0 && impact >= this.crashMin(j, "car");
-    if (wreckI) this.wreck(i);
+    if (wreckI) this.wreck(i, "collision");
     else if (impact > 2) this.emitHit("bump", i, impact);
-    if (wreckJ) this.wreck(j);
+    if (wreckJ) this.wreck(j, "collision");
     else if (impact > 2) this.emitHit("bump", j, impact);
   }
 
@@ -832,9 +833,14 @@ export class RaceEngine {
    * facing the right way. It sits, then the driver has to get going again. This is not
    * a checkpoint reset.
    */
-  private wreck(i: number): void {
+  private wreck(i: number, cause: WreckCause): void {
     const v = this.vehicles[i];
     if (v.wrecked > 0 || v.grace > 0) return;
+    // The boom sits where the hit happened. placeVehicle then slides the car back and clears the slide.
+    const hitX = v.x;
+    const hitY = v.y;
+    const hitZ = v.z;
+    const kind = explosionKind(cause, v.oiled > 0);
     const q = v.query;
     const back = this.track.sample(q.s - CRASH.settleBack);
     const margin = this.carParams[i].radius + 0.8;
@@ -853,7 +859,8 @@ export class RaceEngine {
       this.stuck = false;
       this.wrongWay = false;
     }
-    this.events.emit({ type: "crash", racer: i });
+    if (kind) this.events.emit({ type: "explosion", kind, x: hitX, y: hitY, z: hitZ, racer: i });
+    this.events.emit({ type: "crash", racer: i, boom: kind !== null });
   }
 
   /** Holds a wrecked car still. When the timer ends it may drive, with a short grace so the same hit does not wreck it again. */
@@ -1026,7 +1033,7 @@ export class RaceEngine {
       if (hit >= 0) {
         this.shots.splice(i, 1);
         this.events.emit({ type: "weaponHit", shooter: s.owner, target: hit, kind: "gun" });
-        this.wreck(hit);
+        this.wreck(hit, "gun");
         continue;
       }
       if (s.life <= 0) this.shots.splice(i, 1);
@@ -1044,7 +1051,7 @@ export class RaceEngine {
       if (hit >= 0) {
         this.mines.splice(i, 1);
         this.events.emit({ type: "weaponHit", shooter: m.owner, target: hit, kind: "mine" });
-        this.wreck(hit);
+        this.wreck(hit, "mine");
       }
     }
     for (let i = this.slicks.length - 1; i >= 0; i--) {

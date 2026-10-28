@@ -88,6 +88,9 @@ describe("weapons", () => {
     expect(e.hud().gunSeconds).toBe(WEAPONS.gunBurst);
     e.advance(1 / 60);
     expect(events.some((x) => x.type === "weaponHit" && x.kind === "gun" && x.target === 1)).toBe(true);
+    const boom = events.find((x) => x.type === "explosion" && x.kind === "gun" && x.racer === 1);
+    expect(boom && boom.type === "explosion").toBeTruthy();
+    expect(events.some((x) => x.type === "crash" && x.racer === 1 && x.boom)).toBe(true);
     expect(e.vehicles[1].wrecked).toBeGreaterThan(0);
     expect(e.player.wrecked).toBe(0);
     const before = e.shots.length;
@@ -131,10 +134,17 @@ describe("weapons", () => {
     put(e, 1, mine.x + 30, mine.z);
     runFor(e, WEAPONS.mineArm, () => neutralControls());
     expect(e.mines).toHaveLength(1);
+    const events: RaceEvent[] = [];
+    e.events.on((x) => events.push(x));
     put(e, 1, mine.x, mine.z);
+    const hitX = v.x;
+    const hitZ = v.z;
     e.advance(1 / 60);
     expect(v.wrecked).toBeGreaterThan(0);
     expect(e.mines).toHaveLength(0);
+    const boom = events.find((x) => x.type === "explosion");
+    expect(boom && boom.type === "explosion" && boom.kind === "mine" && boom.racer === 1).toBe(true);
+    if (boom && boom.type === "explosion") expect(Math.hypot(boom.x - hitX, boom.z - hitZ)).toBeLessThan(2);
   });
 
   it("oil makes the car that drives through it slide", () => {

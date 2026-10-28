@@ -66,6 +66,33 @@ export class Puffs {
     }
   }
 
+  /**
+   * Sparks, chunks, rising smoke and a dust ring for a blast.
+   * `power` is 0..1 after distance, so a far explosion spends fewer puffs.
+   */
+  blast(x: number, y: number, z: number, power: number): void {
+    const sparks = 8 + Math.round(power * 8);
+    for (let i = 0; i < sparks; i++) {
+      const a = (i / sparks) * Math.PI * 2 + Math.random() * 0.35;
+      const r = 5 + power * 9 + Math.random() * 4;
+      const hot = i % 3 === 0 ? "#fff4c2" : i % 3 === 1 ? "#ffb020" : "#ff5a1f";
+      this.spawn(x, y + 1.1, z, Math.cos(a) * r, 3 + Math.random() * (4 + power * 5), Math.sin(a) * r, hot, 0.32 + Math.random() * 0.22, 0.16, 0.03, 5, 1.4);
+    }
+    const debris = 4 + Math.round(power * 5);
+    for (let i = 0; i < debris; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 3 + Math.random() * (4 + power * 6);
+      this.spawn(x, y + 0.8, z, Math.cos(a) * r, 4 + Math.random() * 6, Math.sin(a) * r, i % 2 === 0 ? "#6b5344" : "#d9d3c7", 0.55 + Math.random() * 0.25, 0.26, 0.08, 16, 0.55);
+    }
+    const smoke = 5 + Math.round(power * 6);
+    for (let i = 0; i < smoke; i++) {
+      const a = (i / smoke) * Math.PI * 2;
+      const drift = 1.2 + Math.random() * 1.6;
+      this.spawn(x, y + 0.6, z, Math.cos(a) * drift, 1.4 + Math.random() * 1.8, Math.sin(a) * drift, i % 2 === 0 ? "#6e6a66" : "#b7b1a8", 0.85 + power * 0.4, 0.55, 2.2 + power * 1.4, -1.8, 0.65);
+    }
+    this.ring(x, y, z, "#cbb89a", 6 + power * 10);
+  }
+
   /** A ring of dust, for landings. */
   ring(x: number, y: number, z: number, color: string, strength: number): void {
     const n = Math.min(16, 6 + Math.round(strength));

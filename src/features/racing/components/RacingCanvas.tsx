@@ -44,6 +44,7 @@ export default function RacingCanvas({ engine, cars, lowPower, onReady, onFail }
       renderer = new RacingRenderer(canvas, {
         reducedMotion: () => useSettingsStore.getState().reducedMotion,
         cameraDistance: () => useRacingSettings.getState().cameraDistance,
+        screenShake: () => useRacingSettings.getState().screenShake,
         lowPower,
       });
     } catch (err) {

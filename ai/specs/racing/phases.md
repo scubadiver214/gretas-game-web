@@ -149,6 +149,24 @@ The boom plays on the hit: a bolt that wrecks a rival, a mine that wrecks a riva
 
 **Verified.** `engine/weapons.test.ts`: a rival placed on a fresh slick emits `weaponHit` kind `oil`, gets slippery, and is not wrecked. Gun and mine hits already emit `weaponHit`, and the sound hook plays the explosion when the target is not the player. `tsc --noEmit` clean. The boom itself is a synthesised cue (`fx.explosion`), so the browser could not be checked by ear.
 
+3.7 keeps the hit, and moves the big boom onto the wreck. A first touch of oil is a whoosh again.
+
+### 3.7 Earthquake blasts
+
+**Goal.** A mine, a gun wreck, a crash while sliding on oil, or a hard car-to-car hit should feel like an arcade explosion: a boom, a fireball, and a short earthquake of the camera. Cars further away feel less of it. The cars themselves are not shoved by the shake.
+
+**What shipped**
+
+- `engine/explosion.ts` turns a blast into listener feedback: type, position, intensity, shake length and size, volume, and radius. Falloff is smooth. The car that was hit always gets the full blast. Stacked shakes are capped (`EXPLOSION` in `config.ts`).
+- The chase camera keeps driving. The renderer adds the earthquake on top of it (sideways, up, and a small roll) and lets it die out. Calm view, and the new menu choice **Explosion shake** (Full / Softer / Off), can turn that off. Steering and the vehicle step are untouched.
+- A mine or a gun also ripples the picture for a moment on a desktop. Phones skip that extra pass and keep the fireball, sparks, smoke, dust, and the ring.
+- The boom is synthesised in `boom.ts` (crack, low rumble, a short echo, sometimes a metallic tick). It follows the mute switch and the sound volume, and a second blast in the same instant is quieter. A far blast is not played.
+- Oil still only slides. The earthquake is the crash that happens while the car is sliding. Touching a slick still whooshes.
+
+**Verified.** `engine/explosion.test.ts` (kind priority, falloff, direct hit vs far, shake off still reports audio, envelope, cap). Mine and gun events carry a position at the hit, not the spot the car is set back to. A hay-bale or animal wreck is not a blast. A head-on wrecks both cars and emits two collision blasts. A wreck while `oiled` is an oil blast. Racing suite: 360 tests. `tsc --noEmit` clean.
+
+**Browser (embedded Chromium, `/play/racing`, desert, Helper).** Settings lists Explosion shake with Full selected, plus Softer and Off. A mine under the player emitted `explosion` kind `mine`, showed an orange fireball and sparks ahead of the spun car, the CRASH! banner, and speed 0. The sky and the road stayed the right colours through the ripple. Sound was muted in that session, so the boom was not heard.
+
 ---
 
 ## Phase 4 — collectibles, rewards, persistence

@@ -28,6 +28,16 @@ flowchart TD
 
 ## Log
 
+### 2026-10-28 — Earthquake when something blows up
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| R-42 | A mine, a gun wreck, a hard car-to-car hit, or a wreck while the car is still sliding on oil emits one `explosion` (kind, position, racer). The camera shakes; the cars do not. Gun and mine outrank a slide. A slide outranks a plain crash. A hay bale, an animal, or the boundary wall is still the old bump, not a blast | The player asked for those four moments to feel like an arcade explosion, and for the shake to be the camera so handling stays fair | Shaking the road meshes or the physics; treating every crash as a bomb; booming on the oil puddle itself |
+| R-43 | Nearby cars hear and feel a blast, quieter and smaller with distance. The car that was hit always gets the full one. Overlapping shakes are summed and then capped. This narrows R-28: coins, walls and bumps stay player-only | A mine up the road should be obvious, and five at once should not throw the camera off the track | The same intensity for the whole field; a hard cutoff at a distance; one shake that replaces the others |
+| R-44 | Menu **Explosion shake** is Full, Softer, or Off, saved with the other racing settings. Calm view still turns every shake off, including this one. The boom follows the existing mute switch and sound volume | Some players get dizzy. The option had to be able to soften or disable the shake without muting the race | A new global settings page; shaking even when Calm view is on |
+| R-45 | The picture ripples only for a strong nearby mine or gun, and only when shake is allowed. A phone skips that extra draw and keeps the fireball, sparks, smoke, dust and ring. No new libraries | A fullscreen pass every frame would cost the race. The toy look is already meshes and puffs | EffectComposer on every frame; a refraction material; dropping the ring on phones |
+| R-46 | The first touch of oil is a whoosh. The boom is the crash while sliding. This replaces the oil half of R-41. Dropping a weapon still only whooshes | Oil does not wreck a car. A boom on the puddle made a slide sound like a bomb, and a later crash would have boomed twice | Keeping the full explosion on the first slide; making oil wreck the car |
+
 ### 2026-10-26 — A boom when a weapon connects
 
 | ID | Decision | Why | Rejected |

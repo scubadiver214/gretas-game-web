@@ -36,4 +36,4 @@ Open work only. Finished items belong in [phases.md](phases.md). Point at a phas
 
 ## Not a phase, do not forget
 
-- [ ] context7 was unavailable when racing was built; re-check three.js APIs against current docs if the renderer is rewritten
+- [ ] context7 was unavailable when racing was built, and again for the 3.7 blast (three.js r186 ripple pass was checked against the copy of three in node_modules). Re-check three.js APIs against current docs if the renderer is rewritten

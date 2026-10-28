@@ -1,10 +1,12 @@
 import { Color, DirectionalLight, Fog, HemisphereLight, InstancedMesh, NeutralToneMapping, PCFShadowMap, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { MeshKit } from "@/components/three/kit";
-import { BUGGY, CAMERA, CAMERA_DISTANCE_SCALE, type CameraDistance } from "../config";
+import { BUGGY, CAMERA, CAMERA_DISTANCE_SCALE, EXPLOSION, type CameraDistance } from "../config";
 import { ChaseCamera, type CameraOptions, type CameraTarget } from "../engine/camera";
 import { makeCameraWorld } from "../engine/cameraWorld";
+import { ExplosionShake, feedbackFor, shakePhase } from "../engine/explosion";
 import { clamp01, fwdX, fwdZ, lerp } from "../engine/math";
 import { newRenderPose, type AnimalPose, type RaceEngine, type RenderPose } from "../engine/RaceEngine";
+import type { ScreenShake } from "../settings";
 import type { RaceEvent } from "../types";
 import type { TrackContent } from "../world/content";
 import type { Track } from "../world/track";
@@ -16,6 +18,7 @@ import { WeaponProps } from "./meshes/weapons";
 import { buildProps } from "./meshes/props";
 import { Sky } from "./meshes/sky";
 import { buildRamps, buildRoad, buildStartLine, buildTerrain, buildWater, type Water } from "./meshes/world";
+import { ExplosionView } from "./explosionView";
 import { Puffs } from "./puffs";
 import { Precipitation } from "./meshes/precip";
 import { THEMES, type WorldTheme } from "./theme";
@@ -29,6 +32,8 @@ export interface RendererOptions {
   /** Read each frame, so the settings toggle takes effect immediately. */
   reducedMotion: () => boolean;
   cameraDistance: () => CameraDistance;
+  /** Full, softer, or off. Calm view (reduced motion) forces off. */
+  screenShake: () => ScreenShake;
   /** Smaller shadow map and lower pixel ratio for phones and tablets. */
   lowPower: boolean;
 }
@@ -46,6 +51,8 @@ export class RacingRenderer {
   private readonly kit = new MeshKit();
   private readonly textures = new RacingTextures();
   private readonly particles = new Puffs();
+  private readonly blasts: ExplosionView;
+  private readonly quakes = new ExplosionShake();
   private readonly chase = new ChaseCamera();
   private readonly sun: DirectionalLight;
   private readonly hemi: HemisphereLight;
@@ -100,6 +107,9 @@ export class RacingRenderer {
   private orbitAngle = 0;
   private dustDebt = 0;
   private sparkDebt = 0;
+  /** 0..1. A short brightness punch on a nearby blast. Calm view keeps this at 0. */
+  private exposureFlash = 0;
+  private readonly exposureBase = 1.05;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -111,7 +121,9 @@ export class RacingRenderer {
     this.renderer.shadowMap.type = PCFShadowMap;
     // Neutral tone mapping keeps the toy-box colours saturated.
     this.renderer.toneMapping = NeutralToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = this.exposureBase;
+    this.blasts = new ExplosionView(options.lowPower);
+    this.blasts.warm(this.renderer);
 
     this.hemi = new HemisphereLight("#ffffff", "#e9b878", 2);
     this.sun = new DirectionalLight("#fff0d4", 3.3);
@@ -128,7 +140,7 @@ export class RacingRenderer {
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.35;
     this.sunOffset = { x: 0, y: 0, z: 0 };
-    this.scene.add(this.hemi, this.sun, this.sun.target, this.particles.mesh);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.particles.mesh, this.blasts.group);
   }
 
   /** Builds the static world for a track. Takes a moment, so the host shows a loading screen around it. */
@@ -231,6 +243,7 @@ export class RacingRenderer {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.blasts.resize(this.renderer.domElement.width, this.renderer.domElement.height);
   }
 
   render(dt: number): void {
@@ -285,16 +298,20 @@ export class RacingRenderer {
     if (engine.phase === "ready") {
       this.orbitAngle += dt * 0.28;
       this.chase.orbit(t, this.orbitAngle, 10.5, 3.6);
+      this.quakes.clear();
     } else {
       this.chase.update(simDt, t, this.cameraOptions(calm));
+      this.quakes.advance(simDt);
     }
     const c = this.chase;
-    this.camera.position.set(c.x + c.shakeX, c.y + c.shakeY, c.z);
+    const q = this.quakes.offset;
+    this.camera.position.set(c.x + c.shakeX + q.x, c.y + c.shakeY + q.y, c.z + q.z);
     this.camera.fov = c.fov;
     this.camera.updateProjectionMatrix();
     this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(c.lookX, c.lookY, c.lookZ);
-    if (c.roll !== 0) this.camera.rotateZ(c.roll);
+    this.camera.lookAt(c.lookX + q.x, c.lookY + q.y, c.lookZ + q.z);
+    const roll = c.roll + q.roll;
+    if (roll !== 0) this.camera.rotateZ(roll);
 
     // Light and shadow follow the player.
     this.sun.target.position.set(t.x, t.y, t.z);
@@ -307,8 +324,11 @@ export class RacingRenderer {
     this.applyWeather(engine, calm);
     this.precip?.update(simDt, this.camera.position.x, this.camera.position.y, this.camera.position.z, calm, engine.weather.intensity);
     this.emitTrail(engine, simDt, calm);
+    this.blasts.update(simDt);
     this.particles.update(simDt, this.camera.position.x, this.camera.position.y, this.camera.position.z);
-    this.renderer.render(this.scene, this.camera);
+    this.exposureFlash = Math.max(0, this.exposureFlash - simDt * 5.5);
+    this.renderer.toneMappingExposure = this.exposureBase + (calm ? 0 : this.exposureFlash * 0.62);
+    if (!this.blasts.present(this.renderer, this.scene, this.camera)) this.renderer.render(this.scene, this.camera);
   }
 
   dispose(): void {
@@ -319,6 +339,7 @@ export class RacingRenderer {
       if (o instanceof InstancedMesh) o.dispose();
     });
     this.particles.dispose();
+    this.blasts.dispose();
     this.kit.dispose();
     this.textures.dispose();
     this.renderer.dispose();
@@ -365,6 +386,29 @@ export class RacingRenderer {
     this.sun.intensity = lerp(theme.sun.intensity, theme.sun.intensity * (storm?.sun ?? 1), intensity);
     this.hemi.intensity = lerp(theme.hemi.intensity, theme.hemi.intensity * (storm?.hemi ?? 1), intensity);
     this.renderer.toneMappingExposure = lerp(1.05, engine.weather.kind === "rain" ? 0.82 : 1.12, intensity);
+  }
+
+  /** Camera metres of earthquake for the current settings. Calm view wins. */
+  private shakeScale(calm: boolean): number {
+    if (calm) return 0;
+    const mode = this.options.screenShake();
+    if (mode === "off") return 0;
+    if (mode === "soft") return EXPLOSION.softScale;
+    return 1;
+  }
+
+  /** Fireball, dust and a camera jolt. The cars are not moved. */
+  private onExplosion(e: Extract<RaceEvent, { type: "explosion" }>): void {
+    const engine = this.engine;
+    if (!engine) return;
+    const calm = this.options.reducedMotion();
+    const player = engine.player;
+    const fb = feedbackFor(e.kind, { x: e.x, y: e.y, z: e.z }, { x: player.x, y: player.y, z: player.z }, e.racer === engine.playerIndex, this.shakeScale(calm));
+    this.quakes.add(fb.shakeMagnitude, fb.shakeDuration, fb.tremor, shakePhase(e.x, e.z));
+    if (fb.falloff < 0.08) return;
+    this.blasts.spawn(e.x, e.y, e.z, fb.explosionIntensity, fb.distort);
+    this.particles.blast(e.x, e.y, e.z, fb.explosionIntensity);
+    if (!calm && fb.explosionIntensity > 0.35) this.exposureFlash = Math.min(1, this.exposureFlash + fb.explosionIntensity * 0.7);
   }
 
   private cameraOptions(calm: boolean): CameraOptions {
@@ -444,6 +488,9 @@ export class RacingRenderer {
       case "reset":
         this.syncCars();
         this.particles.clear();
+        this.blasts.clear();
+        this.quakes.clear();
+        this.exposureFlash = 0;
         this.pickups?.reset(-1);
         this.weapons?.reset();
         this.resetCamera();
@@ -465,11 +512,14 @@ export class RacingRenderer {
         this.weapons?.reset();
         break;
       case "weaponHit": {
+        if (e.kind !== "oil") break;
         const v = engine.vehicles[e.target];
-        this.particles.sparkle(v.x, v.y + 1.2, v.z, e.kind === "gun" ? "#ffb020" : e.kind === "oil" ? "#7eb6ff" : "#ff5a5a", 16);
-        if (e.target === engine.playerIndex) this.chase.kick(0.45);
+        this.particles.sparkle(v.x, v.y + 1.2, v.z, "#7eb6ff", 12);
         break;
       }
+      case "explosion":
+        this.onExplosion(e);
+        break;
       case "checkpoint": {
         const g = track.checkpoints[e.index];
         this.particles.sparkle(g.x, 5, g.z, "#41c9ff", 22);
@@ -502,6 +552,7 @@ export class RacingRenderer {
         if (e.racer === engine.playerIndex) this.chase.kick(0.2);
         break;
       case "crash": {
+        if (e.boom) break;
         const v = engine.vehicles[e.racer];
         this.particles.ring(v.x, v.y, v.z, "#e7d3a1", 16);
         this.particles.sparkle(v.x, v.y + 1.1, v.z, "#ffe08a", 20);

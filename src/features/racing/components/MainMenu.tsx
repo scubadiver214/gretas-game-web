@@ -22,7 +22,7 @@ import { fx } from "@/lib/fx";
 import { GAME_TITLE, rivalPaceLabel, type CameraDistance } from "../config";
 import { ASSIST_LABELS, ASSIST_LEVELS, difficultyFor, type AssistLevel } from "../engine/difficulty";
 import type { Rival } from "../rivals";
-import { useRacingSettings, type RaceMode } from "../settings";
+import { useRacingSettings, type RaceMode, type ScreenShake } from "../settings";
 import { TRACKS } from "../world";
 import type { TrackDefinition, WorldId } from "../world/track";
 import { R, bigText, plate } from "./hudStyle";
@@ -247,6 +247,8 @@ export default function MainMenu({
   const setAssist = useRacingSettings((s) => s.setAssist);
   const cameraDistance = useRacingSettings((s) => s.cameraDistance);
   const setCameraDistance = useRacingSettings((s) => s.setCameraDistance);
+  const screenShake = useRacingSettings((s) => s.screenShake);
+  const setScreenShake = useRacingSettings((s) => s.setScreenShake);
   const simpleHud = useRacingSettings((s) => s.simpleHud);
   const setSimpleHud = useRacingSettings((s) => s.setSimpleHud);
   const reducedMotion = useSettingsStore((s) => s.reducedMotion);
@@ -353,6 +355,16 @@ export default function MainMenu({
                 { id: "far", text: "Far" },
               ]}
               onChange={setCameraDistance}
+            />
+            <Choice<ScreenShake>
+              label="Explosion shake"
+              value={screenShake}
+              options={[
+                { id: "full", text: "Full" },
+                { id: "soft", text: "Softer" },
+                { id: "off", text: "Off" },
+              ]}
+              onChange={setScreenShake}
             />
             <FormControlLabel control={<Switch checked={simpleHud} onChange={(_, v) => setSimpleHud(v)} />} label={<Typography sx={{ ...bigText, fontSize: "1rem" }}>Simple screen (hide clock and map)</Typography>} />
             <FormControlLabel control={<Switch checked={reducedMotion} onChange={toggleReducedMotion} />} label={<Typography sx={{ ...bigText, fontSize: "1rem" }}>Calm view (less shake)</Typography>} />

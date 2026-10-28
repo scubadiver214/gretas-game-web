@@ -201,6 +201,32 @@ export const CAMERA = {
   shakeDecay: 6,
 } as const;
 
+/**
+ * Earthquake feedback when a mine, a gun, an oil crash or a hard car hit goes off.
+ * Shake numbers are metres of camera offset. The chase camera adds them; the cars do not move.
+ * Durations sit between a short jolt and a little over a second. `effectRadius` is metres.
+ */
+export const EXPLOSION = {
+  /** Combined camera offset never passes this, however many blasts overlap. */
+  maxShake: 2.4,
+  /** Radians. A small roll on top of the sideways shove. */
+  maxRoll: 0.09,
+  /** How many blasts can shake at once. A new one replaces the weakest. */
+  maxLayers: 4,
+  /** Ripple the picture only when the blast is still at least this strong after distance. */
+  distortMin: 0.55,
+  /** Skip the sound below this, so a far blast stays quiet. */
+  audibleMin: 0.05,
+  /** "Softer" in the menu. */
+  softScale: 0.38,
+  kinds: {
+    oil: { intensity: 0.5, shakeDuration: 0.66, shakeMagnitude: 0.95, audioVolume: 0.7, effectRadius: 50, tremor: 0.15, distort: false },
+    collision: { intensity: 0.62, shakeDuration: 0.8, shakeMagnitude: 1.25, audioVolume: 0.78, effectRadius: 58, tremor: 0.3, distort: false },
+    mine: { intensity: 0.86, shakeDuration: 0.98, shakeMagnitude: 1.8, audioVolume: 0.92, effectRadius: 76, tremor: 0.62, distort: true },
+    gun: { intensity: 1, shakeDuration: 1.16, shakeMagnitude: 2.3, audioVolume: 1, effectRadius: 94, tremor: 0.85, distort: true },
+  },
+} as const;
+
 /** The player's camera-distance setting scales CAMERA.distance and height. */
 export const CAMERA_DISTANCE_SCALE = { close: 0.78, normal: 1, far: 1.28 } as const;
 export type CameraDistance = keyof typeof CAMERA_DISTANCE_SCALE;

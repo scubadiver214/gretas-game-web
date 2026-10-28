@@ -36,6 +36,19 @@ describe("racing settings: race or time trial", () => {
   });
 });
 
+describe("racing settings: explosion shake", () => {
+  it("starts on full and keeps a saved softer or off", () => {
+    expect(useRacingSettings.getState().screenShake).toBe("full");
+    expect(migrate({ screenShake: "soft" }).screenShake).toBe("soft");
+    expect(migrate({ screenShake: "off" }).screenShake).toBe("off");
+  });
+
+  it("falls back to full when the saved value is missing or nonsense", () => {
+    expect(migrate({}).screenShake).toBe("full");
+    expect(migrate({ screenShake: "earthquake" }).screenShake).toBe("full");
+  });
+});
+
 describe("racing settings: how many races you have started", () => {
   it("starts at zero and counts a race", () => {
     useRacingSettings.setState({ racesEntered: 0 });

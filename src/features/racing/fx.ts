@@ -1,20 +1,31 @@
+import { useSettingsStore } from "@/features/settings/store";
 import { celebrate, fx } from "@/lib/fx";
+import { vibrate } from "@/lib/fx/haptics";
+import { duckMusic } from "@/lib/fx/mixer";
+import { EXPLOSION } from "./config";
 import { ordinal } from "./components/format";
+import { playRacingBoom } from "./boom";
+import { feedbackFor } from "./engine/explosion";
 import type { RaceEngine } from "./engine/RaceEngine";
+import type { RaceEvent } from "./types";
 import { useRacingHud } from "./useRacingHud";
 
 /** Overtakes closer together than this are rolled into one banner (side-by-side cars swap places a lot). */
 const PLACE_BANNER_GAP_MS = 1500;
 
 /**
- * Engine events -> sounds, haptics and short HUD banners, for the player's car only
- * (rivals make no noise). Also calls out each place gained or lost in a race. Returns
- * the unbind function. (Engine and tyre noise and the racing soundtrack arrive in the
- * polish phase; these are the moment-to-moment cues.)
+ * Engine events -> sounds, haptics and short HUD banners. Most cues are for the player's
+ * car only. A blast is the exception: anyone close enough hears it, quieter with distance.
+ * Also calls out each place gained or lost in a race. Returns the unbind function.
+ * (Engine and tyre noise and the racing soundtrack arrive in the polish phase.)
  */
 export function bindRacingFx(engine: RaceEngine): () => void {
   const flash = useRacingHud.getState().flash;
   const unbindEvents = engine.events.on((e) => {
+    if (e.type === "explosion") {
+      hearExplosion(engine, e);
+      return;
+    }
     if ("racer" in e && e.racer !== engine.playerIndex) return;
     switch (e.type) {
       case "countdown":
@@ -66,7 +77,7 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         flash(e.auto ? "Back on the road!" : "Reset!", "blue");
         break;
       case "crash":
-        fx.crash();
+        if (!e.boom) fx.crash();
         break;
       case "weaponPickup":
         fx.ding();
@@ -79,8 +90,7 @@ export function bindRacingFx(engine: RaceEngine): () => void {
         flash("Empty!", "red");
         break;
       case "weaponHit":
-        if (e.shooter === engine.playerIndex && e.target !== engine.playerIndex) fx.explosion();
-        else if (e.target === engine.playerIndex) fx.crash();
+        if (e.kind === "oil" && e.target !== engine.playerIndex) fx.whoosh();
         break;
       case "oil":
         fx.whoosh();
@@ -118,4 +128,17 @@ export function bindRacingFx(engine: RaceEngine): () => void {
     unbindEvents();
     unbindRank();
   };
+}
+
+/** A mine, a gun, an oil crash or a hard car hit. Loud up close, a distant thud further off. */
+function hearExplosion(engine: RaceEngine, e: Extract<RaceEvent, { type: "explosion" }>): void {
+  const player = engine.vehicles[engine.playerIndex];
+  const fb = feedbackFor(e.kind, { x: e.x, y: e.y, z: e.z }, { x: player.x, y: player.y, z: player.z }, e.racer === engine.playerIndex, 1);
+  if (fb.audioVolume < EXPLOSION.audibleMin) return;
+  const { soundOn, hapticsOn } = useSettingsStore.getState();
+  if (soundOn) {
+    playRacingBoom(e.kind, fb.audioVolume);
+    if (fb.audioVolume > 0.45) duckMusic(0.28, 0.1, 0.4);
+  }
+  if (hapticsOn && fb.falloff > 0.55) vibrate(e.kind === "gun" || e.kind === "mine" ? "heavy" : "error");
 }

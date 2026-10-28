@@ -56,7 +56,8 @@ describe("crashes", () => {
     const hitS = e.player.query.s;
     e.advance(1 / 60);
 
-    expect(events.some((x) => x.type === "crash" && x.racer === 0)).toBe(true);
+    expect(events.some((x) => x.type === "crash" && x.racer === 0 && x.boom === false)).toBe(true);
+    expect(events.some((x) => x.type === "explosion")).toBe(false);
     expect(events.some((x) => x.type === "respawn")).toBe(false);
     expect(e.player.speed).toBe(0);
     expect(e.player.wrecked).toBeGreaterThan(0);
@@ -98,6 +99,7 @@ describe("crashes", () => {
     plant(e, 0, p.x - p.tz * lat, p.z + p.tx * lat, heading, 26);
     runFor(e, 0.4, () => ({ ...neutralControls(), throttle: 1 }));
     expect(events.some((x) => x.type === "crash")).toBe(false);
+    expect(events.some((x) => x.type === "explosion")).toBe(false);
     expect(events.some((x) => x.type === "wall")).toBe(true);
     expect(e.player.wrecked).toBe(0);
   });
@@ -119,6 +121,7 @@ describe("crashes", () => {
     plant(e, 1, soft.x + soft.tx * 3, soft.z + soft.tz * 3, soft.heading, 18);
     e.advance(1 / 60);
     expect(events.filter((x) => x.type === "crash")).toHaveLength(0);
+    expect(events.some((x) => x.type === "explosion")).toBe(false);
 
     events.length = 0;
     const p = e.track.sample(480);
@@ -130,6 +133,8 @@ describe("crashes", () => {
     e.advance(1 / 60);
     const crashed = events.filter((x) => x.type === "crash").map((x) => (x.type === "crash" ? x.racer : -1));
     expect(crashed.sort()).toEqual([0, 1]);
+    expect(events.filter((x) => x.type === "explosion" && x.kind === "collision")).toHaveLength(2);
+    expect(events.filter((x) => x.type === "crash" && x.boom)).toHaveLength(2);
     expect(e.vehicles[0].speed).toBe(0);
     expect(e.vehicles[1].speed).toBe(0);
     expect(along(e, e.vehicles[0].query.s, s0)).toBeLessThan(CRASH.settleBack + 8);
@@ -153,8 +158,29 @@ describe("crashes", () => {
     plant(e, 0, road.x - road.tx * gap, road.z - road.tz * gap, road.heading, 24);
     const hitS = e.player.query.s;
     e.advance(1 / 60);
-    expect(events.some((x) => x.type === "crash" && x.racer === 0)).toBe(true);
+    expect(events.some((x) => x.type === "crash" && x.racer === 0 && x.boom === false)).toBe(true);
+    expect(events.some((x) => x.type === "explosion")).toBe(false);
     expect(e.player.speed).toBe(0);
     expect(along(e, e.player.query.s, hitS)).toBeLessThan(CRASH.settleBack + 8);
+  });
+
+  it("treats a crash while the car is still sliding as an oil blast", () => {
+    const e = racing();
+    const events: RaceEvent[] = [];
+    e.events.on((x) => events.push(x));
+    const o = e.content.obstacles.find((ob) => ob.kind === "hay" || ob.kind === "boulder" || ob.kind === "tires");
+    expect(o).toBeTruthy();
+    e.track.projectGlobal(o!.x, o!.z, e.player.query);
+    const p = e.track.sample(e.player.query.s);
+    const dx = o!.x - p.x;
+    const dz = o!.z - p.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const gap = o!.r + e.params.radius + 0.2;
+    plant(e, 0, o!.x - (dx / d) * gap, o!.z - (dz / d) * gap, headingOf(dx, dz), 28);
+    e.player.oiled = 1.2;
+    e.advance(1 / 60);
+    const boom = events.find((x) => x.type === "explosion");
+    expect(boom && boom.type === "explosion" && boom.kind === "oil" && boom.racer === 0).toBe(true);
+    expect(events.some((x) => x.type === "crash" && x.racer === 0 && x.boom)).toBe(true);
   });
 });
