@@ -361,6 +361,48 @@
   animation: sprinkle 0.85s ease-in forwards;
 }
 
+.melt-meter {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  pointer-events: none;
+}
+.melt-meter span {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  opacity: 0.42;
+}
+.melt-meter span.is-on {
+  opacity: 1;
+  box-shadow: 0 2px 0 #f3c6d8;
+}
+.motion-note {
+  position: absolute;
+  z-index: 3;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  margin: 0;
+  background: #fff;
+  color: #e8437a;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 4px 0 #f3c6d8;
+}
+
 .scoop-drop { animation: scoop-drop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; transform-box: fill-box; transform-origin: center; }
 .scoop-wobble { animation: wobble 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 80%; }
 .sauce-draw { stroke-dasharray: 140; stroke-dashoffset: 140; animation: drizzle 0.7s ease forwards; }

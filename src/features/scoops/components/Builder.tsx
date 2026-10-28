@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fx } from "@/lib/fx";
 import { useSettingsStore } from "@/features/settings/store";
+import { MELT_STAGES, type MeltStage } from "../animation/melt";
+import type { MotionHud } from "../animation/useDessertMotion";
 import { ScoopProblem } from "../api/client";
 import { DROPPED_SCOOP, MIX_LABELS } from "../config";
 import { clearDraft, saveDraft, type ScoopDraft } from "../draft";
@@ -47,6 +49,11 @@ function plopWord(slot: IngredientSlot, id: string): string {
 export function Builder({ draft, tutorial, onExit, onBook, onTutorialDone }: BuilderProps) {
   const { session, saveRecipe } = useScoops();
   const calm = useSettingsStore((s) => s.reducedMotion);
+  const osCalm = usePrefersReducedMotion();
+  const motionOn = !calm && !osCalm;
+  const [meltStage, setMeltStage] = useState<MeltStage>("fresh");
+  const [motionNote, setMotionNote] = useState<{ id: number; text: string } | null>(null);
+  const noteId = useRef(0);
   const [history, setHistory] = useState<CreationHistory>({ past: [], present: draft.creation, future: [] });
   const [category, setCategory] = useState<Category>(draft.creation.containerId ? "scoops" : "serve");
   const [name, setName] = useState(draft.name);
@@ -79,6 +86,19 @@ export function Builder({ draft, tutorial, onExit, onBook, onTutorialDone }: Bui
     const timer = window.setTimeout(() => setPlop(null), 700);
     return () => window.clearTimeout(timer);
   }, [plop]);
+
+  useEffect(() => {
+    if (!motionNote) return;
+    const timer = window.setTimeout(() => setMotionNote(null), 2800);
+    return () => window.clearTimeout(timer);
+  }, [motionNote]);
+
+  const onMotion = (hud: MotionHud) => {
+    setMeltStage(hud.stage);
+    if (!hud.notice) return;
+    noteId.current += 1;
+    setMotionNote({ id: noteId.current, text: hud.notice });
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -239,7 +259,21 @@ export function Builder({ draft, tutorial, onExit, onBook, onTutorialDone }: Bui
             dropOnStage(event.dataTransfer.getData("text/plain"));
           }}
         >
-          <IceCreamPreview creation={creation} assembleKey={assembleKey} animate={!calm} />
+          <IceCreamPreview creation={creation} assembleKey={assembleKey} animate={!calm} live={motionOn} onMotion={onMotion} />
+          {motionOn && creation.flavorIds.length > 0 && (
+            <div className="melt-meter" data-testid="melt-meter" role="status" aria-label={MELT_STAGES.find((stage) => stage.id === meltStage)?.label ?? "Fresh"}>
+              {MELT_STAGES.map((stage) => (
+                <span key={stage.id} className={stage.id === meltStage ? "is-on" : undefined}>
+                  {stage.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {motionNote && (
+            <p className="motion-note" aria-live="polite">
+              {motionNote.text}
+            </p>
+          )}
           {plop && !calm && <span className="plop">{plop}</span>}
           {justAdded && RAIN.has(justAdded) && !calm && <SprinkleRain />}
         </div>
@@ -504,6 +538,18 @@ function IngredientButton({ emoji, name, selected, locked, level, drag, onClick 
       {locked && <span className="lock">Level {level}</span>}
     </button>
   );
+}
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduced(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+  return reduced;
 }
 
 function SprinkleRain() {

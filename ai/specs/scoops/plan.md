@@ -28,6 +28,7 @@ Scoops does **not** join `GameMode`. That union drives stars, daily challenges, 
 src/features/scoops/
   game-data/          flavors, containers, toppings, sauces, extras, secrets, achievements, avatars
   logic/              creation, undo, secrets, XP, moderation, events, sort scores
+  animation/          melt clock, topping load, frame poses, DOM writer. Not stored on a recipe
   data/               normalized document store + repository
   api/                HTTP handler and browser client
   components/         shop screens and the ice cream picture
@@ -87,7 +88,7 @@ interface IceCreamRecipe {
 }
 ```
 
-The picture component takes this shape (or the in-progress creation, which is the same ingredients without an id). Cards, the stage, and the reveal all use it.
+The picture component takes this shape (or the in-progress creation, which is the same ingredients without an id). Cards, the stage, and the reveal all use it. Melt, drips, and topping wobble are drawn on top of that list and are not saved. A recipe opened again starts fresh. Tuning for the motion is `src/features/scoops/animation/motionConfig.ts`.
 
 ## API
 

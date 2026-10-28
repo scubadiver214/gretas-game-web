@@ -98,5 +98,26 @@ Goal: saving a scoop can win an avatar, with easy first prizes and harder ones f
 
 `pnpm exec vitest run src/features/scoops` covers first-save prizes, cherry/tower/fancy/waffle prizes, the rare faces, and Shelby's Twin on the secret favorite. In the browser, saving a cone shows the avatar prize before the finished scoop.
 
+## Phase 9 — Living scoops (done 2026-10-28)
+
+Goal: the ice cream moves, melts, and gets messy while a saved recipe stays a list of ingredients.
+
+- [x] Scoops drop, squash, settle, and nudge the ones underneath
+- [x] Toppings fall on, then slide or drop off as the load grows
+- [x] A clock from the first scoop drives melt, drips, a puddle, and flowing syrup
+- [x] Flavor looks and melt rates, short notes, and a Fresh → Super Melty meter
+- [x] Start over and a new dessert reset the clock. Saved recipes do not store melt
+- [x] Calm motion and the OS reduced-motion setting skip the animation loop
+
+### What exists
+
+`src/features/scoops/animation/` is the clock, the load bands, and the frame writer. `IceCreamPreview` still draws the SVG. The maker stage is the only place that runs the loop. Recipe cards and the saved reveal stay still. Tuning lives in `animation/motionConfig.ts`.
+
+### How it was verified
+
+- `pnpm exec vitest run src/features/scoops`: 10 files, 45 tests. The new file checks the 30/60/120 second stages, a capped melt curve, landing and bounce, overload versus a light sprinkle, drips, strawberry syrup moving faster than hot fudge, the kid messages, all 15 flavors, and that `CurrentCreation` has no melt field.
+- `pnpm exec tsc --noEmit` and eslint on the animation folder, `IceCreamPreview.tsx`, and `Builder.tsx` are clean.
+- In the browser at `/play/scoops`: a waffle cone with vanilla, chocolate, and strawberry. The new scoop started about 51px up and stretched, then settled, and the lower scoops shifted down when it landed. The meter moved from Fresh to Melting (drips and a puddle) and then Super Melty. Six toppings and three sauces showed "That's one messy masterpiece!", pieces fell past the cone, and hot fudge, caramel, and strawberry syrup moved at different speeds (about 5, 9, and 15 pixels in the same span). Average frame time on that stage was under 5ms. Start over cleared the scoops and the next vanilla began at Fresh with no puddle. Community cards still draw the saved cone with no drip nodes and no melt stage.
+
 
 

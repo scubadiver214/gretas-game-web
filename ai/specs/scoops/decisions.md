@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-10-28 — The scoop stays one solid color
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-18 | The scoop fill is the flavor color, lightened a little at the top, with a darker rim. Toppings are centered on the upper dome. Syrup is a solid ribbon down the side. The moving drop still shows the flow. | A near-white gradient and a dashed syrup line made cotton candy look see-through, and emoji baselines put worms in the air above the scoop. | Leaving the dashed syrup. Clipping toppings, which would slice the pictures. |
+
+## 2026-10-28 — Melt is a picture, not a recipe
+
+| ID | Decision | Why | Rejected |
+| --- | --- | --- | --- |
+| D-17 | The dessert is still the SVG in `IceCreamPreview`. A `requestAnimationFrame` loop in `animation/` writes transforms from elapsed time. Saved recipes, drafts, and the API stay ingredient lists. The clock starts when the first scoop is on the stage and resets when the scoops are cleared. Calm motion and `prefers-reduced-motion` do not run the loop, so the picture stays still and fresh. | The maker already drew cones, scoops, and toppings as SVG. A physics engine or a second renderer would replace working art. Melt and falling toppings are funny while you build, and a recipe in the book should come back as the kid designed it. | Canvas or WebGL. A rigid-body library. Storing melt time on the recipe. Blocking more toppings at 100% load. A countdown. |
+
 ## 2026-10-27 — Production shop file lives in tmp
 
 | ID | Decision | Why | Rejected |
